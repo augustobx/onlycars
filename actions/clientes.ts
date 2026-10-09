@@ -5,6 +5,7 @@ import { getTenantContext } from '@/lib/tenant-context';
 import { requireTenantRole } from '@/lib/user-auth';
 import { revalidatePath } from 'next/cache';
 import { RolMembresia } from '@prisma/client';
+import { hashClientePassword } from '@/lib/client-auth';
 
 const CLIENT_ROLES = [RolMembresia.OWNER, RolMembresia.MANAGER, RolMembresia.VENDEDOR, RolMembresia.ADMINISTRATIVO];
 
@@ -59,3 +60,36 @@ export async function actualizarCliente(id_cliente: number, data: any) {
     return { success: false, error: 'Ocurrió un error al actualizar el cliente.' };
   }
 }
+
+export async function resetearPasswordClienteAdminAction(idCliente: number, passwordManual?: string) {
+  try {
+    const tenant = await getTenantContext();
+    await requireTenantRole(tenant.id, CLIENT_ROLES);
+
+    const cliente = await db.cliente.findFirst({
+      where: { id_cliente: idCliente, tenantId: tenant.id },
+    });
+    if (!cliente) return { success: false, error: 'Cliente no encontrado.' };
+
+    const nuevaPassword = passwordManual?.trim() || `Auto${Math.floor(1000 + Math.random() * 9000)}`;
+    const passwordHash = await hashClientePassword(nuevaPassword);
+
+    await db.$transaction([
+      db.cliente.update({
+        where: { id_cliente: idCliente },
+        data: { passwordHash },
+      }),
+      db.clienteSession.deleteMany({
+        where: { clienteId: idCliente },
+      }),
+    ]);
+
+    revalidatePath(`/clientes/${idCliente}`);
+    revalidatePath('/clientes');
+    return { success: true, passwordGenerada: nuevaPassword };
+  } catch (error: any) {
+    console.error('Error reseteando password de cliente:', error);
+    return { success: false, error: error?.message || 'Error al resetear contraseña.' };
+  }
+}
+

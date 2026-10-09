@@ -164,3 +164,73 @@ export async function getPortalCurrentClientAction() {
     return null;
   }
 }
+
+export async function portalRecuperarPasswordAction(params: {
+  dni: string;
+  contacto: string;
+  nuevaPassword: string;
+}) {
+  try {
+    const tenant = await getTenantContext();
+    if (!tenant.features.has(CLIENT_PWA_FEATURE_KEY)) {
+      return { success: false, error: 'El portal de clientes no está habilitado para esta concesionaria.' };
+    }
+
+    const cleanDni = normalizeDni(params.dni);
+    const contacto = String(params.contacto || '').trim().toLowerCase();
+    const nuevaPassword = String(params.nuevaPassword || '').trim();
+
+    if (!cleanDni || cleanDni.length < 6) {
+      return { success: false, error: 'Ingresá un DNI válido.' };
+    }
+    if (!contacto) {
+      return { success: false, error: 'Ingresá el teléfono o email registrado con tu cuenta.' };
+    }
+    if (!nuevaPassword || nuevaPassword.length < 6) {
+      return { success: false, error: 'La nueva contraseña debe tener al menos 6 caracteres.' };
+    }
+
+    const cliente = await db.cliente.findFirst({
+      where: {
+        tenantId: tenant.id,
+        dni: cleanDni,
+      },
+    });
+
+    if (!cliente) {
+      return { success: false, error: 'No se encontró una cuenta con ese DNI en esta agencia.' };
+    }
+
+    const phoneClean = (cliente.telefono || '').replace(/[^0-9]/g, '');
+    const inputPhoneClean = contacto.replace(/[^0-9]/g, '');
+    const emailMatches = cliente.email && cliente.email.trim().toLowerCase() === contacto;
+    const phoneMatches = inputPhoneClean.length >= 6 && phoneClean.includes(inputPhoneClean);
+
+    if (!emailMatches && !phoneMatches) {
+      return {
+        success: false,
+        error: 'El teléfono o email no coincide con los datos registrados para este DNI.',
+      };
+    }
+
+    const passwordHash = await hashClientePassword(nuevaPassword);
+
+    await db.$transaction([
+      db.cliente.update({
+        where: { id_cliente: cliente.id_cliente },
+        data: { passwordHash },
+      }),
+      db.clienteSession.deleteMany({
+        where: { clienteId: cliente.id_cliente },
+      }),
+    ]);
+
+    await createClienteSession(cliente.id_cliente);
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error recuperando contraseña de cliente:', error);
+    return { success: false, error: error?.message || 'Error al restablecer la contraseña.' };
+  }
+}
+

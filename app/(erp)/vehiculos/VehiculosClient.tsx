@@ -14,9 +14,12 @@ import {
   BookmarkCheck,
   ChevronLeft,
   ChevronRight,
+  Globe,
+  Loader2,
 } from 'lucide-react';
 import EstadoSelect from '@/components/vehiculos/EstadoSelect';
 import DualMoney from '@/components/common/DualMoney';
+import { togglePublicacionWeb } from '@/actions/vehiculos';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -65,8 +68,39 @@ export default function VehiculosClient({ vehiculos, currentTab, currentDolar, i
     return () => clearTimeout(timer);
   }, [searchTerm, pathname, router, searchParams]);
 
+  const [vehiculosList, setVehiculosList] = useState<any[]>(vehiculos);
+  const [togglingId, setTogglingId] = useState<number | null>(null);
+
+  useEffect(() => {
+    setVehiculosList(vehiculos);
+  }, [vehiculos]);
+
+  const handleToggleWeb = async (id: number, currentVal: boolean) => {
+    try {
+      setTogglingId(id);
+      const nextVal = !currentVal;
+      setVehiculosList((prev) =>
+        prev.map((item) => (item.id_vehiculo === id ? { ...item, publicadoWeb: nextVal } : item))
+      );
+      const res = await togglePublicacionWeb(id, nextVal);
+      if (!res.success) {
+        setVehiculosList((prev) =>
+          prev.map((item) => (item.id_vehiculo === id ? { ...item, publicadoWeb: currentVal } : item))
+        );
+        alert(res.error || 'No se pudo actualizar la visibilidad en el catálogo web.');
+      }
+    } catch {
+      setVehiculosList((prev) =>
+        prev.map((item) => (item.id_vehiculo === id ? { ...item, publicadoWeb: currentVal } : item))
+      );
+      alert('Error de conexión al actualizar la visibilidad web.');
+    } finally {
+      setTogglingId(null);
+    }
+  };
+
   const sorted = useMemo(() => {
-    return [...vehiculos].sort((a: any, b: any) => {
+    return [...vehiculosList].sort((a: any, b: any) => {
       if (orden === 'az') return `${a.marca} ${a.modelo}`.localeCompare(`${b.marca} ${b.modelo}`);
       if (orden === 'za') return `${b.marca} ${b.modelo}`.localeCompare(`${a.marca} ${a.modelo}`);
       if (orden === 'mayor_precio') return Number(b.venta_ars || 0) - Number(a.venta_ars || 0);
@@ -208,6 +242,7 @@ export default function VehiculosClient({ vehiculos, currentTab, currentDolar, i
                   <th className="px-3 py-3 text-right">Venta</th>
                   <th className="px-3.5 py-3">Estado</th>
                   <th className="px-3 py-3 text-center">Reserva</th>
+                  <th className="px-2.5 py-3 text-center">Web</th>
                   <th className="px-2 py-3 text-center">Tareas</th>
                   <th className="px-3.5 py-3 text-right">Acción</th>
                 </tr>
@@ -234,6 +269,26 @@ export default function VehiculosClient({ vehiculos, currentTab, currentDolar, i
                     <td className="px-3 py-2.5 text-right whitespace-nowrap"><DualMoney ars={v.venta_ars} usd={v.venta_usd} rate={currentDolar} compact primaryClassName="font-black text-emerald-700" /></td>
                     <td className="px-3.5 py-2.5 whitespace-nowrap"><EstadoSelect idVehiculo={v.id_vehiculo} estadoActual={v.estado} /></td>
                     <td className="px-3 py-2.5 text-center whitespace-nowrap"><ReservationBadge v={v} />{!v.reservado && <span className="text-xs text-slate-300">—</span>}</td>
+                    <td className="px-2.5 py-2.5 text-center whitespace-nowrap">
+                      <button
+                        type="button"
+                        disabled={togglingId === v.id_vehiculo}
+                        onClick={() => handleToggleWeb(v.id_vehiculo, Boolean(v.publicadoWeb))}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black transition-all cursor-pointer ${
+                          v.publicadoWeb
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 shadow-xs'
+                            : 'bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200'
+                        }`}
+                        title={v.publicadoWeb ? 'Visible en catálogo online. Clic para ocultar.' : 'Oculto en catálogo online. Clic para publicar.'}
+                      >
+                        {togglingId === v.id_vehiculo ? (
+                          <Loader2 className="w-3 h-3 animate-spin text-slate-500" />
+                        ) : (
+                          <Globe className={`w-3 h-3 ${v.publicadoWeb ? 'text-emerald-600' : 'text-slate-400'}`} />
+                        )}
+                        <span>{v.publicadoWeb ? 'Online' : 'Oculto'}</span>
+                      </button>
+                    </td>
                     <td className="px-2 py-2.5 text-center whitespace-nowrap">
                       {v.tareas_pendientes > 0 ? <span className="bg-amber-50 border border-amber-200 text-amber-700 px-2 py-0.5 rounded-full text-[11px] font-black">{v.tareas_pendientes}</span> : <span className="text-slate-300 text-xs">—</span>}
                     </td>
@@ -259,6 +314,26 @@ export default function VehiculosClient({ vehiculos, currentTab, currentDolar, i
                   <DualMoney ars={v.venta_ars} usd={v.venta_usd} rate={currentDolar} primaryClassName="text-xl font-black text-emerald-900" />
                 </div>
                 <div className="flex items-center justify-between text-xs text-slate-500"><span className="flex items-center gap-1"><Wrench className="w-3.5 h-3.5" /> {v.tareas_pendientes} tareas</span><DualMoney ars={v.compra_ars} usd={v.compra_usd} rate={currentDolar} compact showLabels={false} primaryClassName="font-bold text-slate-600" secondaryClassName="text-[10px] text-slate-400" /></div>
+                <div className="flex items-center justify-between pt-1 border-t border-slate-100">
+                  <span className="text-[11px] font-bold text-slate-500">Catálogo Web</span>
+                  <button
+                    type="button"
+                    disabled={togglingId === v.id_vehiculo}
+                    onClick={() => handleToggleWeb(v.id_vehiculo, Boolean(v.publicadoWeb))}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black transition-all cursor-pointer ${
+                      v.publicadoWeb
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
+                        : 'bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200'
+                    }`}
+                  >
+                    {togglingId === v.id_vehiculo ? (
+                      <Loader2 className="w-3 h-3 animate-spin text-slate-500" />
+                    ) : (
+                      <Globe className={`w-3 h-3 ${v.publicadoWeb ? 'text-emerald-600' : 'text-slate-400'}`} />
+                    )}
+                    <span>{v.publicadoWeb ? 'Publicado' : 'Oculto'}</span>
+                  </button>
+                </div>
                 <Link href={`/vehiculos/${v.id_vehiculo}`} className="block text-center w-full py-2.5 rounded-xl bg-slate-900 text-white text-sm font-black">Abrir carpeta</Link>
               </div>
             ))}

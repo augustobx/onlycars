@@ -34,6 +34,8 @@ export default async function PortalVehiculoPage({
     where: {
       id_vehiculo: idVehiculo,
       tenantId: tenant.id,
+      publicadoWeb: true,
+      estado: { in: ['LISTO_PARA_VENTA', 'EN_CONSIGNACION'] },
     },
     include: {
       fotos: { orderBy: [{ orden: 'asc' }, { id_foto: 'asc' }] },

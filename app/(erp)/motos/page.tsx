@@ -44,6 +44,7 @@ export default async function MotosPage({ searchParams }: { searchParams: Promis
             compra_usd: compraUsd, compra_ars: compraUsd > 0 ? compraUsd * dolarBlue : Number(v.precio_compra_ars) || 0,
             venta_usd: ventaUsd, venta_ars: ventaUsd > 0 ? ventaUsd * dolarBlue : Number(v.precio_venta_ars) || 0,
             tipo_vehiculo: v.tipo_vehiculo, cilindrada: v.cilindrada || '',
+            publicadoWeb: Boolean(v.publicadoWeb ?? true),
         };
     });
 

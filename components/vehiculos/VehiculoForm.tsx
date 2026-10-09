@@ -20,13 +20,14 @@ export default function VehiculoForm({ vehiculo }: { vehiculo?: any }) {
         : vehiculo?.estado;
 
     const { register, handleSubmit, watch } = useForm({
-        defaultValues: vehiculo ? { ...vehiculo, estado: legacyOperationalState } : {
+        defaultValues: vehiculo ? { ...vehiculo, estado: legacyOperationalState, publicadoWeb: vehiculo.publicadoWeb ?? true } : {
             tipo_vehiculo: 'Auto',
             estado: 'EN_PREPARACION',
             tipo_ingreso: 'Propio',
             comision_consignacion_pct: 0,
             km: 0,
             anio: new Date().getFullYear(),
+            publicadoWeb: true,
         },
     });
 
@@ -151,6 +152,19 @@ export default function VehiculoForm({ vehiculo }: { vehiculo?: any }) {
                             <div><label className={labelClass}>Estado operativo</label><select {...register('estado')} className={inputClass}><option value="EN_PREPARACION">En Preparación</option><option value="LISTO_PARA_VENTA">Listo para Venta</option><option value="EN_CONSIGNACION">En Consignación</option><option value="VENDIDO">Vendido</option></select></div>
                             <div><label className={labelClass}>Tipo de Ingreso</label><select {...register('tipo_ingreso')} className={inputClass}><option value="Propio">Vehículo Propio (Agencia)</option><option value="Consignacion">Consignación de Tercero</option><option value="Permuta">Permuta</option></select></div>
                             {tipoIngreso === 'Consignacion' && <div className="p-4 bg-fuchsia-50 border border-fuchsia-200 rounded-xl"><label className="block text-xs font-bold text-fuchsia-800 uppercase tracking-wider mb-2">Comisión Pactada (%)</label><input type="number" step="0.01" {...register('comision_consignacion_pct', { valueAsNumber: true })} className={inputClass} placeholder="Ej: 5.00" /></div>}
+                            <div className="pt-3 border-t border-slate-200">
+                                <label className="flex items-start gap-3 cursor-pointer select-none">
+                                    <input
+                                        type="checkbox"
+                                        {...register('publicadoWeb')}
+                                        className="mt-1 w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+                                    />
+                                    <div>
+                                        <span className="text-xs font-bold text-slate-800">Publicar en Catálogo Online / PWA</span>
+                                        <p className="text-[11px] text-slate-500">Si está marcado, se mostrará en el catálogo web si su estado es Listo o Consignación.</p>
+                                    </div>
+                                </label>
+                            </div>
                         </div>
                     </div>
 

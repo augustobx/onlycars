@@ -22,7 +22,8 @@ export default async function PortalCatalogoPage() {
   const vehiculosDb = await db.vehiculo.findMany({
     where: {
       tenantId: tenant.id,
-      estado: 'LISTO_PARA_VENTA',
+      publicadoWeb: true,
+      estado: { in: ['LISTO_PARA_VENTA', 'EN_CONSIGNACION'] },
     },
     orderBy: { fecha_ingreso: 'desc' },
     include: {

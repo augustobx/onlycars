@@ -73,7 +73,8 @@ export default async function PortalHomePage() {
   const destacadosDb = await db.vehiculo.findMany({
     where: {
       tenantId: tenant.id,
-      estado: 'LISTO_PARA_VENTA',
+      publicadoWeb: true,
+      estado: { in: ['LISTO_PARA_VENTA', 'EN_CONSIGNACION'] },
     },
     take: 3,
     orderBy: { fecha_ingreso: 'desc' },

@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { portalLoginAction, portalRegisterAction } from '@/actions/portal-auth';
-import { ShieldCheck, UserCheck, Lock, User, Phone, Mail, Loader2, ArrowRight } from 'lucide-react';
+import { portalLoginAction, portalRegisterAction, portalRecuperarPasswordAction } from '@/actions/portal-auth';
+import { ShieldCheck, UserCheck, Lock, User, Phone, Mail, Loader2, ArrowRight, KeyRound } from 'lucide-react';
 
 export default function PortalLoginClient({
   tenantName,
@@ -13,7 +13,7 @@ export default function PortalLoginClient({
   redirectTo?: string;
 }) {
   const router = useRouter();
-  const [tab, setTab] = useState<'LOGIN' | 'REGISTER'>('LOGIN');
+  const [tab, setTab] = useState<'LOGIN' | 'REGISTER' | 'RECOVER'>('LOGIN');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -24,6 +24,8 @@ export default function PortalLoginClient({
   const [nombre, setNombre] = useState('');
   const [telefono, setTelefono] = useState('');
   const [email, setEmail] = useState('');
+  const [contacto, setContacto] = useState('');
+  const [nuevaPassword, setNuevaPassword] = useState('');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,6 +67,28 @@ export default function PortalLoginClient({
 
     if (!res.success) {
       setError(res.error || 'No se pudo crear el acceso.');
+      return;
+    }
+
+    router.push(redirectTo);
+    router.refresh();
+  };
+
+  const handleRecover = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setNotice('');
+    setLoading(true);
+
+    const res = await portalRecuperarPasswordAction({
+      dni,
+      contacto,
+      nuevaPassword,
+    });
+    setLoading(false);
+
+    if (!res.success) {
+      setError(res.error || 'No se pudo restablecer la contraseña.');
       return;
     }
 
@@ -158,6 +182,20 @@ export default function PortalLoginClient({
             </div>
           </div>
 
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => {
+                setTab('RECOVER');
+                setError('');
+                setNotice('');
+              }}
+              className="text-[11px] font-bold text-slate-400 hover:text-emerald-400 transition"
+            >
+              ¿Olvidaste tu contraseña?
+            </button>
+          </div>
+
           <button
             type="submit"
             disabled={loading}
@@ -167,7 +205,7 @@ export default function PortalLoginClient({
             Ingresar a mi cuenta
           </button>
         </form>
-      ) : (
+      ) : tab === 'REGISTER' ? (
         <form onSubmit={handleRegister} className="space-y-3.5 bg-slate-850 p-5 rounded-3xl border border-slate-800 shadow-xl">
           <div>
             <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">
@@ -261,6 +299,90 @@ export default function PortalLoginClient({
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
             Confirmar y Acceder
+          </button>
+        </form>
+      ) : (
+        <form onSubmit={handleRecover} className="space-y-3.5 bg-slate-850 p-5 rounded-3xl border border-slate-800 shadow-xl">
+          <div className="text-center pb-1">
+            <p className="text-xs font-black text-white flex items-center justify-center gap-1.5">
+              <KeyRound className="w-4 h-4 text-emerald-400" /> Restablecer Contraseña
+            </p>
+            <p className="text-[11px] text-slate-400 mt-1">
+              Validamos tus datos con tu DNI y tu teléfono o email registrado.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">
+              Número de DNI
+            </label>
+            <div className="relative">
+              <UserCheck className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
+              <input
+                type="text"
+                inputMode="numeric"
+                required
+                value={dni}
+                onChange={(e) => setDni(e.target.value)}
+                placeholder="Ej. 34567890"
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700/80 text-white text-sm focus:outline-none focus:border-emerald-500 font-mono"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">
+              Teléfono o Email Registrado
+            </label>
+            <div className="relative">
+              <Phone className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
+              <input
+                type="text"
+                required
+                value={contacto}
+                onChange={(e) => setContacto(e.target.value)}
+                placeholder="Ej. 3415556677 o juan@mail.com"
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700/80 text-white text-sm focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">
+              Nueva Contraseña
+            </label>
+            <div className="relative">
+              <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
+              <input
+                type="password"
+                required
+                value={nuevaPassword}
+                onChange={(e) => setNuevaPassword(e.target.value)}
+                placeholder="Mínimo 6 caracteres"
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700/80 text-white text-sm focus:outline-none focus:border-emerald-500 font-mono"
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full mt-2 py-3 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 text-xs font-black transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20"
+          >
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
+            Restablecer y Acceder
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setTab('LOGIN');
+              setError('');
+              setNotice('');
+            }}
+            className="w-full py-2 text-center text-xs text-slate-400 hover:text-white font-bold transition"
+          >
+            ← Volver a Iniciar Sesión
           </button>
         </form>
       )}

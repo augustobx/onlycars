@@ -56,10 +56,12 @@ export async function guardarVehiculo(data: any) {
       estado: estado as any, tipo_ingreso: data.tipo_ingreso || 'Propio', comision_consignacion_pct: Math.max(0, Number(data.comision_consignacion_pct) || 0),
       precio_compra_ars: compra.ars, precio_compra_usd: compra.usd, precio_venta_ars: venta.ars, precio_venta_usd: venta.usd,
       gastos_preparacion_usd: gastosPrep, gastos_gestoria_usd: gastosGest, costo_total_real_usd: compra.usd + gastosPrep + gastosGest,
+      publicadoWeb: typeof data.publicadoWeb === 'boolean' ? data.publicadoWeb : true,
       notas_internas: data.notas_internas?.trim() || null,
     } });
 
     revalidatePath('/vehiculos'); revalidatePath('/motos'); revalidatePath('/ventas/nueva');
+    revalidatePath('/portal/catalogo'); revalidatePath('/portal');
     return { success: true, id_vehiculo: v.id_vehiculo };
   } catch (error: any) {
     console.error('Error guardando vehículo:', error);
@@ -95,10 +97,12 @@ export async function actualizarVehiculo(id: number, data: any) {
       estado: estado as any, tipo_ingreso: data.tipo_ingreso, comision_consignacion_pct: Math.max(0, Number(data.comision_consignacion_pct) || 0),
       precio_compra_ars: compra.ars, precio_compra_usd: compra.usd, precio_venta_ars: venta.ars, precio_venta_usd: venta.usd,
       gastos_preparacion_usd: gastosPrep, gastos_gestoria_usd: gastosGest, costo_total_real_usd: compra.usd + gastosPrep + gastosGest,
+      publicadoWeb: typeof data.publicadoWeb === 'boolean' ? data.publicadoWeb : undefined,
       notas_internas: data.notas_internas?.trim() || null,
     } });
 
     revalidatePath('/vehiculos'); revalidatePath('/motos'); revalidatePath(`/vehiculos/${id}`); revalidatePath('/ventas/nueva');
+    revalidatePath('/portal/catalogo'); revalidatePath('/portal');
     return { success: true };
   } catch (error: any) {
     console.error('Error actualizando vehículo:', error);
@@ -115,8 +119,30 @@ export async function cambiarEstadoVehiculo(id: number, nuevoEstado: any) {
     const updated = await db.vehiculo.updateMany({ where: { id_vehiculo: id, tenantId: tenant.id }, data: { estado: nuevoEstado } });
     if (!updated.count) return { success: false, error: 'Vehículo inexistente.' };
     revalidatePath('/vehiculos'); revalidatePath('/motos'); revalidatePath(`/vehiculos/${id}`); revalidatePath('/ventas/nueva');
+    revalidatePath('/portal/catalogo'); revalidatePath('/portal');
     return { success: true };
   } catch (error) { console.error('Error cambiando estado:', error); return { success: false, error: 'Error al cambiar estado.' }; }
+}
+
+export async function togglePublicacionWeb(id: number, publicadoWeb: boolean) {
+  try {
+    const tenant = await getTenantContext();
+    await requireTenantRole(tenant.id, INVENTORY_ADMIN);
+    const updated = await db.vehiculo.updateMany({
+      where: { id_vehiculo: id, tenantId: tenant.id },
+      data: { publicadoWeb },
+    });
+    if (!updated.count) return { success: false, error: 'Vehículo no encontrado.' };
+    revalidatePath('/vehiculos');
+    revalidatePath('/motos');
+    revalidatePath(`/vehiculos/${id}`);
+    revalidatePath('/portal/catalogo');
+    revalidatePath('/portal');
+    return { success: true, publicadoWeb };
+  } catch (error: any) {
+    console.error('Error modificando visibilidad web:', error);
+    return { success: false, error: error?.message || 'Error al cambiar visibilidad web.' };
+  }
 }
 
 export async function buscarVehiculosParaVenta(term: string) {

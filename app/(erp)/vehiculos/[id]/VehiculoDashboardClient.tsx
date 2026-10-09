@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, BadgeDollarSign, Camera, Car, CircleDollarSign, FileText, History, MessageSquare, Printer, Tag, Truck, UserRound, Wrench } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft, BadgeDollarSign, Camera, Car, CircleDollarSign, FileText, Globe, History, Loader2, MessageSquare, Printer, Tag, Truck, UserRound, Wrench } from 'lucide-react';
+import { togglePublicacionWeb } from '@/actions/vehiculos';
 import VehiculoForm from '@/components/vehiculos/VehiculoForm';
 import TareasManager from '@/components/vehiculos/TareasManager';
 import AnotacionesManager from '@/components/vehiculos/AnotacionesManager';
@@ -20,8 +22,31 @@ function estadoClass(estado: string) {
 }
 
 export default function VehiculoDashboardClient({ vehiculo, clientes, timeline, dolarActual }: { vehiculo: any; clientes: any[]; timeline: any[]; dolarActual: number }) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>('resumen');
+  const [isPublicadoWeb, setIsPublicadoWeb] = useState(Boolean(vehiculo.publicadoWeb ?? true));
+  const [togglingWeb, setTogglingWeb] = useState(false);
   const backHref = vehiculo.tipo_vehiculo === 'Moto' ? '/motos' : '/vehiculos';
+
+  const handleToggleWeb = async () => {
+    try {
+      setTogglingWeb(true);
+      const next = !isPublicadoWeb;
+      setIsPublicadoWeb(next);
+      const res = await togglePublicacionWeb(vehiculo.id_vehiculo, next);
+      if (!res.success) {
+        setIsPublicadoWeb(!next);
+        alert(res.error || 'No se pudo cambiar la visibilidad web.');
+      } else {
+        router.refresh();
+      }
+    } catch {
+      setIsPublicadoWeb(isPublicadoWeb);
+      alert('Error de conexión al cambiar la visibilidad web.');
+    } finally {
+      setTogglingWeb(false);
+    }
+  };
 
   const gastosTareasUsd = vehiculo.tareas.reduce((sum: number, t: any) => sum + t.gastos.reduce((acc: number, g: any) => acc + Number(g.monto_usd || 0), 0), 0);
   const gastosTareasArs = vehiculo.tareas.reduce((sum: number, t: any) => sum + t.gastos.reduce((acc: number, g: any) => acc + Number(g.monto_ars || 0), 0), 0);
@@ -54,7 +79,7 @@ export default function VehiculoDashboardClient({ vehiculo, clientes, timeline, 
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       <div className="rounded-3xl bg-slate-950 text-white p-6 md:p-8 shadow-xl">
         <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-6">
-          <div><Link href={backHref} className="inline-flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-white mb-5"><ArrowLeft className="w-4 h-4" /> {vehiculo.tipo_vehiculo === 'Moto' ? 'Inventario de motos' : 'Inventario'}</Link><div className="flex flex-wrap items-center gap-3 mb-3"><span className={`px-3 py-1 rounded-full border text-[10px] uppercase font-black ${estadoClass(vehiculo.estado)}`}>{String(vehiculo.estado).replace(/_/g, ' ')}</span><span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] uppercase font-black text-slate-300">{vehiculo.tipo_ingreso || 'Propio'}</span>{vehiculo.location?.name && <span className="text-xs text-slate-400">{vehiculo.location.name}</span>}</div><h1 className="text-3xl md:text-4xl font-black">{vehiculo.marca} {vehiculo.modelo}</h1><p className="text-slate-400 mt-2">{vehiculo.version || 'Sin versión'} · {vehiculo.anio || 'S/A'} · {vehiculo.patente || 'Sin patente'} · {Number(vehiculo.km || 0).toLocaleString('es-AR')} km</p><div className="flex flex-wrap gap-2 mt-5"><Link href={`/documentos/ficha/${vehiculo.id_vehiculo}`} target="_blank" className="px-3.5 py-2 rounded-xl bg-white/10 border border-white/10 text-xs font-black flex items-center gap-2"><Printer className="w-4 h-4 text-blue-400" /> Ficha de salón</Link>{vehiculo.estado !== 'VENDIDO' && <Link href={`/ventas/nueva?v=${vehiculo.id_vehiculo}`} className="px-3.5 py-2 rounded-xl bg-emerald-600 text-xs font-black flex items-center gap-2"><CircleDollarSign className="w-4 h-4" /> Cotizar / vender</Link>}</div></div>
+          <div><Link href={backHref} className="inline-flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-white mb-5"><ArrowLeft className="w-4 h-4" /> {vehiculo.tipo_vehiculo === 'Moto' ? 'Inventario de motos' : 'Inventario'}</Link><div className="flex flex-wrap items-center gap-3 mb-3"><span className={`px-3 py-1 rounded-full border text-[10px] uppercase font-black ${estadoClass(vehiculo.estado)}`}>{String(vehiculo.estado).replace(/_/g, ' ')}</span><span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] uppercase font-black text-slate-300">{vehiculo.tipo_ingreso || 'Propio'}</span>{vehiculo.location?.name && <span className="text-xs text-slate-400">{vehiculo.location.name}</span>}</div><h1 className="text-3xl md:text-4xl font-black">{vehiculo.marca} {vehiculo.modelo}</h1><p className="text-slate-400 mt-2">{vehiculo.version || 'Sin versión'} · {vehiculo.anio || 'S/A'} · {vehiculo.patente || 'Sin patente'} · {Number(vehiculo.km || 0).toLocaleString('es-AR')} km</p><div className="flex flex-wrap gap-2 mt-5"><button type="button" disabled={togglingWeb} onClick={handleToggleWeb} className={`px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-2 border transition ${isPublicadoWeb ? 'bg-emerald-500/15 border-emerald-400/30 text-emerald-300 hover:bg-emerald-500/25' : 'bg-white/10 border-white/10 text-slate-400 hover:text-white'}`} title={isPublicadoWeb ? 'Visible en catálogo online. Clic para ocultar' : 'Oculto en catálogo online. Clic para publicar'}>{togglingWeb ? <Loader2 className="w-4 h-4 animate-spin text-slate-400" /> : <Globe className="w-4 h-4 text-emerald-400" />}Catálogo Web: {isPublicadoWeb ? 'Publicado' : 'Oculto'}</button><Link href={`/documentos/ficha/${vehiculo.id_vehiculo}`} target="_blank" className="px-3.5 py-2 rounded-xl bg-white/10 border border-white/10 text-xs font-black flex items-center gap-2"><Printer className="w-4 h-4 text-blue-400" /> Ficha de salón</Link>{vehiculo.estado !== 'VENDIDO' && <Link href={`/ventas/nueva?v=${vehiculo.id_vehiculo}`} className="px-3.5 py-2 rounded-xl bg-emerald-600 text-xs font-black flex items-center gap-2"><CircleDollarSign className="w-4 h-4" /> Cotizar / vender</Link>}</div></div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 xl:min-w-[620px]"><div className="rounded-2xl bg-white/5 border border-white/10 p-4"><p className="text-[10px] uppercase font-black text-slate-500">Costo real</p><DualMoney ars={costoTotalArs} usd={costoTotalUsd} rate={dolarActual} primaryClassName="text-lg font-black text-white" secondaryClassName="text-xs text-slate-400" /></div><div className="rounded-2xl bg-white/5 border border-white/10 p-4"><p className="text-[10px] uppercase font-black text-slate-500">Precio venta</p><DualMoney ars={ventaArs} usd={ventaUsd} rate={dolarActual} primaryClassName="text-lg font-black text-blue-300" secondaryClassName="text-xs text-slate-400" /></div><div className="rounded-2xl bg-white/5 border border-white/10 p-4"><p className="text-[10px] uppercase font-black text-slate-500">Margen potencial</p><DualMoney ars={margenArs} usd={margenUsd} rate={dolarActual} primaryClassName={`text-lg font-black ${margenArs >= 0 ? 'text-emerald-300' : 'text-red-300'}`} secondaryClassName="text-xs text-slate-400" /><p className="text-[10px] text-slate-500 mt-1">{margenPct.toFixed(1)}%</p></div></div>
         </div>
       </div>

@@ -311,6 +311,7 @@ model Vehiculo {
   notas_internas            String?        @db.Text
   id_cliente                Int?
   permuta_de_venta_id       Int?
+  publicadoWeb              Boolean        @default(true)
 
   tenant       Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   location     Location?      @relation(fields: [locationId], references: [id], onDelete: SetNull)
@@ -328,6 +329,7 @@ model Vehiculo {
   @@index([tenantId, estado])
   @@index([tenantId, locationId])
   @@index([tenantId, marca, modelo])
+  @@index([tenantId, publicadoWeb])
 }
 
 model VehiculoFoto {
