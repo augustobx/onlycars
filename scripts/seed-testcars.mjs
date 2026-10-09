@@ -169,7 +169,7 @@ async function main() {
 
   await prisma.tenantMembership.upsert({
     where: {
-      userId_tenantId: { userId: adminUser.id, tenantId: tenant.id },
+      tenantId_userId: { tenantId: tenant.id, userId: adminUser.id },
     },
     update: { role: 'OWNER', isActive: true },
     create: {
