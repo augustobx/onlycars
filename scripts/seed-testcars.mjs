@@ -98,9 +98,9 @@ async function main() {
       code: 'central',
       name: 'Casa Central Rosario',
       address: 'Av. Pellegrini 2450',
-      city: 'Rosario',
       phone: '+54 9 341 555-0199',
       isActive: true,
+      isMain: true,
     },
   });
 
@@ -117,7 +117,7 @@ async function main() {
       tenantId_featureKey: { tenantId: tenant.id, featureKey: 'pwa_clientes' },
     },
     update: {
-      enabled: true,
+      isEnabled: true,
       config: {
         enabled: true,
         mostrarCuotas: true,
@@ -131,7 +131,7 @@ async function main() {
     create: {
       tenantId: tenant.id,
       featureKey: 'pwa_clientes',
-      enabled: true,
+      isEnabled: true,
       config: {
         enabled: true,
         mostrarCuotas: true,
@@ -148,8 +148,8 @@ async function main() {
     where: {
       tenantId_featureKey: { tenantId: tenant.id, featureKey: 'seller_pwa' },
     },
-    update: { enabled: true },
-    create: { tenantId: tenant.id, featureKey: 'seller_pwa', enabled: true },
+    update: { isEnabled: true },
+    create: { tenantId: tenant.id, featureKey: 'seller_pwa', isEnabled: true },
   });
 
   // 6. Usuario Administrador de TestCars
