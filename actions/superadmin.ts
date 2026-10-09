@@ -197,6 +197,7 @@ export async function getTenantDetailAction(tenantId: string) {
           orderBy: { createdAt: 'asc' },
         },
         locations: { orderBy: [{ isMain: 'desc' }, { name: 'asc' }] },
+        features: true,
         _count: {
           select: {
             vehiculos: true,
@@ -218,6 +219,21 @@ export async function getTenantDetailAction(tenantId: string) {
     plans,
     tenantBaseDomain: getTenantBaseDomain(),
   };
+}
+
+export async function toggleTenantFeatureAction(
+  tenantId: string,
+  featureKey: string,
+  isEnabled: boolean
+) {
+  await requireSuperAdmin();
+  await prisma.tenantFeature.upsert({
+    where: { tenantId_featureKey: { tenantId, featureKey } },
+    update: { isEnabled },
+    create: { tenantId, featureKey, isEnabled },
+  });
+  revalidateSuperAdmin(tenantId);
+  return { success: true };
 }
 
 export async function getPlansAction() {

@@ -48,6 +48,8 @@ model Tenant {
   entregas      Entrega[]
   cashSessions  CashSession[]
   cashMovements CashMovement[]
+  solicitudesPrestamo SolicitudPrestamo[]
+  solicitudDocumentos SolicitudPrestamoDocumento[]
 
   @@index([status])
   @@index([createdAt])
@@ -377,19 +379,85 @@ model Cliente {
   localidad       String?
   provincia       String?
   notas           String?  @db.Text
+  passwordHash    String?
+  ultimoAcceso    DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  ventas       Venta[]
-  prestamos    Prestamo[]
-  senias       Senia[]
-  vehiculos    Vehiculo[]
-  prospectos   Prospecto[]
-  cotizaciones Cotizacion[]
+  tenant              Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  ventas              Venta[]
+  prestamos           Prestamo[]
+  senias              Senia[]
+  vehiculos           Vehiculo[]
+  prospectos          Prospecto[]
+  cotizaciones        Cotizacion[]
+  sesiones            ClienteSession[]
+  solicitudesPrestamo SolicitudPrestamo[]
 
   @@unique([tenantId, dni])
   @@index([tenantId, nombre_completo])
+}
+
+model ClienteSession {
+  id        String   @id @default(uuid())
+  clienteId Int
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  cliente Cliente @relation(fields: [clienteId], references: [id_cliente], onDelete: Cascade)
+
+  @@index([expiresAt])
+}
+
+model SolicitudPrestamo {
+  id                     Int                     @id @default(autoincrement())
+  tenantId               String
+  id_cliente             Int
+  monto_solicitado_usd   Decimal                 @db.Decimal(10, 2)
+  monto_solicitado_ars   Decimal?                @db.Decimal(12, 2)
+  cantidad_cuotas        Int
+  motivo                 String?
+  ingresos_mensuales_ars Decimal?                @db.Decimal(12, 2)
+  estado                 EstadoSolicitudPrestamo @default(PENDIENTE)
+  observaciones_cliente  String?                 @db.Text
+  resolucion_motivo      String?                 @db.Text
+  fecha_solicitud        DateTime                @default(now())
+  fecha_resolucion       DateTime?
+  revisadoPorUserId      String?
+
+  tenant     Tenant                       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  cliente    Cliente                      @relation(fields: [id_cliente], references: [id_cliente], onDelete: Cascade)
+  documentos SolicitudPrestamoDocumento[]
+
+  @@index([tenantId, estado])
+  @@index([tenantId, id_cliente])
+}
+
+enum EstadoSolicitudPrestamo {
+  PENDIENTE
+  EN_REVISION
+  APROBADO
+  RECHAZADO
+  CANCELADO
+}
+
+model SolicitudPrestamoDocumento {
+  id                  Int               @id @default(autoincrement())
+  tenantId            String
+  solicitudPrestamoId Int
+  tipo_documento      String
+  nombre_archivo      String
+  url_archivo         String            @db.Text
+  object_key          String?           @db.VarChar(512)
+  mime_type           String?           @db.VarChar(100)
+  size_bytes          Int?
+  createdAt           DateTime          @default(now())
+
+  tenant    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  solicitud SolicitudPrestamo @relation(fields: [solicitudPrestamoId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, solicitudPrestamoId])
 }
 
 model Prospecto {

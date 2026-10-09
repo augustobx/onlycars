@@ -7,6 +7,7 @@ import {
   updateTenantAction,
   registerSaaSPaymentAction,
   resetTenantUserPasswordAction,
+  toggleTenantFeatureAction,
   type SaaSStatus,
 } from '@/actions/superadmin';
 import {
@@ -22,6 +23,7 @@ import {
   ShieldCheck,
   Globe2,
   KeyRound,
+  Sparkles,
 } from 'lucide-react';
 
 function asDateInput(value: Date | string | null | undefined) {
@@ -96,6 +98,21 @@ export default function TenantDetailClient({ initialData }: { initialData: any }
     setSaving(false);
   };
 
+  const [pwaClientesActive, setPwaClientesActive] = useState<boolean>(() => {
+    const f = tenant.features?.find((item: any) => item.featureKey === 'pwa_clientes');
+    return f ? Boolean(f.isEnabled) : false;
+  });
+
+  const togglePwaFeature = async () => {
+    const nextVal = !pwaClientesActive;
+    setPwaClientesActive(nextVal);
+    setSaving(true);
+    await toggleTenantFeatureAction(tenant.id, 'pwa_clientes', nextVal);
+    setSaving(false);
+    setMessage(`Módulo App Clientes ${nextVal ? 'habilitado' : 'deshabilitado'} para este tenant.`);
+    router.refresh();
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
@@ -140,6 +157,37 @@ export default function TenantDetailClient({ initialData }: { initialData: any }
             <div className="px-5 py-4 border-b border-slate-800"><h2 className="font-black text-white">Usuarios y accesos</h2><p className="text-xs text-slate-500 mt-1">Miembros asociados al tenant. El reset no muestra ni recupera claves existentes.</p></div>
             <div className="divide-y divide-slate-800/70">
               {tenant.memberships.map((membership: any) => <div key={membership.id} className="px-5 py-4 flex items-center justify-between gap-4"><div className="min-w-0"><div className="flex items-center gap-2"><p className="font-bold text-sm text-white truncate">{membership.user.name || membership.user.email}</p>{membership.role === 'OWNER' && <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />}</div><p className="text-xs text-slate-500 truncate mt-0.5">{membership.user.email} · {membership.role} · {membership.location?.name || 'Todas'}</p></div><button type="button" onClick={() => resetPassword(membership.user.id, membership.user.email)} disabled={saving} className="shrink-0 p-2 rounded-lg border border-slate-800 text-slate-500 hover:text-amber-400 hover:border-amber-500/30" title="Cambiar contraseña"><KeyRound className="w-4 h-4" /></button></div>)}
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-slate-800 bg-slate-900/70 overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-800 flex items-center justify-between">
+              <div>
+                <h2 className="font-black text-white flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-emerald-400" /> Módulos Premium & Capacidades
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">Control de acceso modular por concesionaria.</p>
+              </div>
+            </div>
+            <div className="p-5">
+              <div className="flex items-center justify-between p-4 rounded-xl border border-slate-800 bg-slate-950/40">
+                <div>
+                  <p className="text-sm font-black text-white">App PWA Clientes & Catálogo Web</p>
+                  <p className="text-xs text-slate-500 mt-0.5">Acceso a /portal, planes de cuotas, préstamos y validaciones.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={togglePwaFeature}
+                  disabled={saving}
+                  className={`px-4 py-2 rounded-xl text-xs font-black transition ${
+                    pwaClientesActive
+                      ? 'bg-emerald-600 text-white hover:bg-emerald-500'
+                      : 'bg-slate-800 text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {pwaClientesActive ? 'ACTIVADO' : 'DESACTIVADO'}
+                </button>
+              </div>
             </div>
           </section>
         </div>

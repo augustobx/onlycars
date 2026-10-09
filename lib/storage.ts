@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import fs from 'fs/promises';
 import path from 'path';
 
-export type VehicleMediaFolder = 'vehicles' | 'branding' | 'general';
+export type VehicleMediaFolder = 'vehicles' | 'branding' | 'general' | 'documents';
 
 export interface StorageUploadOptions {
   tenantId: string;
@@ -33,17 +33,26 @@ const ALLOWED_IMAGE_TYPES = new Set([
   'image/avif',
 ]);
 
+const ALLOWED_DOCUMENT_TYPES = new Set([
+  'application/pdf',
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+]);
+
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
+const MAX_DOCUMENT_SIZE_BYTES = 15 * 1024 * 1024;
 const APP_STORAGE_PREFIX = (process.env.STORAGE_PREFIX || 'onlycars').replace(/^\/+|\/+$/g, '') || 'onlycars';
 
 export function sanitizeFileName(name: string): string {
-  return String(name || 'imagen')
+  return String(name || 'archivo')
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/\s+/g, '_')
     .replace(/[^a-z0-9._-]/g, '')
-    .slice(-140) || 'imagen.webp';
+    .slice(-140) || 'archivo.bin';
 }
 
 export function validateImageBuffer(mimeType: string, buffer: Buffer): { valid: boolean; error?: string } {
@@ -72,6 +81,26 @@ export function validateImageBuffer(mimeType: string, buffer: Buffer): { valid: 
     : { valid: false, error: 'El contenido del archivo no coincide con el formato declarado.' };
 }
 
+export function validateFileBuffer(folder: VehicleMediaFolder, mimeType: string, buffer: Buffer): { valid: boolean; error?: string } {
+  if (folder === 'documents') {
+    const mime = String(mimeType || '').toLowerCase();
+    if (!ALLOWED_DOCUMENT_TYPES.has(mime)) {
+      return { valid: false, error: 'Formato no permitido. Usá PDF, JPG, PNG o WebP.' };
+    }
+    if (!buffer.length || buffer.length > MAX_DOCUMENT_SIZE_BYTES) {
+      return { valid: false, error: 'El documento debe pesar entre 1 byte y 15 MB.' };
+    }
+    if (mime === 'application/pdf') {
+      const ascii = buffer.subarray(0, 5).toString('ascii');
+      return ascii.startsWith('%PDF')
+        ? { valid: true }
+        : { valid: false, error: 'El archivo PDF no tiene una cabecera válida.' };
+    }
+    return validateImageBuffer(mime, buffer);
+  }
+  return validateImageBuffer(mimeType, buffer);
+}
+
 function tenantPrefix(tenantId: string): string {
   return `${APP_STORAGE_PREFIX}/tenants/${tenantId}/`;
 }
@@ -79,8 +108,8 @@ function tenantPrefix(tenantId: string): string {
 export function generateTenantObjectKey(tenantId: string, folder: VehicleMediaFolder, originalFileName: string): string {
   if (!tenantId) throw new Error('STORAGE_ERROR: tenantId es requerido.');
   const safe = sanitizeFileName(originalFileName);
-  const ext = path.extname(safe) || '.webp';
-  const base = path.basename(safe, ext) || 'imagen';
+  const ext = path.extname(safe) || (folder === 'documents' ? '.pdf' : '.webp');
+  const base = path.basename(safe, ext) || 'archivo';
   const suffix = crypto.randomBytes(5).toString('hex');
   return `${tenantPrefix(tenantId)}${folder}/${Date.now()}_${suffix}_${base}${ext}`;
 }
@@ -96,7 +125,7 @@ class LocalStorageProvider implements StorageProvider {
     if (process.env.NODE_ENV === 'production' && process.env.ALLOW_LOCAL_STORAGE !== 'true') {
       throw new Error('STORAGE_ERROR: almacenamiento local deshabilitado en producción. Configurá STORAGE_PROVIDER=r2.');
     }
-    const validation = validateImageBuffer(options.mimeType, options.buffer);
+    const validation = validateFileBuffer(options.folder, options.mimeType, options.buffer);
     if (!validation.valid) throw new Error(validation.error);
 
     const objectKey = generateTenantObjectKey(options.tenantId, options.folder, options.fileName);
@@ -212,7 +241,7 @@ class R2StorageProvider implements StorageProvider {
   }
 
   async upload(options: StorageUploadOptions): Promise<StorageUploadResult> {
-    const validation = validateImageBuffer(options.mimeType, options.buffer);
+    const validation = validateFileBuffer(options.folder, options.mimeType, options.buffer);
     if (!validation.valid) throw new Error(validation.error);
 
     const objectKey = generateTenantObjectKey(options.tenantId, options.folder, options.fileName);

@@ -16,9 +16,10 @@ export default async function ConfiguracionPage() {
     redirect('/');
   }
 
-  const [s, sellerPwaFeature] = await Promise.all([
+  const [s, sellerPwaFeature, clientPwaFeature] = await Promise.all([
     db.tenantSettings.findUnique({ where: { tenantId: tenant.id } }),
     db.tenantFeature.findUnique({ where: { tenantId_featureKey: { tenantId: tenant.id, featureKey: 'seller_pwa' } } }),
+    db.tenantFeature.findUnique({ where: { tenantId_featureKey: { tenantId: tenant.id, featureKey: 'pwa_clientes' } } }),
   ]);
 
   return <ConfiguracionClient initial={{
@@ -39,5 +40,7 @@ export default async function ConfiguracionPage() {
     direccion: s?.direccion || tenant.address || '',
     pieImpresion: s?.pieImpresion || '',
     sellerPwa: normalizeSellerPwaConfig(sellerPwaFeature?.config),
+    clientPwa: clientPwaFeature?.config,
+    isClientPwaEnabled: tenant.features.has('pwa_clientes'),
   }} />;
 }

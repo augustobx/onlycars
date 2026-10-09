@@ -10,11 +10,18 @@ export default async function PrestamosPage() {
     const tenant = await getTenantContext();
     const dolarActual = Number(tenant.settings?.dolarActual || 1400);
 
-    const prestamosDb = await db.prestamo.findMany({
-        where: { tenantId: tenant.id },
-        orderBy: { fecha_prestamo: 'desc' },
-        include: { cliente: true, cuotas: { orderBy: { numero_cuota: 'asc' } } }
-    });
+    const [prestamosDb, solicitudesDb] = await Promise.all([
+        db.prestamo.findMany({
+            where: { tenantId: tenant.id },
+            orderBy: { fecha_prestamo: 'desc' },
+            include: { cliente: true, cuotas: { orderBy: { numero_cuota: 'asc' } } }
+        }),
+        db.solicitudPrestamo.findMany({
+            where: { tenantId: tenant.id },
+            orderBy: { fecha_solicitud: 'desc' },
+            include: { cliente: true, documentos: true }
+        }),
+    ]);
 
     const prestamos = prestamosDb.map((p: any) => ({
         ...p,
@@ -32,9 +39,16 @@ export default async function PrestamosPage() {
         }))
     }));
 
+    const solicitudes = solicitudesDb.map((s: any) => ({
+        ...s,
+        monto_solicitado_usd: Number(s.monto_solicitado_usd),
+        monto_solicitado_ars: s.monto_solicitado_ars ? Number(s.monto_solicitado_ars) : null,
+        fecha_str: s.fecha_solicitud.toISOString(),
+    }));
+
     return (
         <Suspense fallback={<div className="flex justify-center items-center h-screen"><Loader2 className="w-10 h-10 animate-spin text-indigo-600" /></div>}>
-            <PrestamosClient prestamos={prestamos} dolarActual={dolarActual} />
+            <PrestamosClient prestamos={prestamos} solicitudes={solicitudes} dolarActual={dolarActual} />
         </Suspense>
     );
 }

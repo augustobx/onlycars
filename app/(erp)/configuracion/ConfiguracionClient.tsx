@@ -2,9 +2,11 @@
 
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Building2, DollarSign, Eye, EyeOff, Image as ImageIcon, Loader2, Palette, Save, Smartphone } from 'lucide-react';
+import { Building2, DollarSign, Eye, EyeOff, Image as ImageIcon, Loader2, Palette, Save, Smartphone, Sparkles, ShieldAlert, Globe, CheckCircle2 } from 'lucide-react';
 import { guardarConfiguracion, guardarPwaVendedorConfig, subirLogoTenant } from '@/actions/config';
+import { guardarPortalClientesConfigAction } from '@/actions/portal-config';
 import { SellerPwaConfig } from '@/lib/seller-pwa-config';
+import { ClientPwaConfig, normalizeClientPwaConfig } from '@/lib/client-pwa-config';
 import { useConfigStore } from '@/store/useConfigStore';
 
 export default function ConfiguracionClient({ initial }: { initial: any }) {
@@ -14,6 +16,7 @@ export default function ConfiguracionClient({ initial }: { initial: any }) {
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [error, setError] = useState('');
+  const [copiedLink, setCopiedLink] = useState(false);
   const [form, setForm] = useState({
     appName: initial.appName || initial.tenantName || 'OnlyCars',
     dolarActual: String(initial.dolarActual || 1400),
@@ -32,6 +35,7 @@ export default function ConfiguracionClient({ initial }: { initial: any }) {
     pieImpresion: initial.pieImpresion || '',
   });
   const [sellerPwa, setSellerPwa] = useState<SellerPwaConfig>(initial.sellerPwa);
+  const [clientPwa, setClientPwa] = useState<ClientPwaConfig>(normalizeClientPwaConfig(initial.clientPwa));
 
   const input = 'w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500';
   const label = 'block text-[11px] font-black uppercase tracking-wider text-slate-500 mb-1.5';
@@ -54,14 +58,24 @@ export default function ConfiguracionClient({ initial }: { initial: any }) {
     e.preventDefault();
     setSaving(true); setError('');
 
-    const [res, pwaRes] = await Promise.all([
+    const savePromises: Promise<any>[] = [
       guardarConfiguracion({ ...form, dolarActual: Number(form.dolarActual), tnaFinanciacion: Number(form.tnaFinanciacion), comisionVentaDefecto: Number(form.comisionVentaDefecto), logoUrl: form.logoUrl || null }),
       guardarPwaVendedorConfig(sellerPwa),
-    ]);
+    ];
+
+    if (initial.isClientPwaEnabled) {
+      savePromises.push(guardarPortalClientesConfigAction(clientPwa));
+    }
+
+    const results = await Promise.all(savePromises);
+    const res = results[0];
+    const pwaRes = results[1];
+    const clientRes = results[2];
 
     setSaving(false);
     if (!res.success) return setError(res.error || 'No se pudo guardar la configuración.');
     if (!pwaRes.success) return setError(pwaRes.error || 'No se pudo guardar la configuración de vendedores.');
+    if (clientRes && !clientRes.success) return setError(clientRes.error || 'No se pudo guardar la configuración del portal de clientes.');
 
     setDolar(Number(form.dolarActual));
     setTipoDolar(form.tipoDolar);
@@ -124,6 +138,138 @@ export default function ConfiguracionClient({ initial }: { initial: any }) {
         <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-3">
           {pwaOptions.map((option) => { const enabled = sellerPwa[option.key]; return <button key={option.key} type="button" onClick={() => togglePwa(option.key)} className={`text-left rounded-2xl border p-4 flex items-start justify-between gap-4 transition-colors ${enabled ? 'border-blue-200 bg-blue-50/60' : 'border-slate-200 bg-slate-50'}`}><div><p className="font-black text-slate-900">{option.title}</p><p className="text-xs text-slate-500 mt-1 leading-relaxed">{option.detail}</p></div><span className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center ${enabled ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-500'}`}>{enabled ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}</span></button>; })}
         </div>
+      </section>
+
+      {/* App de Clientes y Catálogo (Módulo Premium) */}
+      <section className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <header className="p-5 bg-emerald-50 border-b border-emerald-100 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-emerald-600" />
+            <div>
+              <h2 className="font-black text-slate-900 flex items-center gap-2">
+                App Clientes & Catálogo PWA
+                <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-black uppercase">
+                  Módulo Premium
+                </span>
+              </h2>
+              <p className="text-xs text-slate-500">
+                Portal progresivo móvil para clientes con catálogo público, cuotas y préstamos.
+              </p>
+            </div>
+          </div>
+          {initial.isClientPwaEnabled && (
+            <a
+              href="/portal"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-black text-emerald-700 bg-emerald-100 hover:bg-emerald-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition"
+            >
+              <Globe className="w-3.5 h-3.5" /> Abrir Portal Web
+            </a>
+          )}
+        </header>
+
+        {!initial.isClientPwaEnabled ? (
+          <div className="p-6 text-center space-y-3 bg-slate-50/50">
+            <div className="w-12 h-12 mx-auto rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600">
+              <ShieldAlert className="w-6 h-6" />
+            </div>
+            <div className="max-w-md mx-auto space-y-1">
+              <p className="text-sm font-black text-slate-900">Módulo Premium no activado para tu plan</p>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Este módulo permite a tus clientes ver su plan de cuotas, consultar préstamos, solicitar financiación con documentos y navegar tu catálogo de autos en una PWA personalizada.
+              </p>
+              <p className="text-xs text-emerald-600 font-bold pt-1">
+                Contactá a NanoLabs / SuperAdmin para habilitar la App Clientes en tu concesionaria.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="p-5 space-y-4">
+            <div className="p-4 rounded-2xl bg-emerald-50/60 border border-emerald-100 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-black text-emerald-900">Link del Portal para tus Clientes:</p>
+                <p className="text-xs font-mono text-emerald-700 mt-0.5">/portal</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                    navigator.clipboard.writeText(`${window.location.origin}/portal`);
+                    setCopiedLink(true);
+                    setTimeout(() => setCopiedLink(false), 2000);
+                  }
+                }}
+                className="px-3 py-1.5 rounded-xl bg-white border border-emerald-200 text-xs font-black text-emerald-700 hover:bg-emerald-50 shadow-sm transition"
+              >
+                {copiedLink ? '¡Enlace copiado!' : 'Copiar Link'}
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {[
+                { key: 'habilitarCatalogo', title: 'Catálogo público de vehículos', detail: 'Permite a cualquier persona ver autos sin estar logueada.' },
+                { key: 'habilitarPlanCuotas', title: 'Visualización de plan de cuotas', detail: 'Los clientes pueden consultar cuotas pagas, pendientes y montos.' },
+                { key: 'habilitarPrestamos', title: 'Préstamos de dinero adquiridos', detail: 'Permite a los clientes ver el estado y cuotas de sus préstamos.' },
+                { key: 'habilitarSolicitudPrestamos', title: 'Solicitud online de préstamos', detail: 'Habilita a los clientes solicitar nuevos préstamos desde la app.' },
+                { key: 'requerirDocumentacion', title: 'Exigir documentación obligatoria', detail: 'Requiere adjuntar DNI o recibos para enviar solicitudes.' },
+              ].map((opt) => {
+                const enabled = (clientPwa as any)[opt.key];
+                return (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => setClientPwa((prev: any) => ({ ...prev, [opt.key]: !prev[opt.key] }))}
+                    className={`text-left rounded-2xl border p-4 flex items-start justify-between gap-4 transition-colors ${
+                      enabled ? 'border-emerald-200 bg-emerald-50/60' : 'border-slate-200 bg-slate-50'
+                    }`}
+                  >
+                    <div>
+                      <p className="font-black text-slate-900">{opt.title}</p>
+                      <p className="text-xs text-slate-500 mt-1 leading-relaxed">{opt.detail}</p>
+                    </div>
+                    <span className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center ${
+                      enabled ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-500'
+                    }`}>
+                      {enabled ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+              <div>
+                <label className={label}>WhatsApp para consultas de clientes</label>
+                <input
+                  className={input}
+                  value={clientPwa.whatsappContacto}
+                  onChange={(e) => setClientPwa((prev) => ({ ...prev, whatsappContacto: e.target.value }))}
+                  placeholder="549341..."
+                />
+              </div>
+
+              <div>
+                <label className={label}>Monto máximo sugerido para solicitud (USD)</label>
+                <input
+                  type="number"
+                  className={input}
+                  value={clientPwa.montoMaximoPrestamoUsd}
+                  onChange={(e) => setClientPwa((prev) => ({ ...prev, montoMaximoPrestamoUsd: Number(e.target.value) }))}
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className={label}>Mensaje de bienvenida en el Portal</label>
+                <textarea
+                  className={`${input} min-h-16`}
+                  value={clientPwa.mensajeBienvenida}
+                  onChange={(e) => setClientPwa((prev) => ({ ...prev, mensajeBienvenida: e.target.value }))}
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </section>
 
       <section className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">

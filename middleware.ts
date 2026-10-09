@@ -26,6 +26,25 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  const isPortalPath =
+    path === "/portal" ||
+    path.startsWith("/portal/") ||
+    path === "/catalogo" ||
+    path.startsWith("/catalogo/");
+
+  if (isPortalPath) {
+    if (isPlatformHost) {
+      return NextResponse.redirect(new URL("/superadmin", request.url));
+    }
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-tenant-host", host || "localhost");
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
+  }
+
   const sessionToken = request.cookies.get("onlycars_user_session")?.value;
 
   // onlycars.nanoapps.ar es exclusivamente la plataforma/SuperAdmin.
