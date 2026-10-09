@@ -15,7 +15,7 @@ export async function cambiarEstadoSolicitudWebAction(params: {
 }) {
   try {
     const tenant = await getTenantContext();
-    const user = await requireTenantRole(tenant.id, ADMIN_ROLES);
+    const { user } = await requireTenantRole(tenant.id, ADMIN_ROLES);
 
     const solicitud = await db.solicitudPrestamo.findFirst({
       where: { id: params.solicitudId, tenantId: tenant.id },
@@ -52,7 +52,7 @@ export async function aprobarYGenerarPrestamoAction(params: {
 }) {
   try {
     const tenant = await getTenantContext();
-    const user = await requireTenantRole(tenant.id, ADMIN_ROLES);
+    const { user } = await requireTenantRole(tenant.id, ADMIN_ROLES);
     const dolarActual = Number(tenant.settings?.dolarActual || 1400);
 
     const solicitud = await db.solicitudPrestamo.findFirst({
