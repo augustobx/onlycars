@@ -17,6 +17,8 @@ export function middleware(request: NextRequest) {
   const isPublicPath =
     path === "/login" ||
     path.startsWith("/api/health") ||
+    // API autentica cada solicitud con un Bearer separado del login interactivo.
+    path.startsWith("/api/integrations/nanolabs/") ||
     path.startsWith("/api/internal/caddy/ask") ||
     path.startsWith("/_next") ||
     path.startsWith("/favicon.ico") ||
