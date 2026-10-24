@@ -123,3 +123,265 @@
   .ot-mark svg { transition: none; }
   .ot-toast { animation: none; }
 }
+
+/* ==========================================================================
+   ALINEACIÓN Y PADDING DEL LAYOUT
+   ========================================================================== */
+.bh-main {
+  padding: 24px 28px !important;
+  width: 100% !important;
+  max-width: 1650px !important;
+  margin: 0 auto !important;
+  min-width: 0 !important;
+}
+
+@media (max-width: 1024px) {
+  .bh-main {
+    padding: 16px 12px !important;
+  }
+}
+
+/* ==========================================================================
+   TABLAS RESPONSIVAS E INTEGRIDAD VISUAL (SIN DESFASES NI CORTES)
+   ========================================================================== */
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.overflow-x-auto {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.7);
+}
+
+/* ==========================================================================
+   PALETAS DINÁMICAS (GRADIENTES, GLOW Y ACCENTS)
+   ========================================================================== */
+.ot-mark, .nl-mark {
+  background: var(--nl-mark-gradient, linear-gradient(135deg, #FF8A2B, #E25700)) !important;
+  box-shadow: 0 4px 14px var(--nl-mark-glow, rgba(226, 87, 0, 0.28)) !important;
+}
+
+.bh-sidebar__item.active {
+  background: var(--bg-primary-subtlest) !important;
+  color: var(--text-primary-default) !important;
+}
+
+.bh-sidebar__item.active .bh-sidebar__icon-chip {
+  background: var(--bg-primary-default) !important;
+  color: #ffffff !important;
+}
+
+/* ==========================================================================
+   MODO OSCURO COHESIVO PARA TODO EL SISTEMA (ERP, TABLAS, CARDS, INPUTS)
+   ========================================================================== */
+html[data-theme='dark'],
+body[data-theme='dark'],
+.dark {
+  background-color: #0c0e14 !important;
+  color: #f1f5f9 !important;
+  color-scheme: dark;
+}
+
+/* Fondos y superficies principales */
+[data-theme='dark'] .bg-white,
+.dark .bg-white {
+  background-color: #141722 !important;
+}
+
+[data-theme='dark'] .bg-slate-50,
+.dark .bg-slate-50 {
+  background-color: #10131c !important;
+}
+
+[data-theme='dark'] .bg-slate-50\/50,
+.dark .bg-slate-50\/50,
+[data-theme='dark'] .bg-slate-50\/80,
+.dark .bg-slate-50\/80 {
+  background-color: #161a26 !important;
+}
+
+[data-theme='dark'] .bg-slate-100,
+.dark .bg-slate-100 {
+  background-color: #1b202e !important;
+}
+
+[data-theme='dark'] .bg-slate-200,
+.dark .bg-slate-200 {
+  background-color: #242b3d !important;
+}
+
+/* Bordes y divisores */
+[data-theme='dark'] .border-slate-100,
+.dark .border-slate-100,
+[data-theme='dark'] .border-slate-200,
+.dark .border-slate-200,
+[data-theme='dark'] .border-slate-300,
+.dark .border-slate-300,
+[data-theme='dark'] .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+[data-theme='dark'] .divide-slate-200 > :not([hidden]) ~ :not([hidden]),
+.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]),
+[data-theme='dark'] .divide-y > :not([hidden]) ~ :not([hidden]),
+.dark .divide-y > :not([hidden]) ~ :not([hidden]) {
+  border-color: #222838 !important;
+}
+
+/* Tipografía de alto contraste en modo oscuro */
+[data-theme='dark'] .text-slate-900,
+.dark .text-slate-900,
+[data-theme='dark'] .text-slate-800,
+.dark .text-slate-800 {
+  color: #f8fafc !important;
+}
+
+[data-theme='dark'] .text-slate-700,
+.dark .text-slate-700,
+[data-theme='dark'] .text-slate-600,
+.dark .text-slate-600 {
+  color: #cbd5e1 !important;
+}
+
+[data-theme='dark'] .text-slate-500,
+.dark .text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+[data-theme='dark'] .text-slate-400,
+.dark .text-slate-400 {
+  color: #64748b !important;
+}
+
+/* Tablas en modo oscuro */
+[data-theme='dark'] table thead,
+.dark table thead,
+[data-theme='dark'] table thead tr,
+.dark table thead tr {
+  background-color: #181d2a !important;
+}
+
+[data-theme='dark'] table thead th,
+.dark table thead th {
+  background-color: #181d2a !important;
+  color: #94a3b8 !important;
+  border-bottom: 1px solid #222838 !important;
+}
+
+[data-theme='dark'] table tbody tr,
+.dark table tbody tr {
+  background-color: #141722;
+  border-bottom: 1px solid #1c2130 !important;
+}
+
+[data-theme='dark'] table tbody tr:hover,
+.dark table tbody tr:hover,
+[data-theme='dark'] .hover\:bg-slate-50:hover,
+.dark .hover\:bg-slate-50:hover,
+[data-theme='dark'] .hover\:bg-slate-50\/80:hover,
+.dark .hover\:bg-slate-50\/80:hover {
+  background-color: #1c2130 !important;
+}
+
+/* Formularios, inputs y selects en modo oscuro */
+[data-theme='dark'] input:not([type='checkbox']):not([type='radio']),
+.dark input:not([type='checkbox']):not([type='radio']),
+[data-theme='dark'] select,
+.dark select,
+[data-theme='dark'] textarea,
+.dark textarea {
+  background-color: #181c28 !important;
+  color: #f8fafc !important;
+  border-color: #2b3347 !important;
+}
+
+[data-theme='dark'] input::placeholder,
+.dark input::placeholder {
+  color: #64748b !important;
+}
+
+[data-theme='dark'] input:focus,
+.dark input:focus,
+[data-theme='dark'] select:focus,
+.dark select:focus,
+[data-theme='dark'] textarea:focus,
+.dark textarea:focus {
+  border-color: var(--color-brand, #FF6600) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px var(--color-brand-ring, rgba(255, 102, 0, 0.25)) !important;
+}
+
+/* Badges y chips de estado en modo oscuro con transparencia armoniosa */
+[data-theme='dark'] .bg-blue-50,
+.dark .bg-blue-50 {
+  background-color: rgba(37, 99, 235, 0.16) !important;
+  color: #93c5fd !important;
+  border-color: rgba(37, 99, 235, 0.3) !important;
+}
+
+[data-theme='dark'] .bg-emerald-50,
+.dark .bg-emerald-50 {
+  background-color: rgba(5, 150, 105, 0.16) !important;
+  color: #6ee7b7 !important;
+  border-color: rgba(5, 150, 105, 0.3) !important;
+}
+
+[data-theme='dark'] .bg-amber-50,
+.dark .bg-amber-50 {
+  background-color: rgba(217, 119, 6, 0.16) !important;
+  color: #fcd34d !important;
+  border-color: rgba(217, 119, 6, 0.3) !important;
+}
+
+[data-theme='dark'] .bg-red-50,
+.dark .bg-red-50 {
+  background-color: rgba(220, 38, 38, 0.16) !important;
+  color: #fca5a5 !important;
+  border-color: rgba(220, 38, 38, 0.3) !important;
+}
+
+[data-theme='dark'] .bg-fuchsia-50,
+.dark .bg-fuchsia-50 {
+  background-color: rgba(192, 38, 211, 0.16) !important;
+  color: #f0abfc !important;
+  border-color: rgba(192, 38, 211, 0.3) !important;
+}
+
+[data-theme='dark'] .bg-indigo-50,
+.dark .bg-indigo-50 {
+  background-color: rgba(99, 102, 241, 0.16) !important;
+  color: #a5b4fc !important;
+  border-color: rgba(99, 102, 241, 0.3) !important;
+}
+
+/* Dropdowns, modales y popovers en modo oscuro */
+[data-theme='dark'] .bh-dialog,
+.dark .bh-dialog {
+  background: #141722 !important;
+  border-color: #272e42 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme='dark'] .bh-overlay,
+.dark .bh-overlay {
+  background-color: rgba(4, 6, 12, 0.75) !important;
+  backdrop-filter: blur(8px) !important;
+}
+

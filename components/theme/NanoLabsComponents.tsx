@@ -28,6 +28,11 @@ export function useTema() {
       const actual = document.documentElement.getAttribute('data-theme') || localStorage.getItem(CLAVE_TEMA) || 'light';
       setTema(actual);
       document.documentElement.setAttribute('data-theme', actual);
+      if (actual === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
     }
   }, []);
 
@@ -35,6 +40,11 @@ export function useTema() {
     const nuevo = tema === 'dark' ? 'light' : 'dark';
     if (typeof document !== 'undefined') {
       document.documentElement.setAttribute('data-theme', nuevo);
+      if (nuevo === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
       localStorage.setItem(CLAVE_TEMA, nuevo);
     }
     setTema(nuevo);

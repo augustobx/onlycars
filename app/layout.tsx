@@ -35,7 +35,21 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es">
+    <html lang="es" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                const t = localStorage.getItem('nl-theme') || 'light';
+                document.documentElement.setAttribute('data-theme', t);
+                if (t === 'dark') document.documentElement.classList.add('dark');
+                else document.documentElement.classList.remove('dark');
+              } catch (e) {}
+            `,
+          }}
+        />
+      </head>
       <body className={`${inter.className} antialiased`}>
         {/* Sin Sidebar ni TopBar. Solo carga las rutas hijas */}
         {children}

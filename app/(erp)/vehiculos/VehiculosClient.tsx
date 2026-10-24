@@ -232,8 +232,8 @@ export default function VehiculosClient({ vehiculos, currentTab, currentDolar, i
         {paginated.length === 0 ? (
           <div className="py-16 text-center text-slate-500">No hay {isMotos ? 'motos' : 'vehículos'} para los filtros actuales.</div>
         ) : view === 'lista' ? (
-          <div className="w-full">
-            <table className="w-full text-left text-sm table-auto">
+          <div className="w-full overflow-x-auto custom-scrollbar">
+            <table className="w-full text-left text-sm table-auto min-w-[980px]">
               <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] tracking-wider font-black border-b border-slate-200">
                 <tr>
                   <th className="px-3.5 py-3">Unidad</th>

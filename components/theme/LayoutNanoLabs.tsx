@@ -29,11 +29,11 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Palette,
-} from 'lucide-react';
-import { useTema } from './NanoLabsComponents';
 import { logoutAction } from '@/actions/auth';
 import { useConfigStore } from '@/store/useConfigStore';
 import { syncDolarApi } from '@/actions/config';
+import { PaletteSelector } from './PaletteSelector';
+import { useERPTheme } from './ThemeContext';
 import './nanolabs-theme.css';
 import './nanolabs-theme-extra.css';
 
@@ -87,7 +87,7 @@ export function LayoutNanoLabs({
   children,
 }: LayoutNanoLabsProps) {
   const pathname = usePathname();
-  const { tema, alternar } = useTema();
+  const { palette, isDark, toggleDarkMode } = useERPTheme();
   const [plegado, setPlegado] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [tooltip, setTooltip] = useState<{ texto: string; top: number } | null>(null);
@@ -165,7 +165,13 @@ export function LayoutNanoLabs({
       <header className="bh-header bh-header--retail">
         <Link href="/" className="bh-logo" style={{ textDecoration: 'none' }}>
           <div className="bh-logo__mark">
-            <span className="ot-mark nl-mark">
+            <span
+              className="ot-mark nl-mark"
+              style={{
+                background: palette.gradient,
+                boxShadow: `0 4px 14px ${palette.glow}`,
+              }}
+            >
               <Car size={22} strokeWidth={2.2} />
             </span>
           </div>
@@ -177,10 +183,10 @@ export function LayoutNanoLabs({
 
         <div className="bh-header__actions">
           {/* Live Dólar Quotation Pill */}
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white/80 backdrop-blur text-xs font-bold text-slate-700 shadow-sm">
+          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur text-xs font-bold text-slate-700 dark:text-slate-200 shadow-xs">
             <DollarSign size={14} className="text-emerald-600 shrink-0" />
             <span className="text-[10px] uppercase tracking-wider text-slate-400">Dólar {tipoDolar}</span>
-            <span className="font-mono font-black text-slate-900">$ {dolarBlue.toLocaleString('es-AR')}</span>
+            <span className="font-mono font-black text-slate-900 dark:text-white">$ {dolarBlue.toLocaleString('es-AR')}</span>
             {canSyncDolar && (
               <button
                 type="button"
@@ -193,6 +199,9 @@ export function LayoutNanoLabs({
               </button>
             )}
           </div>
+
+          {/* Color Palette Selector */}
+          <PaletteSelector />
 
           {/* Theme Switcher Button */}
           {onSwitchTheme && (
@@ -273,11 +282,11 @@ export function LayoutNanoLabs({
             <button
               type="button"
               className="bh-sidebar__icon-btn"
-              onClick={alternar}
-              aria-label="Cambiar tema"
-              title={tema === 'dark' ? 'Modo claro' : 'Modo oscuro'}
+              onClick={toggleDarkMode}
+              aria-label="Cambiar tema claro u oscuro"
+              title={isDark ? 'Modo claro' : 'Modo oscuro'}
             >
-              {tema === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+              {isDark ? <Sun size={18} /> : <Moon size={18} />}
             </button>
             <button
               type="button"

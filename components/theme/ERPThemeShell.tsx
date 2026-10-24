@@ -8,6 +8,7 @@ import { ERPThemeProvider, useERPTheme, type ERPTheme } from './ThemeContext';
 
 export interface ERPThemeShellProps {
   initialTheme?: ERPTheme;
+  initialPaletteId?: string;
   tenantName: string;
   tenantLogo: string | null;
   isSuperAdmin: boolean;
@@ -94,10 +95,11 @@ function ERPThemeShellContent({
 
 export default function ERPThemeShell({
   initialTheme = '1',
+  initialPaletteId,
   ...props
 }: ERPThemeShellProps) {
   return (
-    <ERPThemeProvider initialTheme={initialTheme}>
+    <ERPThemeProvider initialTheme={initialTheme} initialPaletteId={initialPaletteId}>
       <ERPThemeShellContent {...props} />
     </ERPThemeProvider>
   );

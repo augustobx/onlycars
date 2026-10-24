@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { ColorPalette, PALETTES, DEFAULT_PALETTE_ID, getPalette, applyPaletteToDOM } from './palettes';
 
 export type ERPTheme = '1' | '2';
 
@@ -8,45 +9,89 @@ interface ERPThemeContextType {
   theme: ERPTheme;
   setTheme: (theme: ERPTheme) => void;
   toggleERPTheme: () => void;
+  palette: ColorPalette;
+  setPalette: (paletteId: string) => void;
+  isDark: boolean;
+  toggleDarkMode: () => void;
 }
 
 const ERPThemeContext = createContext<ERPThemeContextType>({
   theme: '1',
   setTheme: () => {},
   toggleERPTheme: () => {},
+  palette: PALETTES[DEFAULT_PALETTE_ID],
+  setPalette: () => {},
+  isDark: false,
+  toggleDarkMode: () => {},
 });
 
 export const useERPTheme = () => useContext(ERPThemeContext);
 
 export function ERPThemeProvider({
   initialTheme = '1',
+  initialPaletteId = DEFAULT_PALETTE_ID,
   children,
 }: {
   initialTheme?: ERPTheme;
+  initialPaletteId?: string;
   children: ReactNode;
 }) {
   const [theme, setThemeState] = useState<ERPTheme>(initialTheme);
+  const [palette, setPaletteState] = useState<ColorPalette>(getPalette(initialPaletteId));
+  const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
-    // 1. Check URL query param ?theme=2 or ?theme=1
-    if (typeof window !== 'undefined') {
-      const searchParams = new URLSearchParams(window.location.search);
-      const urlTheme = searchParams.get('theme');
-      if (urlTheme === '1' || urlTheme === '2') {
-        setThemeState(urlTheme);
-        document.cookie = `onlycars_theme=${urlTheme}; path=/; max-age=31536000; SameSite=Lax`;
-        localStorage.setItem('onlycars_theme', urlTheme);
-        return;
-      }
+    if (typeof window === 'undefined') return;
 
-      // 2. Fallback to localStorage
-      const saved = localStorage.getItem('onlycars_theme');
-      if (saved === '1' || saved === '2') {
-        setThemeState(saved);
-        document.cookie = `onlycars_theme=${saved}; path=/; max-age=31536000; SameSite=Lax`;
+    // 1. Theme 1 vs 2 resolution
+    const searchParams = new URLSearchParams(window.location.search);
+    const urlTheme = searchParams.get('theme');
+    let resolvedTheme = initialTheme;
+
+    if (urlTheme === '1' || urlTheme === '2') {
+      resolvedTheme = urlTheme;
+      document.cookie = `onlycars_theme=${urlTheme}; path=/; max-age=31536000; SameSite=Lax`;
+      localStorage.setItem('onlycars_theme', urlTheme);
+    } else {
+      const savedTheme = localStorage.getItem('onlycars_theme');
+      if (savedTheme === '1' || savedTheme === '2') {
+        resolvedTheme = savedTheme;
       }
     }
-  }, []);
+    setThemeState(resolvedTheme);
+
+    // 2. Palette resolution
+    const urlPalette = searchParams.get('palette');
+    let resolvedPaletteId = initialPaletteId;
+
+    if (urlPalette && PALETTES[urlPalette]) {
+      resolvedPaletteId = urlPalette;
+      document.cookie = `onlycars_palette=${urlPalette}; path=/; max-age=31536000; SameSite=Lax`;
+      localStorage.setItem('onlycars_palette', urlPalette);
+    } else {
+      const savedPalette = localStorage.getItem('onlycars_palette');
+      if (savedPalette && PALETTES[savedPalette]) {
+        resolvedPaletteId = savedPalette;
+      }
+    }
+    const pal = getPalette(resolvedPaletteId);
+    setPaletteState(pal);
+
+    // 3. Dark mode resolution
+    const savedDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
+      localStorage.getItem('nl-theme') === 'dark';
+    setIsDark(savedDark);
+
+    if (savedDark) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.setAttribute('data-theme', 'light');
+      document.documentElement.classList.remove('dark');
+    }
+
+    applyPaletteToDOM(pal, savedDark);
+  }, [initialTheme, initialPaletteId]);
 
   const setTheme = (newTheme: ERPTheme) => {
     setThemeState(newTheme);
@@ -60,8 +105,44 @@ export function ERPThemeProvider({
     setTheme(theme === '1' ? '2' : '1');
   };
 
+  const setPalette = (paletteId: string) => {
+    const pal = getPalette(paletteId);
+    setPaletteState(pal);
+    if (typeof document !== 'undefined') {
+      document.cookie = `onlycars_palette=${paletteId}; path=/; max-age=31536000; SameSite=Lax`;
+      localStorage.setItem('onlycars_palette', paletteId);
+      applyPaletteToDOM(pal, isDark);
+    }
+  };
+
+  const toggleDarkMode = () => {
+    const nextDark = !isDark;
+    setIsDark(nextDark);
+    if (typeof document !== 'undefined') {
+      const val = nextDark ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', val);
+      if (nextDark) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+      localStorage.setItem('nl-theme', val);
+      applyPaletteToDOM(palette, nextDark);
+    }
+  };
+
   return (
-    <ERPThemeContext.Provider value={{ theme, setTheme, toggleERPTheme }}>
+    <ERPThemeContext.Provider
+      value={{
+        theme,
+        setTheme,
+        toggleERPTheme,
+        palette,
+        setPalette,
+        isDark,
+        toggleDarkMode,
+      }}
+    >
       {children}
     </ERPThemeContext.Provider>
   );

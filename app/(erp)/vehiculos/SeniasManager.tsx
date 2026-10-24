@@ -128,8 +128,8 @@ export default function SeniasManager({ vehiculo, clientes }: { vehiculo: any, c
             {/* TABLA HISTORIAL */}
             <div>
                 <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><History className="w-5 h-5 text-slate-400" /> Historial de Señas</h3>
-                <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-                    <table className="w-full text-sm text-left">
+                <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm overflow-x-auto">
+                    <table className="w-full text-sm text-left min-w-[500px]">
                         <thead className="bg-slate-50 text-slate-600 uppercase text-xs font-bold">
                             <tr>
                                 <th className="px-4 py-3">Fecha</th>
