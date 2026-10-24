@@ -29,6 +29,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Palette,
+} from 'lucide-react';
 import { logoutAction } from '@/actions/auth';
 import { useConfigStore } from '@/store/useConfigStore';
 import { syncDolarApi } from '@/actions/config';
