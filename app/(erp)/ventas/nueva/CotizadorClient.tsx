@@ -202,70 +202,295 @@ export default function CotizadorClient({
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
       <div className="flex items-start gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center"><Calculator className="w-6 h-6" /></div>
-        <div><h1 className="text-3xl font-black text-slate-900">Cotizador y cierre de venta</h1><p className="text-sm text-slate-500 mt-1">Seleccioná entidades con búsqueda y trabajá siempre con ARS + USD.</p>{initialQuote && <p className="text-xs font-bold text-blue-700 mt-2">Origen: cotización #{initialQuote.id_cotizacion}{initialProspectoId ? ` · operación #${initialProspectoId}` : ''}</p>}</div>
+        <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0">
+          <Calculator className="w-6 h-6" />
+        </div>
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100">Cotizador y cierre de venta</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Seleccioná entidades con búsqueda y trabajá siempre con ARS + USD.</p>
+          {initialQuote && (
+            <p className="text-xs font-bold text-blue-600 dark:text-blue-400 mt-2">
+              Origen: cotización #{initialQuote.id_cotizacion}{initialProspectoId ? ` · operación #${initialProspectoId}` : ''}
+            </p>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2 space-y-5">
-          <section className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
-            <h2 className="font-black text-slate-900">1. Unidad y cliente</h2>
+          <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+            <h2 className="font-black text-slate-900 dark:text-slate-100 text-lg">1. Unidad y cliente</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <SearchCombobox label="Vehículo" required value={vehiculoId} onChange={setVehiculoId} options={vehicleOptions} placeholder="Buscar por modelo, patente o año..." />
-              <div><SearchCombobox label="Cliente" required value={clienteId} onChange={setClienteId} options={clientOptions} placeholder="Buscar por nombre, DNI, CUIT o teléfono..." /><div className="mt-1 text-right"><Link href="/clientes" className="text-xs font-bold text-blue-700 hover:underline">Crear nuevo cliente</Link></div></div>
+              <div>
+                <SearchCombobox label="Cliente" required value={clienteId} onChange={setClienteId} options={clientOptions} placeholder="Buscar por nombre, DNI, CUIT o teléfono..." />
+                <div className="mt-1.5 text-right">
+                  <Link href="/clientes" className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">
+                    + Crear nuevo cliente
+                  </Link>
+                </div>
+              </div>
             </div>
 
-            {vehicleReservation && !clienteId && <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 flex items-start gap-3"><BookmarkCheck className="w-5 h-5 text-amber-600 shrink-0" /><div><p className="font-black text-amber-950">Unidad con reserva activa</p><p className="text-xs text-amber-800 mt-1">{vehicleReservation.cliente_nombre} · {vehicleReservation.recibo_nro || `Reserva #${vehicleReservation.id_senia}`}</p></div></div>}
-            {reservationMismatch && <div className="rounded-xl bg-red-50 border border-red-200 p-4 flex items-start gap-3"><AlertTriangle className="w-5 h-5 text-red-600 shrink-0" /><div><p className="font-black text-red-950">El cliente seleccionado no es el titular de la reserva</p><p className="text-xs text-red-700 mt-1">La unidad está reservada por {vehicleReservation.cliente_nombre}. No se podrá confirmar la venta a otro cliente mientras esa reserva siga activa.</p></div></div>}
-            {activeReservation && <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"><div className="flex items-start gap-3"><BookmarkCheck className="w-5 h-5 text-emerald-600 shrink-0" /><div><p className="font-black text-emerald-950">Seña detectada y aplicada</p><p className="text-xs text-emerald-700 mt-1">{activeReservation.recibo_nro || `Reserva #${activeReservation.id_senia}`} · {activeReservation.cliente_nombre}</p></div></div><DualMoney ars={reservationArs} usd={reservationUsd} rate={activeReservation.cotizacion || rate} compact primaryClassName="font-black text-emerald-900" /></div>}
-
-            {selectedVehicle && <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-50 border border-slate-200 rounded-xl p-4"><div><p className="text-[10px] uppercase font-black text-slate-400">Precio publicado</p><DualMoney ars={selectedVehicle.precio_venta_ars} usd={selectedVehicle.precio_venta_usd} rate={rate} /></div><div><p className="text-[10px] uppercase font-black text-slate-400">Costo registrado</p><DualMoney ars={costArs} usd={costUsd} rate={rate} /></div></div>}
-          </section>
-
-          <section className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-5">
-            <h2 className="font-black text-slate-900">2. Precio y modalidad</h2>
-            <DualCurrencyInput label="Precio final pactado" required ars={precio.ars} usd={precio.usd} rate={rate} onChange={setPrecio} helper={initialQuote ? `Precio cargado desde la cotización #${initialQuote.id_cotizacion}. Podés ajustarlo antes de confirmar.` : undefined} />
-            <div><span className="text-xs font-black text-slate-600 uppercase tracking-wider">Forma de pago *</span><div className="grid grid-cols-2 gap-2 bg-slate-100 rounded-xl p-1.5 mt-1.5"><button type="button" onClick={() => setFormaPago('Contado')} className={`py-2.5 rounded-lg text-sm font-black ${formaPago === 'Contado' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}>Contado</button><button type="button" onClick={() => setFormaPago('Cuotas')} className={`py-2.5 rounded-lg text-sm font-black ${formaPago === 'Cuotas' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500'}`}>Financiado</button></div></div>
-
-            {activeReservation && <div className="rounded-xl bg-emerald-50 border border-emerald-100 p-3"><p className="text-[10px] uppercase font-black text-emerald-700">Ya abonado como seña</p><DualMoney ars={reservationArs} usd={reservationUsd} rate={activeReservation.cotizacion || rate} compact /><p className="text-[11px] text-emerald-700 mt-1">Se descuenta automáticamente del efectivo a cobrar al cierre.</p></div>}
-
-            {formaPago === 'Cuotas' && (
-              <div className="rounded-2xl bg-indigo-50/50 border border-indigo-200 p-4 space-y-4">
-                <h3 className="font-black text-indigo-950 flex items-center gap-2"><TrendingUp className="w-4 h-4" /> Condiciones de financiación</h3>
-                <DualCurrencyInput label="Anticipo total" ars={anticipo.ars} usd={anticipo.usd} rate={rate} onChange={setAnticipo} helper={activeReservation ? 'Incluye la seña ya cobrada. Podés aumentar el anticipo total.' : undefined} />
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <label><span className="text-xs font-black text-slate-600 uppercase tracking-wider">Cantidad de cuotas *</span><input type="number" min="1" value={cantidadCuotas} onChange={(e) => setCantidadCuotas(e.target.value)} className="mt-1.5 w-full px-3 py-2.5 border border-slate-300 rounded-xl text-sm" /></label>
-                  <label><span className="text-xs font-black text-slate-600 uppercase tracking-wider">Tasa / recargo (%)</span><input type="number" min="0" step="any" value={recargoPct} onChange={(e) => setRecargoPct(e.target.value)} className="mt-1.5 w-full px-3 py-2.5 border border-slate-300 rounded-xl text-sm" /><span className="text-[10px] text-slate-400 mt-1 block">Configurado: {Number(tnaFinanciacion || 0).toLocaleString('es-AR')}%</span></label>
-                  <label><span className="text-xs font-black text-slate-600 uppercase tracking-wider">Vencimiento 1ª cuota *</span><input type="date" value={fechaPrimerCuota} onChange={(e) => setFechaPrimerCuota(e.target.value)} className="mt-1.5 w-full px-3 py-2.5 border border-slate-300 rounded-xl text-sm" /></label>
+            {vehicleReservation && !clienteId && (
+              <div className="rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 p-4 flex items-start gap-3">
+                <BookmarkCheck className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-black text-amber-950 dark:text-amber-200">Unidad con reserva activa</p>
+                  <p className="text-xs text-amber-800 dark:text-amber-300 mt-1">{vehicleReservation.cliente_nombre} · {vehicleReservation.recibo_nro || `Reserva #${vehicleReservation.id_senia}`}</p>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3"><div className="rounded-xl bg-white border border-indigo-100 p-3"><p className="text-[10px] uppercase font-black text-slate-400">Saldo financiado</p><DualMoney ars={capitalArs} usd={capitalUsd} rate={rate} compact /></div><div className="rounded-xl bg-white border border-indigo-100 p-3"><p className="text-[10px] uppercase font-black text-slate-400">Valor por cuota</p><DualMoney ars={installmentArs} usd={installmentUsd} rate={rate} compact /></div><div className="rounded-xl bg-white border border-indigo-100 p-3"><p className="text-[10px] uppercase font-black text-slate-400">Interés total</p><DualMoney ars={financeIncomeArs} rate={rate} compact /></div></div>
+              </div>
+            )}
+            {reservationMismatch && (
+              <div className="rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/40 p-4 flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-black text-red-950 dark:text-red-200">El cliente seleccionado no es el titular de la reserva</p>
+                  <p className="text-xs text-red-700 dark:text-red-300 mt-1">La unidad está reservada por {vehicleReservation.cliente_nombre}. No se podrá confirmar la venta a otro cliente mientras esa reserva siga activa.</p>
+                </div>
+              </div>
+            )}
+            {activeReservation && (
+              <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <BookmarkCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-black text-emerald-950 dark:text-emerald-200">Seña detectada y aplicada</p>
+                    <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-1">{activeReservation.recibo_nro || `Reserva #${activeReservation.id_senia}`} · {activeReservation.cliente_nombre}</p>
+                  </div>
+                </div>
+                <DualMoney ars={reservationArs} usd={reservationUsd} rate={activeReservation.cotizacion || rate} compact primaryClassName="font-black text-emerald-900 dark:text-emerald-200" />
+              </div>
+            )}
+
+            {selectedVehicle && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+                <div>
+                  <p className="text-[10px] uppercase font-black text-slate-400 dark:text-slate-500">Precio publicado</p>
+                  <DualMoney ars={selectedVehicle.precio_venta_ars} usd={selectedVehicle.precio_venta_usd} rate={rate} />
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase font-black text-slate-400 dark:text-slate-500">Costo registrado</p>
+                  <DualMoney ars={costArs} usd={costUsd} rate={rate} />
+                </div>
               </div>
             )}
           </section>
 
-          <section className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3"><div><h2 className="font-black text-slate-900 flex items-center gap-2"><Shuffle className="w-4 h-4 text-amber-600" /> 3. Permuta</h2><p className="text-xs text-slate-500 mt-1">Si hay toma, el vehículo entra automáticamente al inventario.</p></div><label className="flex items-center gap-2 text-sm font-black text-slate-700"><input type="checkbox" checked={tienePermuta} onChange={(e) => setTienePermuta(e.target.checked)} /> Incluir permuta</label></div>
-            {tienePermuta && <div className="rounded-2xl bg-amber-50 border border-amber-200 p-4 space-y-4"><div className="grid grid-cols-1 md:grid-cols-2 gap-4"><label><span className="text-xs font-black text-slate-600 uppercase">Marca *</span><input value={permuta.marca} onChange={(e) => setPermuta({ ...permuta, marca: e.target.value })} className="mt-1.5 w-full px-3 py-2.5 rounded-xl border border-amber-200 bg-white" /></label><label><span className="text-xs font-black text-slate-600 uppercase">Modelo *</span><input value={permuta.modelo} onChange={(e) => setPermuta({ ...permuta, modelo: e.target.value })} className="mt-1.5 w-full px-3 py-2.5 rounded-xl border border-amber-200 bg-white" /></label><label><span className="text-xs font-black text-slate-600 uppercase">Versión</span><input value={permuta.version} onChange={(e) => setPermuta({ ...permuta, version: e.target.value })} className="mt-1.5 w-full px-3 py-2.5 rounded-xl border border-amber-200 bg-white" /></label><label><span className="text-xs font-black text-slate-600 uppercase">Patente</span><input value={permuta.patente} onChange={(e) => setPermuta({ ...permuta, patente: e.target.value.toUpperCase() })} className="mt-1.5 w-full px-3 py-2.5 rounded-xl border border-amber-200 bg-white uppercase" /></label><label><span className="text-xs font-black text-slate-600 uppercase">Año *</span><input type="number" value={permuta.anio} onChange={(e) => setPermuta({ ...permuta, anio: e.target.value })} className="mt-1.5 w-full px-3 py-2.5 rounded-xl border border-amber-200 bg-white" /></label><label><span className="text-xs font-black text-slate-600 uppercase">Kilometraje *</span><input type="number" min="0" value={permuta.km} onChange={(e) => setPermuta({ ...permuta, km: e.target.value })} className="mt-1.5 w-full px-3 py-2.5 rounded-xl border border-amber-200 bg-white" /></label><label><span className="text-xs font-black text-slate-600 uppercase">Color</span><input value={permuta.color} onChange={(e) => setPermuta({ ...permuta, color: e.target.value })} className="mt-1.5 w-full px-3 py-2.5 rounded-xl border border-amber-200 bg-white" /></label><label><span className="text-xs font-black text-slate-600 uppercase">Motor</span><input value={permuta.motor} onChange={(e) => setPermuta({ ...permuta, motor: e.target.value })} className="mt-1.5 w-full px-3 py-2.5 rounded-xl border border-amber-200 bg-white" /></label></div><DualCurrencyInput label="Valor de toma" required ars={valorPermuta.ars} usd={valorPermuta.usd} rate={rate} onChange={setValorPermuta} /></div>}
+          <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-5">
+            <h2 className="font-black text-slate-900 dark:text-slate-100 text-lg">2. Precio y modalidad</h2>
+            <DualCurrencyInput label="Precio final pactado" required ars={precio.ars} usd={precio.usd} rate={rate} onChange={setPrecio} helper={initialQuote ? `Precio cargado desde la cotización #${initialQuote.id_cotizacion}. Podés ajustarlo antes de confirmar.` : undefined} />
+            <div>
+              <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">Forma de pago *</span>
+              <div className="grid grid-cols-2 gap-2 bg-slate-100 dark:bg-slate-800 rounded-xl p-1.5 mt-1.5">
+                <button
+                  type="button"
+                  onClick={() => setFormaPago('Contado')}
+                  className={`py-2.5 rounded-lg text-sm font-black transition-all ${formaPago === 'Contado' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                >
+                  Contado
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormaPago('Cuotas')}
+                  className={`py-2.5 rounded-lg text-sm font-black transition-all ${formaPago === 'Cuotas' ? 'bg-[var(--bg-primary-default,#FF6600)] text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                >
+                  Financiado
+                </button>
+              </div>
+            </div>
+
+            {activeReservation && (
+              <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-800/40 p-3">
+                <p className="text-[10px] uppercase font-black text-emerald-700 dark:text-emerald-400">Ya abonado como seña</p>
+                <DualMoney ars={reservationArs} usd={reservationUsd} rate={activeReservation.cotizacion || rate} compact />
+                <p className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-1">Se descuenta automáticamente del efectivo a cobrar al cierre.</p>
+              </div>
+            )}
+
+            {formaPago === 'Cuotas' && (
+              <div className="rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-800/40 p-4 space-y-4">
+                <h3 className="font-black text-indigo-950 dark:text-indigo-300 flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-indigo-600 dark:text-indigo-400" /> Condiciones de financiación
+                </h3>
+                <DualCurrencyInput label="Anticipo total" ars={anticipo.ars} usd={anticipo.usd} rate={rate} onChange={setAnticipo} helper={activeReservation ? 'Incluye la seña ya cobrada. Podés aumentar el anticipo total.' : undefined} />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <label>
+                    <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">Cantidad de cuotas *</span>
+                    <input
+                      type="number"
+                      min="1"
+                      value={cantidadCuotas}
+                      onChange={(e) => setCantidadCuotas(e.target.value)}
+                      className="mt-1.5 w-full px-3 py-2.5 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[var(--bg-primary-default,#FF6600)]"
+                    />
+                  </label>
+                  <label>
+                    <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">Tasa / recargo (%)</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="any"
+                      value={recargoPct}
+                      onChange={(e) => setRecargoPct(e.target.value)}
+                      className="mt-1.5 w-full px-3 py-2.5 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[var(--bg-primary-default,#FF6600)]"
+                    />
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 block">Configurado: {Number(tnaFinanciacion || 0).toLocaleString('es-AR')}%</span>
+                  </label>
+                  <label>
+                    <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">Vencimiento 1ª cuota *</span>
+                    <input
+                      type="date"
+                      value={fechaPrimerCuota}
+                      onChange={(e) => setFechaPrimerCuota(e.target.value)}
+                      className="mt-1.5 w-full px-3 py-2.5 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[var(--bg-primary-default,#FF6600)]"
+                    />
+                  </label>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="rounded-xl bg-white dark:bg-slate-900 border border-indigo-100 dark:border-indigo-900/40 p-3 shadow-sm">
+                    <p className="text-[10px] uppercase font-black text-slate-400 dark:text-slate-500">Saldo financiado</p>
+                    <DualMoney ars={capitalArs} usd={capitalUsd} rate={rate} compact />
+                  </div>
+                  <div className="rounded-xl bg-white dark:bg-slate-900 border border-indigo-100 dark:border-indigo-900/40 p-3 shadow-sm">
+                    <p className="text-[10px] uppercase font-black text-slate-400 dark:text-slate-500">Valor por cuota</p>
+                    <DualMoney ars={installmentArs} usd={installmentUsd} rate={rate} compact />
+                  </div>
+                  <div className="rounded-xl bg-white dark:bg-slate-900 border border-indigo-100 dark:border-indigo-900/40 p-3 shadow-sm">
+                    <p className="text-[10px] uppercase font-black text-slate-400 dark:text-slate-500">Interés total</p>
+                    <DualMoney ars={financeIncomeArs} rate={rate} compact />
+                  </div>
+                </div>
+              </div>
+            )}
           </section>
 
-          <section className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm"><label><span className="text-xs font-black text-slate-600 uppercase tracking-wider">Observaciones de la venta</span><textarea value={observaciones} onChange={(e) => setObservaciones(e.target.value)} placeholder="Condiciones pactadas, documentación pendiente, aclaraciones..." className="mt-1.5 w-full min-h-24 px-3 py-2.5 border border-slate-300 rounded-xl text-sm" /></label></section>
+          <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h2 className="font-black text-slate-900 dark:text-slate-100 text-lg flex items-center gap-2">
+                  <Shuffle className="w-4 h-4 text-amber-600 dark:text-amber-400" /> 3. Permuta
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Si hay toma, el vehículo entra automáticamente al inventario.</p>
+              </div>
+              <label className="flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-200 cursor-pointer">
+                <input type="checkbox" checked={tienePermuta} onChange={(e) => setTienePermuta(e.target.checked)} className="w-4 h-4 rounded text-[var(--bg-primary-default,#FF6600)]" />
+                Incluir permuta
+              </label>
+            </div>
+            {tienePermuta && (
+              <div className="rounded-2xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 p-4 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <label>
+                    <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase">Marca *</span>
+                    <input value={permuta.marca} onChange={(e) => setPermuta({ ...permuta, marca: e.target.value })} className="mt-1.5 w-full px-3 py-2.5 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100" />
+                  </label>
+                  <label>
+                    <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase">Modelo *</span>
+                    <input value={permuta.modelo} onChange={(e) => setPermuta({ ...permuta, modelo: e.target.value })} className="mt-1.5 w-full px-3 py-2.5 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100" />
+                  </label>
+                  <label>
+                    <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase">Versión</span>
+                    <input value={permuta.version} onChange={(e) => setPermuta({ ...permuta, version: e.target.value })} className="mt-1.5 w-full px-3 py-2.5 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100" />
+                  </label>
+                  <label>
+                    <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase">Patente</span>
+                    <input value={permuta.patente} onChange={(e) => setPermuta({ ...permuta, patente: e.target.value.toUpperCase() })} className="mt-1.5 w-full px-3 py-2.5 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 uppercase font-mono" />
+                  </label>
+                  <label>
+                    <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase">Año *</span>
+                    <input type="number" value={permuta.anio} onChange={(e) => setPermuta({ ...permuta, anio: e.target.value })} className="mt-1.5 w-full px-3 py-2.5 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100" />
+                  </label>
+                  <label>
+                    <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase">Kilometraje *</span>
+                    <input type="number" min="0" value={permuta.km} onChange={(e) => setPermuta({ ...permuta, km: e.target.value })} className="mt-1.5 w-full px-3 py-2.5 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100" />
+                  </label>
+                  <label>
+                    <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase">Color</span>
+                    <input value={permuta.color} onChange={(e) => setPermuta({ ...permuta, color: e.target.value })} className="mt-1.5 w-full px-3 py-2.5 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100" />
+                  </label>
+                  <label>
+                    <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase">Motor</span>
+                    <input value={permuta.motor} onChange={(e) => setPermuta({ ...permuta, motor: e.target.value })} className="mt-1.5 w-full px-3 py-2.5 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100" />
+                  </label>
+                </div>
+                <DualCurrencyInput label="Valor de toma" required ars={valorPermuta.ars} usd={valorPermuta.usd} rate={rate} onChange={setValorPermuta} />
+              </div>
+            )}
+          </section>
+
+          <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+            <label>
+              <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">Observaciones de la venta</span>
+              <textarea
+                value={observaciones}
+                onChange={(e) => setObservaciones(e.target.value)}
+                placeholder="Condiciones pactadas, documentación pendiente, aclaraciones..."
+                className="mt-1.5 w-full min-h-24 px-3 py-2.5 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--bg-primary-default,#FF6600)]"
+              />
+            </label>
+          </section>
         </div>
 
         <aside className="space-y-5">
-          <div className="bg-slate-950 text-white rounded-2xl p-5 shadow-xl sticky top-24 space-y-4">
-            <div><p className="text-[10px] uppercase tracking-wider font-black text-slate-500">Resumen de operación</p><p className="text-sm font-bold text-slate-300 mt-1">TC aplicado: $ {rate.toLocaleString('es-AR')} / USD</p></div>
-            <div className="rounded-xl bg-white/5 border border-white/10 p-4"><p className="text-[10px] uppercase font-black text-slate-500">Precio final</p><DualMoney ars={finalArs} usd={finalUsd} rate={rate} primaryClassName="text-2xl font-black text-white" secondaryClassName="text-sm font-bold text-slate-400" /></div>
-            {activeReservation && <div className="rounded-xl bg-emerald-500/10 border border-emerald-400/20 p-4"><p className="text-[10px] uppercase font-black text-emerald-400">Seña ya cobrada</p><DualMoney ars={reservationArs} usd={reservationUsd} rate={activeReservation.cotizacion || rate} primaryClassName="font-black text-emerald-200" secondaryClassName="text-xs text-emerald-400" /></div>}
-            {tienePermuta && <div className="rounded-xl bg-amber-500/10 border border-amber-400/20 p-4"><p className="text-[10px] uppercase font-black text-amber-400">Valor de toma</p><DualMoney ars={tradeArs} usd={tradeUsd} rate={rate} primaryClassName="font-black text-amber-100" secondaryClassName="text-xs text-amber-300" /></div>}
-            {formaPago === 'Cuotas' && <div className="rounded-xl bg-indigo-500/10 border border-indigo-400/20 p-4 space-y-3"><div><p className="text-[10px] uppercase font-black text-indigo-400">Capital financiado</p><DualMoney ars={capitalArs} usd={capitalUsd} rate={rate} primaryClassName="font-black text-white" secondaryClassName="text-xs text-indigo-300" /></div><div><p className="text-[10px] uppercase font-black text-indigo-400">Plan</p><p className="text-xl font-black">{count} × $ {installmentArs.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</p><p className="text-xs text-indigo-300">U$S {installmentUsd.toLocaleString('es-AR', { maximumFractionDigits: 2 })} por cuota</p></div></div>}
-            {activeReservation && <div className="rounded-xl bg-white/5 border border-white/10 p-4"><p className="text-[10px] uppercase font-black text-slate-500">Efectivo adicional al cierre</p><DualMoney ars={cashDueAtClosingArs} usd={cashDueAtClosingUsd} rate={rate} primaryClassName="font-black text-white" secondaryClassName="text-xs text-slate-400" /></div>}
-            <div className="rounded-xl bg-emerald-500/10 border border-emerald-400/20 p-4"><p className="text-[10px] uppercase font-black text-emerald-400">Margen comercial estimado</p><DualMoney ars={grossMarginArs} rate={rate} primaryClassName={`text-xl font-black ${grossMarginArs >= 0 ? 'text-emerald-300' : 'text-red-300'}`} secondaryClassName="text-xs text-slate-400" /></div>
-            <button onClick={procesar} disabled={submitting || !selectedVehicle || !selectedClient || finalArs <= 0 || reservationMismatch} className="w-full py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black flex items-center justify-center gap-2 disabled:opacity-50">{submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <CircleDollarSign className="w-5 h-5" />} Confirmar venta <ArrowRight className="w-4 h-4" /></button>
+          <div className="bg-slate-950 text-white rounded-2xl p-5 shadow-xl sticky top-24 space-y-4 border border-slate-800">
+            <div>
+              <p className="text-[10px] uppercase tracking-wider font-black text-slate-400">Resumen de operación</p>
+              <p className="text-sm font-bold text-slate-300 mt-1">TC aplicado: $ {rate.toLocaleString('es-AR')} / USD</p>
+            </div>
+            <div className="rounded-xl bg-white/5 border border-white/10 p-4">
+              <p className="text-[10px] uppercase font-black text-slate-400 tracking-wider">Precio final</p>
+              <DualMoney ars={finalArs} usd={finalUsd} rate={rate} primaryClassName="text-2xl font-black text-white" secondaryClassName="text-sm font-bold text-slate-400" />
+            </div>
+            {activeReservation && (
+              <div className="rounded-xl bg-emerald-500/10 border border-emerald-400/20 p-4">
+                <p className="text-[10px] uppercase font-black text-emerald-400 tracking-wider">Seña ya cobrada</p>
+                <DualMoney ars={reservationArs} usd={reservationUsd} rate={activeReservation.cotizacion || rate} primaryClassName="font-black text-emerald-200" secondaryClassName="text-xs text-emerald-400" />
+              </div>
+            )}
+            {tienePermuta && (
+              <div className="rounded-xl bg-amber-500/10 border border-amber-400/20 p-4">
+                <p className="text-[10px] uppercase font-black text-amber-400 tracking-wider">Valor de toma</p>
+                <DualMoney ars={tradeArs} usd={tradeUsd} rate={rate} primaryClassName="font-black text-amber-100" secondaryClassName="text-xs text-amber-300" />
+              </div>
+            )}
+            {formaPago === 'Cuotas' && (
+              <div className="rounded-xl bg-indigo-500/10 border border-indigo-400/20 p-4 space-y-3">
+                <div>
+                  <p className="text-[10px] uppercase font-black text-indigo-400 tracking-wider">Capital financiado</p>
+                  <DualMoney ars={capitalArs} usd={capitalUsd} rate={rate} primaryClassName="font-black text-white" secondaryClassName="text-xs text-indigo-300" />
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase font-black text-indigo-400 tracking-wider">Plan</p>
+                  <p className="text-xl font-black">{count} × $ {installmentArs.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</p>
+                  <p className="text-xs text-indigo-300">U$S {installmentUsd.toLocaleString('es-AR', { maximumFractionDigits: 2 })} por cuota</p>
+                </div>
+              </div>
+            )}
+            {activeReservation && (
+              <div className="rounded-xl bg-white/5 border border-white/10 p-4">
+                <p className="text-[10px] uppercase font-black text-slate-400 tracking-wider">Efectivo adicional al cierre</p>
+                <DualMoney ars={cashDueAtClosingArs} usd={cashDueAtClosingUsd} rate={rate} primaryClassName="font-black text-white" secondaryClassName="text-xs text-slate-400" />
+              </div>
+            )}
+            <div className="rounded-xl bg-emerald-500/10 border border-emerald-400/20 p-4">
+              <p className="text-[10px] uppercase font-black text-emerald-400 tracking-wider">Margen comercial estimado</p>
+              <DualMoney ars={grossMarginArs} rate={rate} primaryClassName={`text-xl font-black ${grossMarginArs >= 0 ? 'text-emerald-300' : 'text-red-300'}`} secondaryClassName="text-xs text-slate-400" />
+            </div>
+            <button
+              onClick={procesar}
+              disabled={submitting || !selectedVehicle || !selectedClient || finalArs <= 0 || reservationMismatch}
+              className="w-full py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 transition-colors"
+            >
+              {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <CircleDollarSign className="w-5 h-5" />}
+              Confirmar venta <ArrowRight className="w-4 h-4" />
+            </button>
           </div>
         </aside>
       </div>
+    </div>
     </div>
   );
 }

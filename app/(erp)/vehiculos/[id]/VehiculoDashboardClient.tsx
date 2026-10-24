@@ -61,7 +61,7 @@ export default function VehiculoDashboardClient({ vehiculo, clientes, timeline, 
   const ventaArs = Number(vehiculo.precio_venta_ars || 0) || ventaUsd * dolarActual;
   const margenUsd = ventaUsd - costoTotalUsd;
   const margenArs = ventaArs - costoTotalArs;
-  const margenPct = costoTotalArs > 0 ? margenArs / costoTotalArs * 100 : 0;
+  const margenPct = costoTotalArs > 0 ? (margenArs / costoTotalArs) * 100 : 0;
 
   const activeProspects = vehiculo.prospectos.filter((p: any) => !['GANADO', 'PERDIDO'].includes(p.estado));
   const latestQuote = vehiculo.cotizaciones?.[0] || null;
@@ -76,25 +76,328 @@ export default function VehiculoDashboardClient({ vehiculo, clientes, timeline, 
   ];
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <div className="rounded-3xl bg-slate-950 text-white p-6 md:p-8 shadow-xl">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
+      <div className="rounded-3xl bg-slate-950 text-white p-6 md:p-8 shadow-xl border border-slate-800">
         <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-6">
-          <div><Link href={backHref} className="inline-flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-white mb-5"><ArrowLeft className="w-4 h-4" /> {vehiculo.tipo_vehiculo === 'Moto' ? 'Inventario de motos' : 'Inventario'}</Link><div className="flex flex-wrap items-center gap-3 mb-3"><span className={`px-3 py-1 rounded-full border text-[10px] uppercase font-black ${estadoClass(vehiculo.estado)}`}>{String(vehiculo.estado).replace(/_/g, ' ')}</span><span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] uppercase font-black text-slate-300">{vehiculo.tipo_ingreso || 'Propio'}</span>{vehiculo.location?.name && <span className="text-xs text-slate-400">{vehiculo.location.name}</span>}</div><h1 className="text-3xl md:text-4xl font-black">{vehiculo.marca} {vehiculo.modelo}</h1><p className="text-slate-400 mt-2">{vehiculo.version || 'Sin versión'} · {vehiculo.anio || 'S/A'} · {vehiculo.patente || 'Sin patente'} · {Number(vehiculo.km || 0).toLocaleString('es-AR')} km</p><div className="flex flex-wrap gap-2 mt-5"><button type="button" disabled={togglingWeb} onClick={handleToggleWeb} className={`px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-2 border transition ${isPublicadoWeb ? 'bg-emerald-500/15 border-emerald-400/30 text-emerald-300 hover:bg-emerald-500/25' : 'bg-white/10 border-white/10 text-slate-400 hover:text-white'}`} title={isPublicadoWeb ? 'Visible en catálogo online. Clic para ocultar' : 'Oculto en catálogo online. Clic para publicar'}>{togglingWeb ? <Loader2 className="w-4 h-4 animate-spin text-slate-400" /> : <Globe className="w-4 h-4 text-emerald-400" />}Catálogo Web: {isPublicadoWeb ? 'Publicado' : 'Oculto'}</button><Link href={`/documentos/ficha/${vehiculo.id_vehiculo}`} target="_blank" className="px-3.5 py-2 rounded-xl bg-white/10 border border-white/10 text-xs font-black flex items-center gap-2"><Printer className="w-4 h-4 text-blue-400" /> Ficha de salón</Link>{vehiculo.estado !== 'VENDIDO' && <Link href={`/ventas/nueva?v=${vehiculo.id_vehiculo}`} className="px-3.5 py-2 rounded-xl bg-emerald-600 text-xs font-black flex items-center gap-2"><CircleDollarSign className="w-4 h-4" /> Cotizar / vender</Link>}</div></div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 xl:min-w-[620px]"><div className="rounded-2xl bg-white/5 border border-white/10 p-4"><p className="text-[10px] uppercase font-black text-slate-500">Costo real</p><DualMoney ars={costoTotalArs} usd={costoTotalUsd} rate={dolarActual} primaryClassName="text-lg font-black text-white" secondaryClassName="text-xs text-slate-400" /></div><div className="rounded-2xl bg-white/5 border border-white/10 p-4"><p className="text-[10px] uppercase font-black text-slate-500">Precio venta</p><DualMoney ars={ventaArs} usd={ventaUsd} rate={dolarActual} primaryClassName="text-lg font-black text-blue-300" secondaryClassName="text-xs text-slate-400" /></div><div className="rounded-2xl bg-white/5 border border-white/10 p-4"><p className="text-[10px] uppercase font-black text-slate-500">Margen potencial</p><DualMoney ars={margenArs} usd={margenUsd} rate={dolarActual} primaryClassName={`text-lg font-black ${margenArs >= 0 ? 'text-emerald-300' : 'text-red-300'}`} secondaryClassName="text-xs text-slate-400" /><p className="text-[10px] text-slate-500 mt-1">{margenPct.toFixed(1)}%</p></div></div>
+          <div>
+            <Link href={backHref} className="inline-flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-white mb-5 transition-colors">
+              <ArrowLeft className="w-4 h-4" /> {vehiculo.tipo_vehiculo === 'Moto' ? 'Inventario de motos' : 'Inventario'}
+            </Link>
+            <div className="flex flex-wrap items-center gap-2.5 mb-3">
+              <span className={`px-3 py-1 rounded-full border text-[10px] uppercase font-black ${estadoClass(vehiculo.estado)}`}>
+                {String(vehiculo.estado).replace(/_/g, ' ')}
+              </span>
+              <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] uppercase font-black text-slate-300">
+                {vehiculo.tipo_ingreso || 'Propio'}
+              </span>
+              {vehiculo.location?.name && <span className="text-xs text-slate-400 font-medium">{vehiculo.location.name}</span>}
+            </div>
+            <h1 className="text-3xl md:text-4xl font-black">{vehiculo.marca} {vehiculo.modelo}</h1>
+            <p className="text-slate-400 mt-2 text-sm sm:text-base">
+              {vehiculo.version || 'Sin versión'} · {vehiculo.anio || 'S/A'} · <span className="font-mono uppercase font-bold text-slate-300">{vehiculo.patente || 'Sin patente'}</span> · {Number(vehiculo.km || 0).toLocaleString('es-AR')} km
+            </p>
+            <div className="flex flex-wrap gap-2.5 mt-5">
+              <button
+                type="button"
+                disabled={togglingWeb}
+                onClick={handleToggleWeb}
+                className={`px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-2 border transition ${isPublicadoWeb ? 'bg-emerald-500/15 border-emerald-400/30 text-emerald-300 hover:bg-emerald-500/25' : 'bg-white/10 border-white/10 text-slate-400 hover:text-white'}`}
+                title={isPublicadoWeb ? 'Visible en catálogo online. Clic para ocultar' : 'Oculto en catálogo online. Clic para publicar'}
+              >
+                {togglingWeb ? <Loader2 className="w-4 h-4 animate-spin text-slate-400" /> : <Globe className="w-4 h-4 text-emerald-400" />}
+                Catálogo Web: {isPublicadoWeb ? 'Publicado' : 'Oculto'}
+              </button>
+              <Link href={`/documentos/ficha/${vehiculo.id_vehiculo}`} target="_blank" className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-xs font-black flex items-center gap-2 transition-colors">
+                <Printer className="w-4 h-4 text-blue-400" /> Ficha de salón
+              </Link>
+              {vehiculo.estado !== 'VENDIDO' && (
+                <Link href={`/ventas/nueva?v=${vehiculo.id_vehiculo}`} className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-black flex items-center gap-2 transition-colors shadow-sm">
+                  <CircleDollarSign className="w-4 h-4" /> Cotizar / vender
+                </Link>
+              )}
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full xl:w-auto xl:min-w-[580px]">
+            <div className="rounded-2xl bg-white/5 border border-white/10 p-4">
+              <p className="text-[10px] uppercase font-black text-slate-400 tracking-wider">Costo real</p>
+              <DualMoney ars={costoTotalArs} usd={costoTotalUsd} rate={dolarActual} primaryClassName="text-lg font-black text-white" secondaryClassName="text-xs text-slate-400" />
+            </div>
+            <div className="rounded-2xl bg-white/5 border border-white/10 p-4">
+              <p className="text-[10px] uppercase font-black text-slate-400 tracking-wider">Precio venta</p>
+              <DualMoney ars={ventaArs} usd={ventaUsd} rate={dolarActual} primaryClassName="text-lg font-black text-blue-300" secondaryClassName="text-xs text-slate-400" />
+            </div>
+            <div className="rounded-2xl bg-white/5 border border-white/10 p-4">
+              <p className="text-[10px] uppercase font-black text-slate-400 tracking-wider">Margen potencial</p>
+              <DualMoney ars={margenArs} usd={margenUsd} rate={dolarActual} primaryClassName={`text-lg font-black ${margenArs >= 0 ? 'text-emerald-300' : 'text-red-300'}`} secondaryClassName="text-xs text-slate-400" />
+              <p className="text-[10px] text-slate-400 mt-1">{margenPct.toFixed(1)}%</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-2xl p-2 shadow-sm overflow-x-auto"><div className="flex min-w-max gap-1">{tabs.map(tab => { const Icon = tab.icon; const active = activeTab === tab.id; return <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`px-4 py-2.5 rounded-xl text-xs font-black flex items-center gap-2 ${active ? 'bg-slate-900 text-white' : 'text-slate-500 hover:bg-slate-50'}`}><Icon className="w-4 h-4" /> {tab.label}{typeof tab.count === 'number' && <span className={`px-1.5 py-0.5 rounded-md ${active ? 'bg-white/10' : 'bg-slate-100'}`}>{tab.count}</span>}</button>; })}</div></div>
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-2 shadow-sm overflow-x-auto custom-scrollbar">
+        <div className="flex min-w-max gap-1">
+          {tabs.map(tab => {
+            const Icon = tab.icon;
+            const active = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-4 py-2.5 rounded-xl text-xs font-black flex items-center gap-2 transition-colors ${
+                  active
+                    ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 shadow-sm'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                {tab.label}
+                {typeof tab.count === 'number' && (
+                  <span className={`px-1.5 py-0.5 rounded-md text-[10px] ${active ? 'bg-white/20 dark:bg-slate-900/20' : 'bg-slate-100 dark:bg-slate-800'}`}>
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-      {activeTab === 'resumen' && <div className="grid grid-cols-1 xl:grid-cols-3 gap-5"><div className="xl:col-span-2 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm"><div className="flex items-center justify-between mb-4"><div><h2 className="font-black text-slate-900">Datos de la unidad</h2><p className="text-xs text-slate-500">Información comercial, técnica y de stock.</p></div><FileText className="w-5 h-5 text-slate-400" /></div><VehiculoForm vehiculo={vehiculo} /></div><div className="space-y-5"><div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4"><h2 className="font-black text-slate-900">Pulso comercial</h2><div className="grid grid-cols-2 gap-2"><div className="rounded-xl bg-blue-50 p-3"><UserRound className="w-4 h-4 text-blue-600" /><p className="text-[10px] uppercase font-black text-blue-600 mt-2">Prospectos activos</p><p className="text-2xl font-black text-blue-950">{activeProspects.length}</p></div><div className="rounded-xl bg-cyan-50 p-3"><BadgeDollarSign className="w-4 h-4 text-cyan-600" /><p className="text-[10px] uppercase font-black text-cyan-600 mt-2">Cotizaciones</p><p className="text-2xl font-black text-cyan-950">{vehiculo.cotizaciones.length}</p></div></div>{activeReservation && <div className="rounded-xl bg-orange-50 border border-orange-200 p-3"><p className="text-[10px] uppercase font-black text-orange-600">Reserva activa</p><p className="text-sm font-black text-orange-950 mt-1">{activeReservation.cliente.nombre_completo}</p><DualMoney ars={activeReservation.monto_ars} usd={activeReservation.monto_usd} rate={activeReservation.cotizacion || dolarActual} compact primaryClassName="text-xs font-black text-orange-800" /></div>}{lastSale && <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3"><p className="text-[10px] uppercase font-black text-emerald-600">Venta</p><p className="text-sm font-black text-emerald-950 mt-1">{lastSale.numero_boleto || `#${lastSale.id_venta}`}</p><DualMoney usd={lastSale.precio_final_usd} rate={lastSale.cotizacion_dolar_venta || dolarActual} compact primaryClassName="text-xs font-black text-emerald-800" /></div>}</div><div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm"><h2 className="font-black text-slate-900 mb-3">Costeo rápido</h2><div className="space-y-3"><div><p className="text-[10px] uppercase font-black text-slate-400">Compra</p><DualMoney ars={compraArs} usd={compraUsd} rate={dolarActual} compact /></div><div><p className="text-[10px] uppercase font-black text-slate-400">Tareas / gastos</p><DualMoney ars={gastosTareasArs} usd={gastosTareasUsd} rate={dolarActual} compact /></div><div className="pt-2 border-t"><p className="text-[10px] uppercase font-black text-slate-400">Costo real</p><DualMoney ars={costoTotalArs} usd={costoTotalUsd} rate={dolarActual} primaryClassName="font-black text-slate-950" /></div></div></div></div></div>}
+      {activeTab === 'resumen' && (
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
+          <div className="xl:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-4 border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div>
+                <h2 className="font-black text-slate-900 dark:text-slate-100 text-lg">Datos de la unidad</h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Información comercial, técnica y de stock.</p>
+              </div>
+              <FileText className="w-5 h-5 text-slate-400" />
+            </div>
+            <VehiculoForm vehiculo={vehiculo} />
+          </div>
+          <div className="space-y-5">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+              <h2 className="font-black text-slate-900 dark:text-slate-100 text-lg">Pulso comercial</h2>
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/40 p-3">
+                  <UserRound className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <p className="text-[10px] uppercase font-black text-blue-600 dark:text-blue-400 mt-2">Prospectos activos</p>
+                  <p className="text-2xl font-black text-blue-950 dark:text-blue-200">{activeProspects.length}</p>
+                </div>
+                <div className="rounded-xl bg-cyan-50 dark:bg-cyan-950/30 border border-cyan-100 dark:border-cyan-900/40 p-3">
+                  <BadgeDollarSign className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                  <p className="text-[10px] uppercase font-black text-cyan-600 dark:text-cyan-400 mt-2">Cotizaciones</p>
+                  <p className="text-2xl font-black text-cyan-950 dark:text-cyan-200">{vehiculo.cotizaciones.length}</p>
+                </div>
+              </div>
+              {activeReservation && (
+                <div className="rounded-xl bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800/40 p-3">
+                  <p className="text-[10px] uppercase font-black text-orange-600 dark:text-orange-400">Reserva activa</p>
+                  <p className="text-sm font-black text-orange-950 dark:text-orange-200 mt-1">{activeReservation.cliente.nombre_completo}</p>
+                  <DualMoney ars={activeReservation.monto_ars} usd={activeReservation.monto_usd} rate={activeReservation.cotizacion || dolarActual} compact primaryClassName="text-xs font-black text-orange-800 dark:text-orange-300" />
+                </div>
+              )}
+              {lastSale && (
+                <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 p-3">
+                  <p className="text-[10px] uppercase font-black text-emerald-600 dark:text-emerald-400">Venta</p>
+                  <p className="text-sm font-black text-emerald-950 dark:text-emerald-200 mt-1">{lastSale.numero_boleto || `#${lastSale.id_venta}`}</p>
+                  <DualMoney usd={lastSale.precio_final_usd} rate={lastSale.cotizacion_dolar_venta || dolarActual} compact primaryClassName="text-xs font-black text-emerald-800 dark:text-emerald-300" />
+                </div>
+              )}
+            </div>
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+              <h2 className="font-black text-slate-900 dark:text-slate-100 text-lg mb-3">Costeo rápido</h2>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-[10px] uppercase font-black text-slate-400 dark:text-slate-500">Compra</p>
+                  <DualMoney ars={compraArs} usd={compraUsd} rate={dolarActual} compact />
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase font-black text-slate-400 dark:text-slate-500">Tareas / gastos</p>
+                  <DualMoney ars={gastosTareasArs} usd={gastosTareasUsd} rate={dolarActual} compact />
+                </div>
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                  <p className="text-[10px] uppercase font-black text-slate-400 dark:text-slate-500">Costo real</p>
+                  <DualMoney ars={costoTotalArs} usd={costoTotalUsd} rate={dolarActual} primaryClassName="font-black text-slate-950 dark:text-slate-100" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
-      {activeTab === 'comercial' && <div className="space-y-5"><div className="grid grid-cols-1 lg:grid-cols-3 gap-4"><div className="bg-white border border-slate-200 rounded-2xl p-5"><p className="text-[10px] uppercase font-black text-slate-400">Última cotización</p>{latestQuote ? <><DualMoney usd={latestQuote.precio_final_usd} rate={latestQuote.cotizacion_dolar || dolarActual} primaryClassName="text-xl font-black text-slate-900" /><p className="text-xs text-slate-500">{latestQuote.estado} · {new Date(latestQuote.createdAt).toLocaleDateString('es-AR')}</p></> : <p className="text-sm text-slate-500 mt-3">Sin cotizaciones.</p>}</div><div className="bg-white border border-slate-200 rounded-2xl p-5"><p className="text-[10px] uppercase font-black text-slate-400">Reserva</p>{activeReservation ? <><p className="text-lg font-black text-orange-700 mt-2">{activeReservation.recibo_nro}</p><DualMoney ars={activeReservation.monto_ars} usd={activeReservation.monto_usd} rate={activeReservation.cotizacion || dolarActual} compact /></> : <p className="text-sm text-slate-500 mt-3">Sin reserva activa.</p>}</div><div className="bg-white border border-slate-200 rounded-2xl p-5"><p className="text-[10px] uppercase font-black text-slate-400">Venta / Entrega</p>{lastSale ? <><p className="text-lg font-black text-emerald-700 mt-2">{lastSale.numero_boleto || `Venta #${lastSale.id_venta}`}</p><DualMoney usd={lastSale.precio_final_usd} rate={lastSale.cotizacion_dolar_venta || dolarActual} compact /><p className="text-xs text-slate-500">{lastSale.entrega?.estado || 'Entrega pendiente'}</p></> : <p className="text-sm text-slate-500 mt-3">Unidad aún no vendida.</p>}</div></div><div className="bg-white border border-slate-200 rounded-2xl p-5"><div className="flex items-center justify-between mb-4"><div><h2 className="font-black text-slate-900">Oportunidades vinculadas</h2><p className="text-xs text-slate-500">Consultas y cotizaciones asociadas a esta unidad.</p></div><Link href="/prospectos" className="text-xs font-black text-blue-700">Abrir pipeline</Link></div><div className="space-y-3">{vehiculo.prospectos.map((p: any) => <Link key={p.id_prospecto} href={`/prospectos/${p.id_prospecto}`} className="flex flex-col md:flex-row md:items-center justify-between gap-3 rounded-xl border border-slate-200 p-4 hover:bg-blue-50/30"><div><p className="font-black text-slate-900">{p.nombre}</p><p className="text-xs text-slate-500">{p.origen} · {p.telefono || 'Sin teléfono'}</p></div><div className="flex items-center gap-3"><span className="px-2.5 py-1 rounded-full bg-slate-100 text-[10px] font-black">{p.estado.replace(/_/g, ' ')}</span>{p.cotizaciones?.[0] && <DualMoney usd={p.cotizaciones[0].precio_final_usd} rate={p.cotizaciones[0].cotizacion_dolar || dolarActual} compact primaryClassName="text-xs font-black text-cyan-700" secondaryClassName="text-[9px] text-slate-400" />}</div></Link>)}{vehiculo.prospectos.length === 0 && <div className="rounded-xl border border-dashed p-8 text-center text-sm text-slate-500">Sin oportunidades vinculadas.</div>}</div></div><div className="bg-white border border-slate-200 rounded-2xl p-5"><h2 className="font-black text-slate-900 mb-4">Reservas / señas</h2><SeniasManager vehiculo={vehiculo} clientes={clientes} /></div></div>}
+      {activeTab === 'comercial' && (
+        <div className="space-y-5">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+              <p className="text-[10px] uppercase font-black text-slate-400 dark:text-slate-500">Última cotización</p>
+              {latestQuote ? (
+                <>
+                  <DualMoney usd={latestQuote.precio_final_usd} rate={latestQuote.cotizacion_dolar || dolarActual} primaryClassName="text-xl font-black text-slate-900 dark:text-slate-100" />
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{latestQuote.estado} · {new Date(latestQuote.createdAt).toLocaleDateString('es-AR')}</p>
+                </>
+              ) : (
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-3">Sin cotizaciones.</p>
+              )}
+            </div>
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+              <p className="text-[10px] uppercase font-black text-slate-400 dark:text-slate-500">Reserva</p>
+              {activeReservation ? (
+                <>
+                  <p className="text-lg font-black text-orange-600 dark:text-orange-400 mt-2">{activeReservation.recibo_nro}</p>
+                  <DualMoney ars={activeReservation.monto_ars} usd={activeReservation.monto_usd} rate={activeReservation.cotizacion || dolarActual} compact />
+                </>
+              ) : (
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-3">Sin reserva activa.</p>
+              )}
+            </div>
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+              <p className="text-[10px] uppercase font-black text-slate-400 dark:text-slate-500">Venta / Entrega</p>
+              {lastSale ? (
+                <>
+                  <p className="text-lg font-black text-emerald-600 dark:text-emerald-400 mt-2">{lastSale.numero_boleto || `Venta #${lastSale.id_venta}`}</p>
+                  <DualMoney usd={lastSale.precio_final_usd} rate={lastSale.cotizacion_dolar_venta || dolarActual} compact />
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{lastSale.entrega?.estado || 'Entrega pendiente'}</p>
+                </>
+              ) : (
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-3">Unidad aún no vendida.</p>
+              )}
+            </div>
+          </div>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-4 border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div>
+                <h2 className="font-black text-slate-900 dark:text-slate-100 text-lg">Oportunidades vinculadas</h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Consultas y cotizaciones asociadas a esta unidad.</p>
+              </div>
+              <Link href="/prospectos" className="text-xs font-black text-[var(--text-primary-default,#FF6600)] hover:underline">
+                Abrir pipeline →
+              </Link>
+            </div>
+            <div className="space-y-3">
+              {vehiculo.prospectos.map((p: any) => (
+                <Link
+                  key={p.id_prospecto}
+                  href={`/prospectos/${p.id_prospecto}`}
+                  className="flex flex-col md:flex-row md:items-center justify-between gap-3 rounded-xl border border-slate-200 dark:border-slate-800 p-4 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors"
+                >
+                  <div>
+                    <p className="font-black text-slate-900 dark:text-slate-100">{p.nombre}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{p.origen} · {p.telefono || 'Sin teléfono'}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-black text-slate-700 dark:text-slate-300">
+                      {p.estado.replace(/_/g, ' ')}
+                    </span>
+                    {p.cotizaciones?.[0] && (
+                      <DualMoney
+                        usd={p.cotizaciones[0].precio_final_usd}
+                        rate={p.cotizaciones[0].cotizacion_dolar || dolarActual}
+                        compact
+                        primaryClassName="text-xs font-black text-cyan-600 dark:text-cyan-400"
+                        secondaryClassName="text-[9px] text-slate-400"
+                      />
+                    )}
+                  </div>
+                </Link>
+              ))}
+              {vehiculo.prospectos.length === 0 && (
+                <div className="rounded-xl border border-dashed border-slate-200 dark:border-slate-800 p-8 text-center text-sm text-slate-500 dark:text-slate-400">
+                  Sin oportunidades vinculadas.
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+            <h2 className="font-black text-slate-900 dark:text-slate-100 text-lg mb-4">Reservas / señas</h2>
+            <SeniasManager vehiculo={vehiculo} clientes={clientes} />
+          </div>
+        </div>
+      )}
 
-      {activeTab === 'costos' && <div className="grid grid-cols-1 xl:grid-cols-3 gap-5"><div className="xl:col-span-2 bg-white border border-slate-200 rounded-2xl p-5"><TareasManager tareas={vehiculo.tareas} idVehiculo={vehiculo.id_vehiculo} /></div><div className="bg-white border border-slate-200 rounded-2xl p-5 h-fit"><h2 className="font-black text-slate-900 mb-4">Resumen de inversión</h2><div className="space-y-4"><div><p className="text-[10px] uppercase font-black text-slate-400">Compra</p><DualMoney ars={compraArs} usd={compraUsd} rate={dolarActual} /></div><div><p className="text-[10px] uppercase font-black text-slate-400">Gastos operativos</p><DualMoney ars={gastosTareasArs} usd={gastosTareasUsd} rate={dolarActual} /></div><div className="pt-3 border-t"><p className="text-[10px] uppercase font-black text-slate-400">Costo real</p><DualMoney ars={costoTotalArs} usd={costoTotalUsd} rate={dolarActual} primaryClassName="text-xl font-black text-slate-900" /></div></div></div></div>}
+      {activeTab === 'costos' && (
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
+          <div className="xl:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+            <TareasManager tareas={vehiculo.tareas} idVehiculo={vehiculo.id_vehiculo} />
+          </div>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm h-fit">
+            <h2 className="font-black text-slate-900 dark:text-slate-100 text-lg mb-4">Resumen de inversión</h2>
+            <div className="space-y-4">
+              <div>
+                <p className="text-[10px] uppercase font-black text-slate-400 dark:text-slate-500">Compra</p>
+                <DualMoney ars={compraArs} usd={compraUsd} rate={dolarActual} />
+              </div>
+              <div>
+                <p className="text-[10px] uppercase font-black text-slate-400 dark:text-slate-500">Gastos operativos</p>
+                <DualMoney ars={gastosTareasArs} usd={gastosTareasUsd} rate={dolarActual} />
+              </div>
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
+                <p className="text-[10px] uppercase font-black text-slate-400 dark:text-slate-500">Costo real</p>
+                <DualMoney ars={costoTotalArs} usd={costoTotalUsd} rate={dolarActual} primaryClassName="text-xl font-black text-slate-900 dark:text-slate-100" />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
-      {activeTab === 'documentacion' && <div className="grid grid-cols-1 xl:grid-cols-2 gap-5"><div className="bg-white border border-slate-200 rounded-2xl p-5"><div className="flex items-center gap-2 mb-4"><Camera className="w-5 h-5 text-blue-600" /><h2 className="font-black text-slate-900">Fotos y archivos</h2></div><GaleriaFotos fotos={vehiculo.fotos || []} idVehiculo={vehiculo.id_vehiculo} /></div><div className="bg-white border border-slate-200 rounded-2xl p-5"><div className="flex items-center gap-2 mb-4"><MessageSquare className="w-5 h-5 text-slate-600" /><h2 className="font-black text-slate-900">Notas internas</h2></div><AnotacionesManager anotaciones={vehiculo.anotaciones || []} idVehiculo={vehiculo.id_vehiculo} /></div></div>}
+      {activeTab === 'documentacion' && (
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-4 border-b border-slate-100 dark:border-slate-800 pb-3">
+              <Camera className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <h2 className="font-black text-slate-900 dark:text-slate-100 text-lg">Fotos y archivos</h2>
+            </div>
+            <GaleriaFotos fotos={vehiculo.fotos || []} idVehiculo={vehiculo.id_vehiculo} />
+          </div>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-4 border-b border-slate-100 dark:border-slate-800 pb-3">
+              <MessageSquare className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+              <h2 className="font-black text-slate-900 dark:text-slate-100 text-lg">Notas internas</h2>
+            </div>
+            <AnotacionesManager anotaciones={vehiculo.anotaciones || []} idVehiculo={vehiculo.id_vehiculo} />
+          </div>
+        </div>
+      )}
 
-      {activeTab === 'historial' && <div className="bg-white border border-slate-200 rounded-2xl p-5"><div className="flex items-center gap-2 mb-5"><History className="w-5 h-5 text-slate-600" /><div><h2 className="font-black text-slate-900">Timeline 360°</h2><p className="text-xs text-slate-500">Ingreso, tareas, notas, interesados, cotizaciones, reservas, venta y entrega.</p></div></div><div className="space-y-3">{timeline.map((event: any) => <div key={event.id} className="flex gap-3"><div className="w-9 h-9 shrink-0 rounded-full bg-slate-100 flex items-center justify-center">{event.type === 'VENTA' ? <CircleDollarSign className="w-4 h-4 text-emerald-600" /> : event.type === 'RESERVA' ? <Tag className="w-4 h-4 text-orange-600" /> : event.type === 'COTIZACION' ? <BadgeDollarSign className="w-4 h-4 text-cyan-600" /> : event.type === 'ENTREGA' ? <Truck className="w-4 h-4 text-indigo-600" /> : event.type === 'TAREA' ? <Wrench className="w-4 h-4 text-amber-600" /> : <History className="w-4 h-4 text-slate-500" />}</div><div className="flex-1 border-b border-slate-100 pb-3"><div className="flex justify-between gap-3"><p className="text-sm font-bold text-slate-900">{event.title}</p><span className="text-[10px] text-slate-400">{new Date(event.date).toLocaleString('es-AR')}</span></div><p className="text-xs text-slate-500 mt-1">{event.detail}</p></div></div>)}</div></div>}
+      {activeTab === 'historial' && (
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+          <div className="flex items-center gap-2 mb-5 border-b border-slate-100 dark:border-slate-800 pb-3">
+            <History className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+            <div>
+              <h2 className="font-black text-slate-900 dark:text-slate-100 text-lg">Timeline 360°</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Ingreso, tareas, notas, interesados, cotizaciones, reservas, venta y entrega.</p>
+            </div>
+          </div>
+          <div className="space-y-3">
+            {timeline.map((event: any) => (
+              <div key={event.id} className="flex gap-3">
+                <div className="w-9 h-9 shrink-0 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                  {event.type === 'VENTA' ? (
+                    <CircleDollarSign className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  ) : event.type === 'RESERVA' ? (
+                    <Tag className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                  ) : event.type === 'COTIZACION' ? (
+                    <BadgeDollarSign className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                  ) : event.type === 'ENTREGA' ? (
+                    <Truck className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  ) : event.type === 'TAREA' ? (
+                    <Wrench className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  ) : (
+                    <History className="w-4 h-4 text-slate-500" />
+                  )}
+                </div>
+                <div className="flex-1 border-b border-slate-100 dark:border-slate-800/80 pb-3">
+                  <div className="flex justify-between gap-3">
+                    <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{event.title}</p>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500">{new Date(event.date).toLocaleString('es-AR')}</span>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{event.detail}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
