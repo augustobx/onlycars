@@ -7,11 +7,13 @@ import { CarFront } from 'lucide-react';
 export default function PWASplash({
     children,
     logo,
-    initialDolar
+    initialDolar,
+    tenantName,
 }: {
     children: React.ReactNode;
     logo: string | null;
     initialDolar: number;
+    tenantName?: string;
 }) {
     const [showSplash, setShowSplash] = useState(true);
     const { setLogo, setDolar } = useConfigStore();
@@ -44,8 +46,8 @@ export default function PWASplash({
                 </div>
 
                 {!logo && (
-                    <h1 className="text-3xl font-black text-white tracking-tighter z-10">
-                        CarShop<span className="text-[var(--color-brand,#4f46e5)]">ERP</span>
+                    <h1 className="text-2xl font-black text-white tracking-tight z-10 text-center px-4">
+                        {tenantName || 'OnlyCars'}
                     </h1>
                 )}
 

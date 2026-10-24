@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Icono } from './Icono'
-import { INTRO } from './config'
+import { INTRO_DEFAULT, type ConfigIntro } from './config'
 import { NanoLabsMark } from './NanoLabsMark'
 import type { PropsIngreso } from './tipos'
 import { crearCielo } from './escena/cielo'
@@ -17,10 +17,18 @@ const quietoDelSistema = () =>
 export function Login({
   modo,
   ingreso,
+  config,
 }: {
   modo: 'verificando' | 'ingreso' | 'saliendo'
   ingreso?: PropsIngreso
+  config?: Partial<ConfigIntro>
 }) {
+  const conf: ConfigIntro = {
+    producto: config?.producto || INTRO_DEFAULT.producto,
+    area: config?.area || INTRO_DEFAULT.area,
+    bajada: config?.bajada || INTRO_DEFAULT.bajada,
+  }
+
   const lienzo = useRef<HTMLCanvasElement>(null)
   const cielo = useRef<HTMLCanvasElement>(null)
   const escena = useRef<Escena | null>(null)
@@ -61,13 +69,13 @@ export function Login({
       <div className="bh2-vineta" aria-hidden="true" />
 
       <header className="bh2-arriba">
-        <span className="bh2-marca__area">{INTRO.area}</span>
+        <span className="bh2-marca__area">{conf.area}</span>
       </header>
 
       {fase === 'producto' && (
         <div className="bh3-nombre">
-          <h2 className="bh3-nombre__titulo">{INTRO.producto}</h2>
-          <p className="bh3-nombre__bajada">{INTRO.bajada}</p>
+          <h2 className="bh3-nombre__titulo">{conf.producto}</h2>
+          <p className="bh3-nombre__bajada">{conf.bajada}</p>
         </div>
       )}
 
@@ -87,7 +95,11 @@ export function Login({
       </div>
 
       {modo !== 'verificando' && ingreso && (
-        <Tarjeta visible={tarjeta || modo === 'saliendo'} {...ingreso} />
+        <Tarjeta
+          visible={tarjeta || modo === 'saliendo'}
+          producto={conf.producto}
+          {...ingreso}
+        />
       )}
 
       <p className="bh2-pie">NanoLabs · Automotive Cloud · Multi-Tenant Platform</p>
@@ -97,6 +109,7 @@ export function Login({
 
 function Tarjeta({
   visible,
+  producto,
   ambiente,
   error,
   aviso,
@@ -106,7 +119,7 @@ function Tarjeta({
   setPassword,
   loading,
   onSubmit,
-}: PropsIngreso & { visible: boolean }) {
+}: PropsIngreso & { visible: boolean; producto: string }) {
   return (
     <main className={`bh2-tarjeta${visible ? ' bh2-tarjeta--visible' : ''}`} aria-hidden={!visible}>
       <div className="bh2-tarjeta__cuerpo">
@@ -133,7 +146,7 @@ function Tarjeta({
             </div>
             <div>
               <h1 style={{ fontSize: '20px', fontWeight: 700, color: '#1E293B', lineHeight: '1.1' }}>
-                OnlyCars
+                {producto}
               </h1>
               <p style={{ fontSize: '11px', color: '#64748B', fontWeight: 600 }}>
                 Dealer Management System

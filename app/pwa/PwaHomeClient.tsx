@@ -5,7 +5,7 @@ import { CarFront, Calculator, LayoutGrid, UserCircle, ArrowRight, LogOut } from
 import { useConfigStore } from '@/store/useConfigStore';
 import { logoutAction } from '@/actions/auth';
 
-export default function PwaHomeClient({ userName }: { userName: string }) {
+export default function PwaHomeClient({ userName, tenantName }: { userName: string; tenantName?: string }) {
     const { logo } = useConfigStore();
 
     return (
@@ -21,7 +21,7 @@ export default function PwaHomeClient({ userName }: { userName: string }) {
                         <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-black/20" style={{ backgroundColor: 'var(--color-brand)' }}>
                             <CarFront className="w-10 h-10 text-white" />
                         </div>
-                        <h1 className="text-4xl font-black tracking-tighter">CarShop<span style={{ color: 'var(--color-brand)' }}>ERP</span></h1>
+                        <h1 className="text-3xl font-black tracking-tight">{tenantName || 'OnlyCars'}</h1>
                     </>
                 )}
                 <p className="text-slate-400 font-medium mt-2 text-lg">Panel Comercial</p>

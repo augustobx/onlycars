@@ -5,6 +5,7 @@ import './base.css'
 import './login.css'
 import { Login } from './Login'
 import type { PropsIngreso } from './tipos'
+import type { ConfigIntro } from './config'
 
 const MINIMO_MS = 1400
 const SALIDA_MS = 700
@@ -13,9 +14,11 @@ const montada = typeof performance !== 'undefined' ? performance.now() : Date.no
 export function Intro({
   estado,
   ingreso,
+  config,
 }: {
   estado: 'verificando' | 'ingreso' | 'adentro'
   ingreso?: PropsIngreso
+  config?: Partial<ConfigIntro>
 }) {
   const [salida, setSalida] = useState<'no' | 'saliendo' | 'fuera'>('no')
   const [splashListo, setSplashListo] = useState(false)
@@ -46,7 +49,7 @@ export function Intro({
 
   return (
     <div className={adentro ? 'bh2-capa' : undefined}>
-      <Login modo={modo} ingreso={ingreso} />
+      <Login modo={modo} ingreso={ingreso} config={config} />
     </div>
   )
 }

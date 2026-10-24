@@ -51,7 +51,7 @@ export default async function PWALayout({ children }: { children: React.ReactNod
       <style dangerouslySetInnerHTML={{ __html: themeStyles }} />
       <div className="max-w-md mx-auto min-h-screen bg-slate-50 shadow-2xl relative overflow-hidden flex flex-col">
         <ModuleHelpButton variant="floating" />
-        <PWASplash logo={tenant.settings?.logoUrl || null} initialDolar={tenant.settings?.dolarActual || 1400}>
+        <PWASplash logo={tenant.settings?.logoUrl || null} initialDolar={tenant.settings?.dolarActual || 1400} tenantName={tenant.name}>
           {children}
         </PWASplash>
       </div>
