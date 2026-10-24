@@ -491,6 +491,5 @@ export default function CotizadorClient({
         </aside>
       </div>
     </div>
-    </div>
   );
 }
