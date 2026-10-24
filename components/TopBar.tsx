@@ -3,16 +3,18 @@
 import { useEffect, useState } from 'react';
 import { useConfigStore } from '@/store/useConfigStore';
 import { syncDolarApi } from '@/actions/config';
-import { RefreshCw, DollarSign, Loader2, Building2, Settings, BookOpen } from 'lucide-react';
+import { RefreshCw, DollarSign, Loader2, Building2, Settings, BookOpen, Palette } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import ModuleHelpButton from '@/components/ModuleHelpButton';
 
 export default function TopBar({
   initialDolar, initialTipo, initialLogo, tenantName, isSuperAdmin, canSyncDolar = false, canConfigure = false,
+  onSwitchTheme, currentTheme = '1',
 }: {
   initialDolar: number; initialTipo: string; initialLogo: string | null; tenantName?: string; isSuperAdmin?: boolean;
   canSyncDolar?: boolean; canConfigure?: boolean;
+  onSwitchTheme?: (theme: '1' | '2') => void; currentTheme?: '1' | '2';
 }) {
   const router = useRouter();
   const { dolarBlue, setDolar, tipoDolar, setTipoDolar, setLogo } = useConfigStore();
@@ -40,6 +42,20 @@ export default function TopBar({
       <div className="flex items-center gap-3 min-w-0"><div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center shrink-0"><Building2 className="w-4 h-4 text-slate-500" /></div><div className="min-w-0"><p className="text-[10px] uppercase tracking-[0.16em] font-black text-slate-400 leading-none">Concesionaria</p><p className="text-sm font-bold text-slate-800 truncate mt-1">{tenantName || 'OnlyCars'}</p></div>{isSuperAdmin && <span className="hidden lg:inline-flex text-[10px] uppercase tracking-wider font-black px-2 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-100">Plataforma</span>}</div>
 
       <div className="flex items-center gap-2">
+        {onSwitchTheme && (
+          <button
+            type="button"
+            onClick={() => onSwitchTheme('2')}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100 text-xs font-bold transition-all shadow-sm cursor-pointer"
+            title="Probar Tema 2 (NanoLabs Visual)"
+          >
+            <Palette className="w-3.5 h-3.5 text-amber-600" />
+            <span className="hidden md:inline">Probar Tema 2</span>
+            <span className="text-[9px] uppercase px-1 py-0.5 rounded bg-amber-600 text-white font-black tracking-wider">
+              Preview
+            </span>
+          </button>
+        )}
         <div className="hidden sm:flex items-center bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5"><DollarSign className="w-4 h-4 text-emerald-600 mr-2" />{canConfigure ? <Link href="/configuracion" className="flex items-baseline gap-2">{rateContent}</Link> : <div className="flex items-baseline gap-2">{rateContent}</div>}{canSyncDolar && <button onClick={handleSync} disabled={isSyncing} title="Actualizar cotización" className="ml-2 p-1.5 rounded-lg text-slate-400 hover:bg-white hover:text-emerald-600 disabled:opacity-50">{isSyncing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}</button>}</div>
         <Link href="/manual" title="Manual de usuario" className="p-2 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700"><BookOpen className="w-4 h-4" /></Link>
         <ModuleHelpButton />

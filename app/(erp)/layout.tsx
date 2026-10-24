@@ -1,7 +1,7 @@
-import Sidebar from '@/components/Sidebar';
-import TopBar from '@/components/TopBar';
+import ERPThemeShell from '@/components/theme/ERPThemeShell';
 import { getTenantContext } from '@/lib/tenant-context';
 import { getLoggedUser } from '@/lib/user-auth';
+import { cookies } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 
 export default async function ERPLayout({ children }: { children: React.ReactNode }) {
@@ -36,14 +36,27 @@ export default async function ERPLayout({ children }: { children: React.ReactNod
   const initialTipo = tenant.settings?.tipoDolar ?? 'blue';
   const initialLogo = tenant.settings?.logoUrl ?? null;
   const brandPrimary = tenant.settings?.primaryColor ?? '#2563eb';
-  const themeStyles = `:root { --color-brand: ${brandPrimary}; --color-brand-hover: ${brandPrimary}ee; --color-brand-ring: ${brandPrimary}33; }`;
 
-  return <div className="flex min-h-screen bg-slate-50 text-slate-900 font-sans">
-    <style dangerouslySetInnerHTML={{ __html: themeStyles }} />
-    <div className="print:hidden"><Sidebar tenantName={tenant.name} tenantLogo={initialLogo} isSuperAdmin={user.isSuperAdmin} currentRole={currentRole} /></div>
-    <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-      <div className="print:hidden"><TopBar initialDolar={initialDolar} initialTipo={initialTipo} initialLogo={initialLogo} tenantName={tenant.name} isSuperAdmin={user.isSuperAdmin} canConfigure={canConfigure} canSyncDolar={canSyncDolar} /></div>
-      <div className="flex-1 overflow-y-auto">{children}</div>
-    </main>
-  </div>;
+  const cookieStore = await cookies();
+  const cookieTheme = cookieStore.get('onlycars_theme')?.value;
+  const initialTheme = (cookieTheme === '2' ? '2' : '1') as '1' | '2';
+
+  return (
+    <ERPThemeShell
+      initialTheme={initialTheme}
+      tenantName={tenant.name}
+      tenantLogo={initialLogo}
+      isSuperAdmin={user.isSuperAdmin}
+      currentRole={currentRole}
+      canConfigure={canConfigure}
+      canSyncDolar={canSyncDolar}
+      initialDolar={initialDolar}
+      initialTipo={initialTipo}
+      userName={user.name || user.email.split('@')[0]}
+      userEmail={user.email}
+      brandPrimary={brandPrimary}
+    >
+      {children}
+    </ERPThemeShell>
+  );
 }
