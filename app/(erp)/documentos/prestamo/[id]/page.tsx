@@ -102,11 +102,6 @@ export default async function BoletoPrestamoPage({
             <p>
               <strong>Domicilio:</strong> {concesionaria.direccion}
             </p>
-            {prestamo.location && (
-              <p>
-                <strong>Sucursal:</strong> {prestamo.location.name}
-              </p>
-            )}
           </div>
           <div>
             <p className="font-black text-slate-900 uppercase tracking-wider mb-1">

@@ -62,7 +62,6 @@ export async function obtenerDatosBoletoPrestamo(id_prestamo: number) {
     include: {
       cliente: true,
       cuotas: { orderBy: { numero_cuota: 'asc' } },
-      location: true,
     },
   });
   if (!prestamo) throw new Error('Préstamo no encontrado.');
