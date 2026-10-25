@@ -1,19 +1,19 @@
 {
-  "name": "CarShop ERP",
-  "short_name": "CarShop ERP",
-  "description": "Sistema Avanzado de Gestión de Agencia de Vehículos",
-  "start_url": "/",
+  "name": "OnlyCars · Automotive Cloud",
+  "short_name": "OnlyCars",
+  "description": "Sistema de Gestión Automotriz, Ventas, Cuotas y Financiación",
+  "start_url": "/pwa",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#000000",
+  "background_color": "#0b0f19",
+  "theme_color": "#0f172a",
   "icons": [
     {
-      "src": "/icon-192x192.png",
+      "src": "/icons/admin-192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/icon-512x512.png",
+      "src": "/icons/admin-512.png",
       "sizes": "512x512",
       "type": "image/png"
     }

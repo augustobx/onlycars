@@ -6,10 +6,28 @@ import { notFound, redirect } from 'next/navigation';
 import PWASplash from './PWASplash';
 import ModuleHelpButton from '@/components/ModuleHelpButton';
 
-export const metadata: Metadata = {
-  title: 'OnlyCars Sales',
-  description: 'Gestión comercial móvil para concesionarias',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  let tenantName = 'OnlyCars';
+  try {
+    const tenant = await getTenantContext();
+    tenantName = tenant.name;
+  } catch {}
+
+  return {
+    title: `${tenantName} · Ventas Móvil`,
+    description: 'Gestión comercial móvil para concesionarias',
+    manifest: '/api/pwa/manifest/seller',
+    icons: {
+      icon: '/icons/seller-192.png',
+      apple: '/icons/seller-192.png',
+    },
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: 'black-translucent',
+      title: `${tenantName.slice(0, 8)} Ventas`,
+    },
+  };
+}
 
 export const viewport: Viewport = {
   width: 'device-width',

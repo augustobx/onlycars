@@ -6,6 +6,7 @@ import { BookmarkCheck, CarFront, Search } from 'lucide-react';
 import { useConfigStore } from '@/store/useConfigStore';
 import type { SellerPwaConfig } from '@/lib/seller-pwa-config';
 import PwaBottomNav from '../PwaBottomNav';
+import PwaInstallPrompt from '@/components/pwa/PwaInstallPrompt';
 
 export default function DashboardMobileClient({ vehiculos, pwaConfig }: { vehiculos: any[]; pwaConfig: SellerPwaConfig }) {
   const { dolarBlue } = useConfigStore();
@@ -49,6 +50,7 @@ export default function DashboardMobileClient({ vehiculos, pwaConfig }: { vehicu
         ))}
       </main>
 
+      <PwaInstallPrompt appType="seller" />
       <PwaBottomNav active="stock" />
     </div>
   );

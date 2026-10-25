@@ -18,6 +18,7 @@ import {
   Percent,
 } from 'lucide-react';
 import PwaBottomNav from '../PwaBottomNav';
+import PwaInstallPrompt from '@/components/pwa/PwaInstallPrompt';
 import { registrarPrestamo } from '@/actions/prestamos';
 import { registrarPagoCuotaPrestamo } from '@/actions/cuotas';
 import { useRouter } from 'next/navigation';
@@ -645,6 +646,9 @@ export default function PwaPrestamosClient({
           </div>
         </div>
       )}
+
+      {/* PWA INSTALL PROMPT (ADMIN) */}
+      <PwaInstallPrompt appType="admin" appName={tenantName} />
 
       {/* BOTTOM NAV BAR */}
       <PwaBottomNav active="prestamos" />

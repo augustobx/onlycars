@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { CarFront, Calculator, LayoutGrid, UserCircle, ArrowRight, LogOut } from 'lucide-react';
 import { useConfigStore } from '@/store/useConfigStore';
 import { logoutAction } from '@/actions/auth';
+import PwaInstallPrompt from '@/components/pwa/PwaInstallPrompt';
 
 export default function PwaHomeClient({ userName, tenantName }: { userName: string; tenantName?: string }) {
     const { logo } = useConfigStore();
@@ -94,6 +95,8 @@ export default function PwaHomeClient({ userName, tenantName }: { userName: stri
                     </button>
                 </div>
             </div>
+
+            <PwaInstallPrompt appType="seller" appName={tenantName} />
         </div>
     );
 }

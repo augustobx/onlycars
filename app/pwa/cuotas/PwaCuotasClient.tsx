@@ -15,6 +15,7 @@ import {
   FileText,
 } from 'lucide-react';
 import PwaBottomNav from '../PwaBottomNav';
+import PwaInstallPrompt from '@/components/pwa/PwaInstallPrompt';
 import { registrarPagoCuota, registrarPagoCuotaPrestamo } from '@/actions/cuotas';
 import { useRouter } from 'next/navigation';
 
@@ -458,6 +459,9 @@ export default function PwaCuotasClient({
           </div>
         </div>
       )}
+
+      {/* PWA INSTALL PROMPT (ADMIN) */}
+      <PwaInstallPrompt appType="admin" appName={tenantName} />
 
       {/* BOTTOM NAV BAR */}
       <PwaBottomNav active="cuotas" />

@@ -4,12 +4,32 @@ import { getTenantContext } from '@/lib/tenant-context';
 import { CLIENT_PWA_FEATURE_KEY } from '@/lib/client-pwa-config';
 import { getLoggedCliente } from '@/lib/client-auth';
 import PortalBottomNav from './PortalBottomNav';
+import PortalSplash from './PortalSplash';
+import PwaInstallPrompt from '@/components/pwa/PwaInstallPrompt';
 import { ShieldAlert, Phone, Sparkles } from 'lucide-react';
 
-export const metadata: Metadata = {
-  title: 'Portal Clientes',
-  description: 'Consulta de cuotas, préstamos y catálogo de unidades',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  let tenantName = 'OnlyCars';
+  try {
+    const tenant = await getTenantContext();
+    tenantName = tenant.name;
+  } catch {}
+
+  return {
+    title: `${tenantName} · Portal Clientes`,
+    description: 'Consulta de cuotas, préstamos y catálogo de unidades',
+    manifest: '/api/pwa/manifest/client',
+    icons: {
+      icon: '/icons/client-192.png',
+      apple: '/icons/client-192.png',
+    },
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: 'black-translucent',
+      title: `${tenantName.slice(0, 8)} Clientes`,
+    },
+  };
+}
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -63,51 +83,62 @@ export default async function PortalLayout({ children }: { children: React.React
   const brandColor = tenant.settings?.primaryColor || '#10b981';
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 antialiased select-none">
-      <div className="max-w-md mx-auto min-h-screen bg-slate-900 border-x border-slate-800/60 shadow-2xl flex flex-col relative pb-20">
-        <header className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {tenant.settings?.logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={tenant.settings.logoUrl}
-                alt={tenant.name}
-                className="w-8 h-8 rounded-lg object-contain bg-slate-800 p-1 border border-slate-700"
-              />
-            ) : (
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs text-white"
-                style={{ backgroundColor: brandColor }}
-              >
-                {tenant.name.slice(0, 2).toUpperCase()}
+    <>
+      <link rel="manifest" href="/api/pwa/manifest/client" />
+      <link rel="apple-touch-icon" href="/icons/client-192.png" />
+      <div className="min-h-screen bg-slate-950 text-slate-100 antialiased select-none">
+        <div className="max-w-md mx-auto min-h-screen bg-slate-900 border-x border-slate-800/60 shadow-2xl flex flex-col relative pb-20">
+          <PortalSplash
+            logo={tenant.settings?.logoUrl || null}
+            tenantName={tenant.name}
+            brandColor={brandColor}
+          >
+            <header className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 px-4 py-3 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {tenant.settings?.logoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={tenant.settings.logoUrl}
+                    alt={tenant.name}
+                    className="w-8 h-8 rounded-lg object-contain bg-slate-800 p-1 border border-slate-700"
+                  />
+                ) : (
+                  <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs text-white"
+                    style={{ backgroundColor: brandColor }}
+                  >
+                    {tenant.name.slice(0, 2).toUpperCase()}
+                  </div>
+                )}
+                <div>
+                  <p className="text-xs font-black text-white leading-none tracking-tight">{tenant.name}</p>
+                  <p className="text-[10px] text-emerald-400 font-bold leading-none mt-1">Portal Clientes</p>
+                </div>
               </div>
-            )}
-            <div>
-              <p className="text-xs font-black text-white leading-none tracking-tight">{tenant.name}</p>
-              <p className="text-[10px] text-emerald-400 font-bold leading-none mt-1">Portal Clientes</p>
-            </div>
-          </div>
 
-          <div>
-            {currentCliente ? (
-              <span className="text-[11px] font-bold text-slate-300 bg-slate-800/80 px-2.5 py-1 rounded-full border border-slate-700">
-                {currentCliente.nombre_completo.split(' ')[0]}
-              </span>
-            ) : (
-              <a
-                href="/portal/login"
-                className="text-[11px] font-black text-white px-3 py-1.5 rounded-xl border border-emerald-500/30 bg-emerald-600/20 hover:bg-emerald-600/30 transition"
-              >
-                Ingresar
-              </a>
-            )}
-          </div>
-        </header>
+              <div>
+                {currentCliente ? (
+                  <span className="text-[11px] font-bold text-slate-300 bg-slate-800/80 px-2.5 py-1 rounded-full border border-slate-700">
+                    {currentCliente.nombre_completo.split(' ')[0]}
+                  </span>
+                ) : (
+                  <a
+                    href="/portal/login"
+                    className="text-[11px] font-black text-white px-3 py-1.5 rounded-xl border border-emerald-500/30 bg-emerald-600/20 hover:bg-emerald-600/30 transition"
+                  >
+                    Ingresar
+                  </a>
+                )}
+              </div>
+            </header>
 
-        <main className="flex-1 flex flex-col">{children}</main>
+            <main className="flex-1 flex flex-col">{children}</main>
 
-        <PortalBottomNav isLoggedIn={Boolean(currentCliente)} />
+            <PwaInstallPrompt appType="client" appName={tenant.name} />
+            <PortalBottomNav isLoggedIn={Boolean(currentCliente)} />
+          </PortalSplash>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

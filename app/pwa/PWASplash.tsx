@@ -1,66 +1,117 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { useConfigStore } from '@/store/useConfigStore';
-import { CarFront } from 'lucide-react';
+import { CarFront, ShieldCheck, UserCheck } from 'lucide-react';
 
 export default function PWASplash({
-    children,
-    logo,
-    initialDolar,
-    tenantName,
+  children,
+  logo,
+  initialDolar,
+  tenantName,
+  variant,
 }: {
-    children: React.ReactNode;
-    logo: string | null;
-    initialDolar: number;
-    tenantName?: string;
+  children: React.ReactNode;
+  logo: string | null;
+  initialDolar: number;
+  tenantName?: string;
+  variant?: 'admin' | 'seller' | 'client';
 }) {
-    const [showSplash, setShowSplash] = useState(true);
-    const { setLogo, setDolar } = useConfigStore();
+  const pathname = usePathname();
+  const [showSplash, setShowSplash] = useState(true);
+  const { setLogo, setDolar } = useConfigStore();
 
-    useEffect(() => {
-        // Hidratamos el estado global con los datos que vienen del servidor
-        if (logo) setLogo(logo);
-        if (initialDolar) setDolar(initialDolar);
+  const effectiveVariant: 'admin' | 'seller' | 'client' =
+    variant ||
+    (pathname?.includes('/admin') || pathname?.includes('/cuotas') || pathname?.includes('/prestamos')
+      ? 'admin'
+      : pathname?.includes('/portal')
+      ? 'client'
+      : 'seller');
 
-        // El splash dura 1.5 segundos y luego desaparece suavemente
-        const timer = setTimeout(() => setShowSplash(false), 1500);
-        return () => clearTimeout(timer);
-    }, [logo, initialDolar, setLogo, setDolar]);
+  useEffect(() => {
+    if (logo) setLogo(logo);
+    if (initialDolar) setDolar(initialDolar);
 
-    return (
-        <>
-            {/* PANTALLA DE CARGA (SPLASH SCREEN) */}
-            <div className={`absolute inset-0 z-[100] bg-slate-900 flex flex-col items-center justify-center transition-opacity duration-500 ${showSplash ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                {/* Luz de fondo con el color de tu marca */}
-                <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--color-brand,#4f46e5)] rounded-full blur-[120px] opacity-30 -translate-y-1/2 translate-x-1/2"></div>
+    const timer = setTimeout(() => setShowSplash(false), 1400);
+    return () => clearTimeout(timer);
+  }, [logo, initialDolar, setLogo, setDolar]);
 
-                <div className="w-40 h-40 flex items-center justify-center mb-6 animate-pulse z-10">
-                    {logo ? (
-                        <img src={logo} alt="Logo" className="max-w-full max-h-full object-contain drop-shadow-2xl" />
-                    ) : (
-                        <div className="w-24 h-24 bg-[var(--color-brand,#4f46e5)] rounded-3xl flex items-center justify-center shadow-lg shadow-[var(--color-brand,#4f46e5)]/30">
-                            <CarFront className="w-12 h-12 text-white" />
-                        </div>
-                    )}
-                </div>
+  const config = {
+    admin: {
+      badge: 'Panel Administrador',
+      badgeClass: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+      subtitle: 'Cuotas, Préstamos y Finanzas',
+      glowColor: 'rgba(16, 185, 129, 0.25)',
+      Icon: ShieldCheck,
+      iconColor: 'bg-emerald-600',
+    },
+    seller: {
+      badge: 'Comercial & Ventas',
+      badgeClass: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
+      subtitle: 'Stock en Vivo, Cotizador y Operaciones',
+      glowColor: 'rgba(234, 88, 12, 0.25)',
+      Icon: CarFront,
+      iconColor: 'bg-orange-600',
+    },
+    client: {
+      badge: 'Portal Clientes',
+      badgeClass: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
+      subtitle: 'Mis Cuotas, Préstamos y Catálogo Digital',
+      glowColor: 'rgba(2, 132, 199, 0.25)',
+      Icon: UserCheck,
+      iconColor: 'bg-cyan-600',
+    },
+  }[effectiveVariant];
 
-                {!logo && (
-                    <h1 className="text-2xl font-black text-white tracking-tight z-10 text-center px-4">
-                        {tenantName || 'OnlyCars'}
-                    </h1>
-                )}
+  const IconComp = config.Icon;
 
-                {/* Puntitos de carga animados */}
-                <div className="mt-8 flex gap-2 z-10">
-                    <div className="w-2 h-2 rounded-full bg-[var(--color-brand,#4f46e5)] animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                    <div className="w-2 h-2 rounded-full bg-[var(--color-brand,#4f46e5)] animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                    <div className="w-2 h-2 rounded-full bg-[var(--color-brand,#4f46e5)] animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                </div>
+  return (
+    <>
+      {/* PANTALLA DE CARGA (SPLASH SCREEN) */}
+      <div
+        className={`absolute inset-0 z-[100] bg-slate-950 flex flex-col items-center justify-center transition-opacity duration-500 ${
+          showSplash ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+      >
+        {/* Glow de fondo animado */}
+        <div
+          className="absolute w-80 h-80 rounded-full blur-[140px] opacity-40 pointer-events-none -translate-y-12"
+          style={{ backgroundColor: config.glowColor }}
+        />
+
+        <div className="w-32 h-32 flex items-center justify-center mb-5 animate-pulse z-10">
+          {logo ? (
+            <img src={logo} alt="Logo" className="max-w-full max-h-full object-contain drop-shadow-2xl" />
+          ) : (
+            <div className={`w-20 h-20 ${config.iconColor} rounded-3xl flex items-center justify-center shadow-2xl`}>
+              <IconComp className="w-10 h-10 text-white" />
             </div>
+          )}
+        </div>
 
-            {/* CONTENIDO REAL DE LA PWA (Atrás del Splash) */}
-            {children}
-        </>
-    );
+        <div className="text-center px-4 z-10 space-y-1.5">
+          <span className={`text-[10px] uppercase tracking-widest font-black px-2.5 py-1 rounded-full border ${config.badgeClass} inline-block`}>
+            {config.badge}
+          </span>
+          <h1 className="text-2xl font-black text-white tracking-tight">
+            {tenantName || 'OnlyCars'}
+          </h1>
+          <p className="text-xs text-slate-400 font-medium">
+            {config.subtitle}
+          </p>
+        </div>
+
+        {/* Indicadores de carga */}
+        <div className="mt-8 flex gap-2 z-10">
+          <div className="w-2 h-2 rounded-full bg-white/40 animate-bounce" style={{ animationDelay: '0ms' }} />
+          <div className="w-2 h-2 rounded-full bg-white/70 animate-bounce" style={{ animationDelay: '150ms' }} />
+          <div className="w-2 h-2 rounded-full bg-white animate-bounce" style={{ animationDelay: '300ms' }} />
+        </div>
+      </div>
+
+      {children}
+    </>
+  );
 }
