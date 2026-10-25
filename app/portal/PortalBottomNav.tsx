@@ -75,15 +75,15 @@ export default function PortalBottomNav({ isLoggedIn, config }: PortalBottomNavP
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-slate-950/95 backdrop-blur-xl border-t border-slate-800/80 px-2 py-1.5 max-w-md mx-auto shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
-      <div className="flex items-center justify-around w-full gap-1">
+    <nav className="fixed bottom-0 inset-x-0 z-50 bg-slate-950/95 backdrop-blur-xl border-t border-slate-800/80 px-1.5 sm:px-2 py-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] max-w-lg mx-auto shadow-[0_-10px_30px_rgba(0,0,0,0.5)] md:hidden">
+      <div className="flex items-center justify-around w-full gap-0.5 sm:gap-1">
         {navItems.map((item) => {
           const Icon = item.icon;
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex-1 flex flex-col items-center justify-center py-1.5 px-1 rounded-2xl transition-all duration-200 active:scale-95 ${
+              className={`flex-1 flex flex-col items-center justify-center py-1 px-0.5 sm:py-1.5 sm:px-1 rounded-xl transition-all duration-200 active:scale-95 ${
                 item.active
                   ? 'font-black border shadow-sm'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60 font-semibold border-transparent'

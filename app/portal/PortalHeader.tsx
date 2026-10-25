@@ -10,7 +10,6 @@ import {
   Home,
   LogIn,
   LogOut,
-  ShieldCheck,
   TrendingUp,
   User,
 } from 'lucide-react';
@@ -77,34 +76,37 @@ export default function PortalHeader({
   const activeGradient = palette.gradient || 'linear-gradient(135deg, #FF8A2B, #E25700)';
 
   return (
-    <header className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-xl border-b border-slate-800/80 transition-all duration-200">
-      <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
-        {/* Marca / Identidad */}
-        <Link href="/portal" className="flex items-center gap-3 group flex-shrink-0">
+    <header className="sticky top-0 z-40 w-full max-w-full overflow-hidden bg-slate-950/95 backdrop-blur-xl border-b border-slate-800/80 transition-all duration-200">
+      <div className="w-full max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3 flex items-center justify-between gap-2 sm:gap-4 min-w-0">
+        {/* Marca / Identidad (flex y min-w-0 para nunca desbordar) */}
+        <Link
+          href="/portal"
+          className="flex items-center gap-2.5 group min-w-0 flex-1 max-w-[calc(100%-110px)] sm:max-w-none"
+        >
           {logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={logoUrl}
               alt={tenantName}
-              className="w-9 h-9 rounded-xl object-contain bg-slate-900 p-1 border border-slate-800 shadow-md group-hover:scale-105 transition"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl object-contain bg-slate-900 p-1 border border-slate-800 shadow-sm flex-shrink-0 group-hover:scale-105 transition"
             />
           ) : (
             <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-xs text-white shadow-md group-hover:scale-105 transition"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center font-black text-xs text-white shadow-sm flex-shrink-0 group-hover:scale-105 transition"
               style={{ background: activeGradient, boxShadow: `0 4px 12px ${palette.glow}` }}
             >
               {tenantName.slice(0, 2).toUpperCase()}
             </div>
           )}
-          <div>
-            <p className="text-sm font-black text-white leading-none tracking-tight group-hover:text-slate-200 transition">
+          <div className="min-w-0 flex-1">
+            <p className="text-xs sm:text-sm font-black text-white leading-tight truncate group-hover:text-slate-200 transition">
               {tenantName}
             </p>
             <p
-              className="text-[10px] font-bold leading-none mt-1"
+              className="text-[9px] sm:text-[10px] font-bold leading-none mt-0.5 truncate"
               style={{ color: palette.primary }}
             >
-              Portal Oficial de Clientes
+              Portal Clientes
             </p>
           </div>
         </Link>
@@ -139,7 +141,7 @@ export default function PortalHeader({
         </nav>
 
         {/* Acciones Derecha (Dólar, Perfil, Salir/Ingresar) */}
-        <div className="flex items-center gap-2.5 flex-shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 flex-shrink-0">
           {dolarActual > 0 && (
             <div className="hidden sm:flex items-center gap-1.5 text-[11px] font-mono font-bold text-slate-300 bg-slate-900/90 border border-slate-800 px-2.5 py-1 rounded-xl shadow-inner">
               <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
@@ -149,16 +151,16 @@ export default function PortalHeader({
           )}
 
           {currentCliente ? (
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2 bg-slate-900/90 border border-slate-800 rounded-full py-1 pl-1.5 pr-3 shadow-sm">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <div className="flex items-center gap-1.5 bg-slate-900/90 border border-slate-800 rounded-full py-1 pl-1 pr-2.5 shadow-sm max-w-[120px] sm:max-w-[160px]">
                 <div
-                  className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black text-white"
+                  className="w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] font-black text-white flex-shrink-0"
                   style={{ background: activeGradient }}
                 >
-                  <User className="w-3.5 h-3.5" />
+                  <User className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                 </div>
-                <div className="leading-tight text-left">
-                  <span className="text-xs font-bold text-white block truncate max-w-[120px]">
+                <div className="leading-tight text-left min-w-0">
+                  <span className="text-[11px] sm:text-xs font-bold text-white block truncate">
                     {currentCliente.nombre_completo.split(' ')[0]}
                   </span>
                 </div>
@@ -167,20 +169,20 @@ export default function PortalHeader({
               <form action="/api/portal/logout" method="POST">
                 <button
                   type="submit"
-                  className="p-2 rounded-xl bg-slate-900 hover:bg-red-500/10 text-slate-400 hover:text-red-400 border border-slate-800 hover:border-red-500/30 transition shadow-sm"
+                  className="p-1.5 sm:p-2 rounded-xl bg-slate-900 hover:bg-red-500/10 text-slate-400 hover:text-red-400 border border-slate-800 hover:border-red-500/30 transition shadow-sm"
                   title="Cerrar sesión"
                 >
-                  <LogOut className="w-4 h-4" />
+                  <LogOut className="w-3.5 h-3.5" />
                 </button>
               </form>
             </div>
           ) : (
             <Link
               href="/portal/login"
-              className="text-xs font-black text-white px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 active:scale-95 shadow-md"
+              className="text-xs font-black text-white px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl transition flex items-center gap-1.5 active:scale-95 shadow-sm whitespace-nowrap"
               style={{
                 background: activeGradient,
-                boxShadow: `0 4px 12px ${palette.glow}`,
+                boxShadow: `0 2px 8px ${palette.glow}`,
               }}
             >
               <LogIn className="w-3.5 h-3.5" />

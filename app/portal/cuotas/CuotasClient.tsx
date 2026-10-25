@@ -55,10 +55,10 @@ export default function CuotasClient({
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4 sm:space-y-5 min-w-0">
       <div className="space-y-1">
-        <h1 className="text-2xl font-black text-white flex items-center gap-2">
-          <FileText className="w-6 h-6" style={{ color: 'var(--color-brand, #ff6600)' }} /> Mis Planes de Cuotas
+        <h1 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2 truncate">
+          <FileText className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" style={{ color: 'var(--color-brand, #ff6600)' }} /> Mis Planes de Cuotas
         </h1>
         <p className="text-xs text-slate-400">
           Consulta de pagos realizados, cuotas pendientes y próximos vencimientos.

@@ -39,11 +39,11 @@ export default function CatalogoClient({
   const cleanPhone = whatsappContacto.replace(/[^0-9]/g, '');
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4 sm:space-y-5 min-w-0">
       {/* Encabezado */}
       <div className="space-y-1">
-        <h1 className="text-2xl font-black text-white flex items-center gap-2">
-          <Car className="w-6 h-6" style={{ color: 'var(--color-brand, #ff6600)' }} /> Catálogo de Unidades
+        <h1 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2 truncate">
+          <Car className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" style={{ color: 'var(--color-brand, #ff6600)' }} /> Catálogo de Unidades
         </h1>
         <p className="text-xs text-slate-400">
           Stock disponible en <strong className="text-slate-200">{agencyName}</strong> para entrega inmediata con garantía.

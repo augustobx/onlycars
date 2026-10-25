@@ -128,7 +128,7 @@ export default async function PortalLayout({ children }: { children: React.React
       <link rel="manifest" href="/api/pwa/manifest/client" />
       <link rel="apple-touch-icon" href="/icons/client-192.png" />
       <style dangerouslySetInnerHTML={{ __html: themeStyles }} />
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-orange-500/20 selection:text-orange-200">
+      <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-orange-500/20 selection:text-orange-200">
         <PortalSplash
           logo={tenant.settings?.logoUrl || null}
           tenantName={tenant.name}
@@ -145,7 +145,7 @@ export default async function PortalLayout({ children }: { children: React.React
           />
 
           {/* Área Principal de Contenido Responsiva */}
-          <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex flex-col pb-24 md:pb-8">
+          <main className="flex-1 w-full max-w-5xl mx-auto px-3.5 sm:px-6 lg:px-8 py-3.5 sm:py-6 flex flex-col pb-24 md:pb-8 min-w-0">
             {children}
           </main>
 

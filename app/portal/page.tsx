@@ -86,25 +86,25 @@ export default async function PortalHomePage() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 min-w-0">
       {/* Saludo y Estado Principal */}
-      <section className="rounded-3xl bg-gradient-to-br from-slate-900 via-slate-850 to-slate-950 border border-slate-800 p-6 shadow-xl relative overflow-hidden">
+      <section className="rounded-2xl sm:rounded-3xl bg-gradient-to-br from-slate-900 via-slate-850 to-slate-950 border border-slate-800 p-4 sm:p-6 shadow-xl relative overflow-hidden">
         <div
           className="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl pointer-events-none opacity-20"
           style={{ backgroundColor: palette.primary }}
         />
 
         {currentCliente ? (
-          <div className="space-y-4 relative z-10">
+          <div className="space-y-3.5 relative z-10">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <p
-                  className="text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5"
+                  className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5"
                   style={{ color: palette.primary }}
                 >
-                  <ShieldCheck className="w-4 h-4" /> Cliente Verificado
+                  <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Cliente Verificado
                 </p>
-                <h1 className="text-2xl font-black text-white mt-1">
+                <h1 className="text-xl sm:text-2xl font-black text-white mt-1">
                   ¡Hola, {currentCliente.nombre_completo}!
                 </h1>
                 <p className="text-xs text-slate-400 mt-0.5">DNI: {currentCliente.dni || 'Sin registrar'}</p>
@@ -123,20 +123,20 @@ export default async function PortalHomePage() {
             </div>
 
             {/* Resumen rápido de métricas */}
-            <div className="grid grid-cols-3 gap-3 pt-3 border-t border-slate-800/80 text-center">
-              <div className="p-3 rounded-2xl bg-slate-950/70 border border-slate-800 shadow-sm">
-                <p className="text-xl font-black text-white font-mono">{cuotasPendientesCount}</p>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">Cuotas pend.</p>
+            <div className="grid grid-cols-3 gap-2 sm:gap-3 pt-3 border-t border-slate-800/80 text-center">
+              <div className="p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-slate-950/70 border border-slate-800 shadow-sm">
+                <p className="text-lg sm:text-xl font-black text-white font-mono">{cuotasPendientesCount}</p>
+                <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">Cuotas pend.</p>
               </div>
-              <div className="p-3 rounded-2xl bg-slate-950/70 border border-slate-800 shadow-sm">
-                <p className="text-xl font-black font-mono" style={{ color: palette.primary }}>
+              <div className="p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-slate-950/70 border border-slate-800 shadow-sm">
+                <p className="text-lg sm:text-xl font-black font-mono" style={{ color: palette.primary }}>
                   {prestamosActivosCount}
                 </p>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">Préstamos</p>
+                <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">Préstamos</p>
               </div>
-              <div className="p-3 rounded-2xl bg-slate-950/70 border border-slate-800 shadow-sm">
-                <p className="text-xl font-black text-indigo-400 font-mono">{solicitudesPendientesCount}</p>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">En trámite</p>
+              <div className="p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-slate-950/70 border border-slate-800 shadow-sm">
+                <p className="text-lg sm:text-xl font-black text-indigo-400 font-mono">{solicitudesPendientesCount}</p>
+                <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">En trámite</p>
               </div>
             </div>
           </div>
