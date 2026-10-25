@@ -1,8 +1,26 @@
+import type { Metadata } from 'next';
 import { prisma as db } from '@/lib/prisma';
 import { getTenantContext } from '@/lib/tenant-context';
 import PwaCuotasClient from './PwaCuotasClient';
 
 export const dynamic = 'force-dynamic';
+
+export async function generateMetadata(): Promise<Metadata> {
+  let tenantName = 'OnlyCars';
+  try {
+    const tenant = await getTenantContext();
+    tenantName = tenant.name;
+  } catch {}
+
+  return {
+    title: `${tenantName} · Cuotas Móvil`,
+    manifest: '/api/pwa/manifest/admin',
+    icons: {
+      icon: '/icons/admin-192.png',
+      apple: '/icons/admin-192.png',
+    },
+  };
+}
 
 export default async function PwaCuotasPage() {
   const tenant = await getTenantContext();

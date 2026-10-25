@@ -16,6 +16,9 @@ export function middleware(request: NextRequest) {
 
   const isPublicPath =
     path === "/login" ||
+    path === "/manifest.json" ||
+    path.startsWith("/api/pwa/") ||
+    path.startsWith("/icons/") ||
     path.startsWith("/api/health") ||
     path.startsWith("/api/internal/caddy/ask") ||
     path.startsWith("/_next") ||
@@ -23,7 +26,13 @@ export function middleware(request: NextRequest) {
     path.startsWith("/uploads");
 
   if (isPublicPath) {
-    return NextResponse.next();
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-tenant-host", host || "localhost");
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
   }
 
   const isPortalPath =
