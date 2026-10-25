@@ -33,10 +33,146 @@ export async function cambiarEstadoTarea(idTarea: number, nuevoEstado: 'PENDIENT
     const tarea = await db.tarea.findFirst({ where: { id_tarea: idTarea, tenantId: tenant.id, id_vehiculo: idVehiculo } });
     if (!tarea) return { success: false, error: 'Tarea inexistente.' };
     await db.tarea.update({ where: { id_tarea: idTarea }, data: { estado_tarea: nuevoEstado, fecha_fin: nuevoEstado === 'COMPLETADA' ? new Date() : null } });
-    revalidatePath(`/vehiculos/${idVehiculo}`); revalidatePath('/vehiculos'); revalidatePath('/motos');
+    revalidatePath(`/vehiculos/${idVehiculo}`);
+    revalidatePath('/vehiculos');
+    revalidatePath('/motos');
     return { success: true };
-  } catch { return { success: false, error: 'Error al actualizar tarea.' }; }
+  } catch {
+    return { success: false, error: 'Error al actualizar tarea.' };
+  }
 }
+
+export async function editarTarea(idTarea: number, idVehiculo: number, nuevaDescripcion: string) {
+  try {
+    const tenant = await getTenantContext();
+    const { user } = await requireTenantRole(tenant.id, WORKSHOP_ROLES);
+    const text = nuevaDescripcion?.trim();
+    if (!text) return { success: false, error: 'La descripción de la tarea no puede estar vacía.' };
+
+    const tarea = await db.tarea.findFirst({
+      where: { id_tarea: idTarea, tenantId: tenant.id, id_vehiculo: idVehiculo },
+    });
+    if (!tarea) return { success: false, error: 'Tarea inexistente.' };
+
+    const descripcionAnterior = tarea.descripcion;
+    if (descripcionAnterior === text) return { success: true };
+
+    const usuarioNombre = user.name || user.email || 'Usuario';
+
+    await db.$transaction(async (tx) => {
+      await tx.tarea.update({
+        where: { id_tarea: idTarea },
+        data: { descripcion: text },
+      });
+
+      await tx.anotacion.create({
+        data: {
+          tenantId: tenant.id,
+          id_vehiculo: idVehiculo,
+          userId: user.id,
+          texto: `[BITÁCORA] Tarea editada por ${usuarioNombre}: "${descripcionAnterior}" ➔ "${text}"`,
+        },
+      });
+
+      await tx.platformAuditLog.create({
+        data: {
+          tenantId: tenant.id,
+          userId: user.id,
+          action: 'TAREA_EDITADA',
+          resource: `vehiculo:${idVehiculo}/tarea:${idTarea}`,
+          details: {
+            anterior: descripcionAnterior,
+            nueva: text,
+            modificadoPor: usuarioNombre,
+          },
+        },
+      });
+    });
+
+    revalidatePath(`/vehiculos/${idVehiculo}`);
+    revalidatePath('/vehiculos');
+    revalidatePath('/motos');
+    return { success: true };
+  } catch (error) {
+    console.error('Error editando tarea:', error);
+    return { success: false, error: 'Error al editar la tarea.' };
+  }
+}
+
+export async function eliminarTarea(idTarea: number, idVehiculo: number) {
+  try {
+    const tenant = await getTenantContext();
+    const { user } = await requireTenantRole(tenant.id, WORKSHOP_ROLES);
+
+    const tarea = await db.tarea.findFirst({
+      where: { id_tarea: idTarea, tenantId: tenant.id, id_vehiculo: idVehiculo },
+    });
+    if (!tarea) return { success: false, error: 'Tarea inexistente.' };
+
+    const vehiculo = await vehicleForTenant(idVehiculo, tenant.id);
+    const gastos = await db.gasto.findMany({
+      where: { tenantId: tenant.id, id_vehiculo: idVehiculo, categoria: `Taller / Tarea #${idTarea}` },
+    });
+
+    const totalGastosUsd = gastos.reduce((sum, g) => sum + Number(g.monto_usd || 0), 0);
+    const usuarioNombre = user.name || user.email || 'Usuario';
+
+    await db.$transaction(async (tx) => {
+      if (gastos.length > 0) {
+        await tx.gasto.deleteMany({
+          where: { tenantId: tenant.id, id_vehiculo: idVehiculo, categoria: `Taller / Tarea #${idTarea}` },
+        });
+
+        if (vehiculo && totalGastosUsd > 0) {
+          const nuevosGastosPrep = Math.max(0, Number(vehiculo.gastos_preparacion_usd || 0) - totalGastosUsd);
+          await tx.vehiculo.update({
+            where: { id_vehiculo: idVehiculo },
+            data: {
+              gastos_preparacion_usd: nuevosGastosPrep,
+              costo_total_real_usd: Number(vehiculo.precio_compra_usd || 0) + nuevosGastosPrep + Number(vehiculo.gastos_gestoria_usd || 0),
+            },
+          });
+        }
+      }
+
+      await tx.tarea.delete({ where: { id_tarea: idTarea } });
+
+      const detalleGastos = gastos.length > 0 ? ` (se removieron ${gastos.length} gasto(s) vinculados por U$S ${totalGastosUsd.toFixed(2)})` : '';
+      await tx.anotacion.create({
+        data: {
+          tenantId: tenant.id,
+          id_vehiculo: idVehiculo,
+          userId: user.id,
+          texto: `[BITÁCORA] Tarea eliminada por ${usuarioNombre}: "${tarea.descripcion}"${detalleGastos}`,
+        },
+      });
+
+      await tx.platformAuditLog.create({
+        data: {
+          tenantId: tenant.id,
+          userId: user.id,
+          action: 'TAREA_ELIMINADA',
+          resource: `vehiculo:${idVehiculo}/tarea:${idTarea}`,
+          details: {
+            descripcionEliminada: tarea.descripcion,
+            eliminadoPor: usuarioNombre,
+            gastosRemovidosUsd: totalGastosUsd,
+          },
+        },
+      });
+    });
+
+    revalidatePath(`/vehiculos/${idVehiculo}`);
+    revalidatePath('/vehiculos');
+    revalidatePath('/motos');
+    revalidatePath('/caja');
+    return { success: true };
+  } catch (error) {
+    console.error('Error eliminando tarea:', error);
+    return { success: false, error: 'Error al eliminar la tarea.' };
+  }
+}
+
 
 export async function agregarGasto(idTarea: number, idVehiculo: number, montoArs: number, cotizacionDolar: number, descripcion: string) {
   try {

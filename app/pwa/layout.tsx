@@ -31,7 +31,12 @@ export default async function PWALayout({ children }: { children: React.ReactNod
   }
 
   try {
-    await requireTenantRole(tenant.id, [RolMembresia.OWNER, RolMembresia.MANAGER, RolMembresia.VENDEDOR]);
+    await requireTenantRole(tenant.id, [
+      RolMembresia.OWNER,
+      RolMembresia.MANAGER,
+      RolMembresia.ADMINISTRATIVO,
+      RolMembresia.VENDEDOR,
+    ]);
   } catch (error: any) {
     if (String(error?.message || '').startsWith('UNAUTHORIZED')) redirect('/login');
     redirect('/');

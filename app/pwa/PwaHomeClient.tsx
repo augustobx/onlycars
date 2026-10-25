@@ -27,27 +27,49 @@ export default function PwaHomeClient({ userName, tenantName }: { userName: stri
                 <p className="text-slate-400 font-medium mt-2 text-lg">Panel Comercial</p>
             </div>
 
-            <div className="relative z-10 space-y-4">
-                <Link href="/pwa/dashboard" className="group flex items-center justify-between p-6 bg-slate-800/50 border border-slate-700 rounded-[2rem] hover:bg-slate-800 transition-all active:scale-95">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 bg-white/5 rounded-xl text-white"><LayoutGrid className="w-6 h-6" /></div>
+            <div className="relative z-10 space-y-3">
+                <Link href="/pwa/dashboard" className="group flex items-center justify-between p-4 bg-slate-800/50 border border-slate-700 rounded-2xl hover:bg-slate-800 transition-all active:scale-98">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2.5 bg-white/5 rounded-xl text-white"><LayoutGrid className="w-5 h-5" /></div>
                         <div>
-                            <p className="font-black text-xl">Stock en Vivo</p>
-                            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Ver catálogo</p>
+                            <p className="font-black text-base">Stock de Unidades</p>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Catálogo e inventario</p>
                         </div>
                     </div>
-                    <ArrowRight className="w-6 h-6 text-slate-600 transition-colors group-hover:text-white" />
+                    <ArrowRight className="w-5 h-5 text-slate-600 transition-colors group-hover:text-white" />
                 </Link>
 
-                <Link href="/pwa/cotizador" className="group flex items-center justify-between p-6 bg-slate-800/50 border border-slate-700 rounded-[2rem] hover:bg-slate-800 transition-all active:scale-95">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 bg-white/5 rounded-xl text-white"><Calculator className="w-6 h-6" /></div>
+                <Link href="/pwa/cuotas" className="group flex items-center justify-between p-4 bg-slate-800/50 border border-slate-700 rounded-2xl hover:bg-slate-800 transition-all active:scale-98">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2.5 bg-indigo-500/10 text-indigo-400 rounded-xl"><Calculator className="w-5 h-5" /></div>
                         <div>
-                            <p className="font-black text-xl">Cotizar Venta</p>
-                            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Nueva operación</p>
+                            <p className="font-black text-base">Revisar Cuotas</p>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cobranzas y vencimientos</p>
                         </div>
                     </div>
-                    <ArrowRight className="w-6 h-6 text-slate-600 transition-colors group-hover:text-white" />
+                    <ArrowRight className="w-5 h-5 text-slate-600 transition-colors group-hover:text-white" />
+                </Link>
+
+                <Link href="/pwa/prestamos" className="group flex items-center justify-between p-4 bg-slate-800/50 border border-slate-700 rounded-2xl hover:bg-slate-800 transition-all active:scale-98">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-xl"><CarFront className="w-5 h-5" /></div>
+                        <div>
+                            <p className="font-black text-base">Préstamos y Financiación</p>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Generar y administrar mutuos</p>
+                        </div>
+                    </div>
+                    <ArrowRight className="w-5 h-5 text-slate-600 transition-colors group-hover:text-white" />
+                </Link>
+
+                <Link href="/pwa/cotizador" className="group flex items-center justify-between p-4 bg-slate-800/50 border border-slate-700 rounded-2xl hover:bg-slate-800 transition-all active:scale-98">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2.5 bg-white/5 rounded-xl text-white"><Calculator className="w-5 h-5" /></div>
+                        <div>
+                            <p className="font-black text-base">Cotizar Operación</p>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Simulador comercial</p>
+                        </div>
+                    </div>
+                    <ArrowRight className="w-5 h-5 text-slate-600 transition-colors group-hover:text-white" />
                 </Link>
             </div>
 

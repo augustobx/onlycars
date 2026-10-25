@@ -29,6 +29,9 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Palette,
+  Menu,
+  X,
+  Smartphone,
 } from 'lucide-react';
 import { logoutAction } from '@/actions/auth';
 import { useConfigStore } from '@/store/useConfigStore';
@@ -91,6 +94,7 @@ export function LayoutNanoLabs({
   const { palette, isDark, toggleDarkMode } = useERPTheme();
   const [plegado, setPlegado] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [tooltip, setTooltip] = useState<{ texto: string; top: number } | null>(null);
 
   const { dolarBlue, setDolar, tipoDolar, setTipoDolar } = useConfigStore();
@@ -102,6 +106,10 @@ export function LayoutNanoLabs({
     setDolar(initialDolar);
     setTipoDolar(initialTipo);
   }, [initialDolar, initialTipo, setDolar, setTipoDolar]);
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
   const togglePlegado = () => {
     setPlegado((prev) => {
@@ -186,25 +194,48 @@ export function LayoutNanoLabs({
     <div className="bh-layout theme-nanolabs" data-nl-theme="2">
       {/* HEADER 80px */}
       <header className="bh-header bh-header--retail">
-        <Link href="/" className="bh-logo" style={{ textDecoration: 'none' }}>
-          <div className="bh-logo__mark">
-            <span
-              className="ot-mark nl-mark"
-              style={{
-                background: palette.gradient,
-                boxShadow: `0 4px 14px ${palette.glow}`,
-              }}
-            >
-              <Car size={22} strokeWidth={2.2} />
-            </span>
-          </div>
-          <div className="bh-logo__text">
-            {tenantName}
-            <span>NanoLabs Multi-Tenant Cloud</span>
-          </div>
-        </Link>
+        <div className="flex items-center gap-2">
+          {/* Mobile hamburger menu toggle */}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="lg:hidden p-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            aria-label={mobileMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
+          >
+            {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
+
+          <Link href="/" className="bh-logo" style={{ textDecoration: 'none' }}>
+            <div className="bh-logo__mark">
+              <span
+                className="ot-mark nl-mark"
+                style={{
+                  background: palette.gradient,
+                  boxShadow: `0 4px 14px ${palette.glow}`,
+                }}
+              >
+                <Car size={22} strokeWidth={2.2} />
+              </span>
+            </div>
+            <div className="bh-logo__text">
+              {tenantName}
+              <span>NanoLabs Multi-Tenant Cloud</span>
+            </div>
+          </Link>
+        </div>
 
         <div className="bh-header__actions">
+          {/* Mobile App Shortcut */}
+          <Link
+            href="/pwa"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-[var(--bg-primary-default,#FF6600)] to-amber-500 hover:opacity-95 text-white font-black text-xs rounded-xl shadow-xs transition-all active:scale-95 shrink-0"
+            title="Abrir App Móvil optimizada para celular (Cuotas, Préstamos, Stock)"
+          >
+            <Smartphone size={15} />
+            <span className="hidden sm:inline">Modo Celular</span>
+            <span className="sm:hidden">App Móvil</span>
+          </Link>
+
           {/* Live Dólar Quotation Pill */}
           <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur text-xs font-bold text-slate-700 dark:text-slate-200 shadow-xs">
             <DollarSign size={14} className="text-emerald-600 shrink-0" />
@@ -227,7 +258,7 @@ export function LayoutNanoLabs({
           <PaletteSelector />
 
           {/* User info */}
-          <div className="ot-usuario" title={userEmail}>
+          <div className="ot-usuario hidden md:flex" title={userEmail}>
             <div className="bh-list-primary font-bold">{userName}</div>
             <div className="bh-list-secondary text-xs uppercase tracking-wider font-semibold opacity-75">
               {isSuperAdmin ? 'SuperAdmin' : role}
@@ -255,7 +286,7 @@ export function LayoutNanoLabs({
       {/* BODY WITH COLLAPSIBLE SIDEBAR */}
       <div className="bh-layout__body">
         <aside
-          className={`bh-sidebar${plegado ? ' bh-sidebar--collapsed' : ''}`}
+          className={`bh-sidebar${plegado ? ' bh-sidebar--collapsed' : ''}${mobileMenuOpen ? ' bh-sidebar--mobile-open' : ''}`}
           aria-label="Pantallas"
           style={plegado ? { ['--bh-sidebar-width' as string]: `${PLEGADO_W}px` } : undefined}
         >
