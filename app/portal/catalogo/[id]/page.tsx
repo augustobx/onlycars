@@ -1,7 +1,7 @@
 import { prisma as db } from '@/lib/prisma';
 import { getTenantContext } from '@/lib/tenant-context';
 import { CLIENT_PWA_FEATURE_KEY, normalizeClientPwaConfig } from '@/lib/client-pwa-config';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import VehiculoDetalleClient from './VehiculoDetalleClient';
 
 export const dynamic = 'force-dynamic';
@@ -28,6 +28,11 @@ export default async function PortalVehiculoPage({
     },
   });
   const config = normalizeClientPwaConfig(featureRecord?.config);
+
+  if (!config.habilitarCatalogo) {
+    redirect('/portal');
+  }
+
   const dolarActual = Number(tenant.settings?.dolarActual || 1400);
 
   const vehiculoDb = await db.vehiculo.findFirst({

@@ -2,61 +2,102 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Car, FileText, HandCoins, CheckCircle2, User } from 'lucide-react';
+import { Car, FileText, HandCoins, CheckCircle2, Home, LogIn } from 'lucide-react';
+import type { ClientPwaConfig } from '@/lib/client-pwa-config';
 
-export default function PortalBottomNav({ isLoggedIn }: { isLoggedIn: boolean }) {
+interface PortalBottomNavProps {
+  isLoggedIn: boolean;
+  config?: ClientPwaConfig;
+}
+
+export default function PortalBottomNav({ isLoggedIn, config }: PortalBottomNavProps) {
   const pathname = usePathname();
 
-  const navItems = [
-    {
+  // Construcción dinámica de botones según los módulos habilitados por el tenant
+  const navItems = [];
+
+  // 1. Inicio siempre presente
+  navItems.push({
+    href: '/portal',
+    label: 'Inicio',
+    icon: Home,
+    active: pathname === '/portal',
+  });
+
+  // 2. Catálogo (sólo si está habilitado por el tenant)
+  if (config?.habilitarCatalogo !== false) {
+    navItems.push({
       href: '/portal/catalogo',
       label: 'Catálogo',
       icon: Car,
       active: pathname === '/portal/catalogo' || pathname.startsWith('/portal/catalogo/'),
-    },
-    {
+    });
+  }
+
+  // 3. Mis Cuotas (sólo si está habilitado por el tenant)
+  if (config?.habilitarPlanCuotas !== false) {
+    navItems.push({
       href: '/portal/cuotas',
       label: 'Mis Cuotas',
       icon: FileText,
       active: pathname === '/portal/cuotas',
-    },
-    {
+    });
+  }
+
+  // 4. Préstamos (sólo si préstamos o solicitud de préstamos están habilitados)
+  if (config?.habilitarPrestamos !== false || config?.habilitarSolicitudPrestamos !== false) {
+    navItems.push({
       href: '/portal/prestamos',
       label: 'Préstamos',
       icon: HandCoins,
       active: pathname === '/portal/prestamos' || pathname === '/portal/prestamos/solicitar',
-    },
-    {
+    });
+  }
+
+  // 5. Validación de documentación (sólo si solicitud de préstamos está habilitada)
+  if (config?.habilitarSolicitudPrestamos !== false) {
+    navItems.push({
       href: '/portal/prestamos/validaciones',
       label: 'Validación',
       icon: CheckCircle2,
       active: pathname === '/portal/prestamos/validaciones',
-    },
-    {
-      href: isLoggedIn ? '/portal' : '/portal/login',
-      label: isLoggedIn ? 'Inicio' : 'Ingresar',
-      icon: User,
-      active: pathname === '/portal' || pathname === '/portal/login',
-    },
-  ];
+    });
+  }
+
+  // 6. Ingresar (si no inició sesión todavía)
+  if (!isLoggedIn) {
+    navItems.push({
+      href: '/portal/login',
+      label: 'Ingresar',
+      icon: LogIn,
+      active: pathname === '/portal/login',
+    });
+  }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-slate-950/95 backdrop-blur-md border-t border-slate-800/80 px-2 py-1 max-w-md mx-auto">
-      <div className="grid grid-cols-5 items-center">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-slate-950/95 backdrop-blur-xl border-t border-slate-800/80 px-2 py-1.5 max-w-md mx-auto shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
+      <div className="flex items-center justify-around w-full gap-1">
         {navItems.map((item) => {
           const Icon = item.icon;
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all ${
+              className={`flex-1 flex flex-col items-center justify-center py-1.5 px-1 rounded-2xl transition-all duration-200 active:scale-95 ${
                 item.active
-                  ? 'text-emerald-400 font-bold scale-105'
-                  : 'text-slate-400 hover:text-slate-200 font-medium'
+                  ? 'text-emerald-400 font-black bg-emerald-500/15 border border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.15)]'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60 font-semibold border border-transparent'
               }`}
             >
-              <Icon className={`w-5 h-5 ${item.active ? 'text-emerald-400' : 'text-slate-400'}`} />
-              <span className="text-[10px] mt-1 tracking-tight truncate max-w-full">{item.label}</span>
+              <div className="relative">
+                <Icon className={`w-5 h-5 transition-transform duration-200 ${item.active ? 'scale-110 text-emerald-400' : 'text-slate-400'}`} />
+                {item.active && (
+                  <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />
+                )}
+              </div>
+              <span className="text-[10px] mt-1 tracking-tight truncate max-w-full leading-none">
+                {item.label}
+              </span>
             </Link>
           );
         })}

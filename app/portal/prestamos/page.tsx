@@ -24,6 +24,9 @@ export default async function PortalPrestamosPage() {
     },
   });
   const config = normalizeClientPwaConfig(featureRecord?.config);
+  if (!config.habilitarPrestamos && !config.habilitarSolicitudPrestamos) {
+    redirect('/portal');
+  }
   const dolarActual = Number(tenant.settings?.dolarActual || 1400);
 
   const prestamosDb = await db.prestamo.findMany({

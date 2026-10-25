@@ -50,5 +50,12 @@ export default async function PWADashboardPage() {
     };
   });
 
-  return <DashboardMobileClient vehiculos={vehiculosPlanos} pwaConfig={normalizeSellerPwaConfig(sellerPwaFeature?.config)} />;
+  return (
+    <DashboardMobileClient
+      vehiculos={vehiculosPlanos}
+      pwaConfig={normalizeSellerPwaConfig(sellerPwaFeature?.config)}
+      tenantName={tenant.name}
+      dolarActual={dolarActual}
+    />
+  );
 }

@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import { notFound, redirect } from 'next/navigation';
 import { getTenantContext } from '@/lib/tenant-context';
-import { CLIENT_PWA_FEATURE_KEY } from '@/lib/client-pwa-config';
+import { prisma as db } from '@/lib/prisma';
+import { CLIENT_PWA_FEATURE_KEY, normalizeClientPwaConfig } from '@/lib/client-pwa-config';
 import { getLoggedCliente } from '@/lib/client-auth';
 import PortalBottomNav from './PortalBottomNav';
 import PortalSplash from './PortalSplash';
@@ -79,8 +80,18 @@ export default async function PortalLayout({ children }: { children: React.React
     );
   }
 
+  const featureRecord = await db.tenantFeature.findUnique({
+    where: {
+      tenantId_featureKey: {
+        tenantId: tenant.id,
+        featureKey: CLIENT_PWA_FEATURE_KEY,
+      },
+    },
+  });
+  const config = normalizeClientPwaConfig(featureRecord?.config);
   const currentCliente = await getLoggedCliente(tenant.id);
   const brandColor = tenant.settings?.primaryColor || '#10b981';
+  const dolarActual = Number(tenant.settings?.dolarActual || 1400);
 
   return (
     <>
@@ -93,18 +104,18 @@ export default async function PortalLayout({ children }: { children: React.React
             tenantName={tenant.name}
             brandColor={brandColor}
           >
-            <header className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 px-4 py-3 flex items-center justify-between">
+            <header className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-xl border-b border-slate-800/80 px-4 py-3 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {tenant.settings?.logoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={tenant.settings.logoUrl}
                     alt={tenant.name}
-                    className="w-8 h-8 rounded-lg object-contain bg-slate-800 p-1 border border-slate-700"
+                    className="w-9 h-9 rounded-xl object-contain bg-slate-850 p-1 border border-slate-750 shadow-md"
                   />
                 ) : (
                   <div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs text-white"
+                    className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-xs text-white shadow-md shadow-emerald-950/40"
                     style={{ backgroundColor: brandColor }}
                   >
                     {tenant.name.slice(0, 2).toUpperCase()}
@@ -116,7 +127,12 @@ export default async function PortalLayout({ children }: { children: React.React
                 </div>
               </div>
 
-              <div>
+              <div className="flex items-center gap-2">
+                {dolarActual > 0 && (
+                  <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-lg">
+                    USD $ {dolarActual.toLocaleString('es-AR')}
+                  </span>
+                )}
                 {currentCliente ? (
                   <span className="text-[11px] font-bold text-slate-300 bg-slate-800/80 px-2.5 py-1 rounded-full border border-slate-700">
                     {currentCliente.nombre_completo.split(' ')[0]}
@@ -124,7 +140,7 @@ export default async function PortalLayout({ children }: { children: React.React
                 ) : (
                   <a
                     href="/portal/login"
-                    className="text-[11px] font-black text-white px-3 py-1.5 rounded-xl border border-emerald-500/30 bg-emerald-600/20 hover:bg-emerald-600/30 transition"
+                    className="text-[11px] font-black text-white px-3 py-1.5 rounded-xl border border-emerald-500/30 bg-emerald-600/20 hover:bg-emerald-600/30 transition active:scale-95 shadow-sm"
                   >
                     Ingresar
                   </a>
@@ -135,7 +151,7 @@ export default async function PortalLayout({ children }: { children: React.React
             <main className="flex-1 flex flex-col">{children}</main>
 
             <PwaInstallPrompt appType="client" appName={tenant.name} />
-            <PortalBottomNav isLoggedIn={Boolean(currentCliente)} />
+            <PortalBottomNav isLoggedIn={Boolean(currentCliente)} config={config} />
           </PortalSplash>
         </div>
       </div>

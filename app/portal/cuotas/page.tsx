@@ -1,5 +1,6 @@
 import { prisma as db } from '@/lib/prisma';
 import { getTenantContext } from '@/lib/tenant-context';
+import { CLIENT_PWA_FEATURE_KEY, normalizeClientPwaConfig } from '@/lib/client-pwa-config';
 import { getLoggedCliente } from '@/lib/client-auth';
 import { redirect } from 'next/navigation';
 import CuotasClient from './CuotasClient';
@@ -12,6 +13,20 @@ export default async function PortalCuotasPage() {
 
   if (!currentCliente) {
     redirect('/portal/login?redirect=/portal/cuotas');
+  }
+
+  const featureRecord = await db.tenantFeature.findUnique({
+    where: {
+      tenantId_featureKey: {
+        tenantId: tenant.id,
+        featureKey: CLIENT_PWA_FEATURE_KEY,
+      },
+    },
+  });
+  const config = normalizeClientPwaConfig(featureRecord?.config);
+
+  if (!config.habilitarPlanCuotas) {
+    redirect('/portal');
   }
 
   const dolarActual = Number(tenant.settings?.dolarActual || 1400);

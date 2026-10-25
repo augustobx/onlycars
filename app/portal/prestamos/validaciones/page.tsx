@@ -1,5 +1,6 @@
 import { prisma as db } from '@/lib/prisma';
 import { getTenantContext } from '@/lib/tenant-context';
+import { CLIENT_PWA_FEATURE_KEY, normalizeClientPwaConfig } from '@/lib/client-pwa-config';
 import { getLoggedCliente } from '@/lib/client-auth';
 import { redirect } from 'next/navigation';
 import ValidacionesClienteView from './ValidacionesClienteView';
@@ -17,6 +18,20 @@ export default async function PortalValidacionesPage({
 
   if (!currentCliente) {
     redirect('/portal/login?redirect=/portal/prestamos/validaciones');
+  }
+
+  const featureRecord = await db.tenantFeature.findUnique({
+    where: {
+      tenantId_featureKey: {
+        tenantId: tenant.id,
+        featureKey: CLIENT_PWA_FEATURE_KEY,
+      },
+    },
+  });
+  const config = normalizeClientPwaConfig(featureRecord?.config);
+
+  if (!config.habilitarSolicitudPrestamos) {
+    redirect('/portal');
   }
 
   const solicitudesDb = await db.solicitudPrestamo.findMany({

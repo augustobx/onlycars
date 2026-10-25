@@ -146,12 +146,14 @@ export default async function PortalHomePage() {
               >
                 Ingresar con DNI <ArrowRight className="w-3.5 h-3.5" />
               </Link>
-              <Link
-                href="/portal/catalogo"
-                className="py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold text-center border border-slate-700 transition"
-              >
-                Ver Catálogo
-              </Link>
+              {config.habilitarCatalogo && (
+                <Link
+                  href="/portal/catalogo"
+                  className="py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold text-center border border-slate-700 transition"
+                >
+                  Ver Catálogo
+                </Link>
+              )}
             </div>
           </div>
         )}
@@ -235,21 +237,23 @@ export default async function PortalHomePage() {
           </Link>
         )}
 
-        <Link
-          href="/portal/prestamos/validaciones"
-          className="flex items-center justify-between p-4 rounded-2xl bg-slate-850 hover:bg-slate-800 border border-slate-800 transition group"
-        >
-          <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 group-hover:scale-105 transition">
-              <CheckCircle2 className="w-6 h-6" />
+        {config.habilitarSolicitudPrestamos && (
+          <Link
+            href="/portal/prestamos/validaciones"
+            className="flex items-center justify-between p-4 rounded-2xl bg-slate-850 hover:bg-slate-800 border border-slate-800 transition group"
+          >
+            <div className="flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 group-hover:scale-105 transition">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-sm font-black text-white">Validación de Solicitudes</p>
+                <p className="text-[11px] text-slate-400">Estado de trámites y validación de documentación</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-black text-white">Validación de Solicitudes</p>
-              <p className="text-[11px] text-slate-400">Estado de trámites y validación de documentación</p>
-            </div>
-          </div>
-          <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-white transition" />
-        </Link>
+            <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-white transition" />
+          </Link>
+        )}
       </section>
 
       {/* Preview de Unidades Destacadas */}
