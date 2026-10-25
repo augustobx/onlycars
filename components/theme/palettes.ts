@@ -100,6 +100,8 @@ export const PALETTES: Record<string, ColorPalette> = {
 
 export const DEFAULT_PALETTE_ID = 'orange';
 
+export const PALETTE_LIST: ColorPalette[] = Object.values(PALETTES);
+
 export function getPalette(id?: string | null): ColorPalette {
   if (id && PALETTES[id]) return PALETTES[id];
   return PALETTES[DEFAULT_PALETTE_ID];
