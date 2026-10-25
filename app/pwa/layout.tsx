@@ -2,6 +2,9 @@ import type { Metadata, Viewport } from 'next';
 import { RolMembresia } from '@prisma/client';
 import { getTenantContext } from '@/lib/tenant-context';
 import { requireTenantRole } from '@/lib/user-auth';
+import { headers } from 'next/headers';
+import { managedModuleEnabled } from '@/lib/hub-features';
+import { PwaCapabilities } from './PwaCapabilities';
 import { notFound, redirect } from 'next/navigation';
 import PWASplash from './PWASplash';
 import ModuleHelpButton from '@/components/ModuleHelpButton';
@@ -60,6 +63,8 @@ export default async function PWALayout({ children }: { children: React.ReactNod
     redirect('/');
   }
 
+  const pathname = (await headers()).get('x-pathname') || '';
+  if (/^\/pwa\/(dashboard|cotizador|operaciones|vehiculo)(\/|$)/.test(pathname) && !managedModuleEnabled(tenant, 'seller_pwa')) notFound();
   const brandColor = tenant.settings?.primaryColor || '#2563eb';
   const themeStyles = `
     :root {
@@ -75,7 +80,7 @@ export default async function PWALayout({ children }: { children: React.ReactNod
       <div className="max-w-md mx-auto min-h-screen bg-slate-50 shadow-2xl relative overflow-hidden flex flex-col">
         <ModuleHelpButton variant="floating" />
         <PWASplash logo={tenant.settings?.logoUrl || null} initialDolar={tenant.settings?.dolarActual || 1400} tenantName={tenant.name}>
-          {children}
+          <PwaCapabilities sellerEnabled={managedModuleEnabled(tenant, 'seller_pwa')}>{children}</PwaCapabilities>
         </PWASplash>
       </div>
     </div>

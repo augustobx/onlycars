@@ -3,6 +3,7 @@ import "server-only";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { getPlatformHost, getTenantBaseDomain, isPlatformHostname } from "@/lib/domain-config";
+import { effectiveFeatureSet, effectivePlanFeatures, HUB_MODULES } from "@/lib/hub-features";
 
 export type TenantStatus = "ACTIVE" | "TRIAL" | "SUSPENDED" | "PAST_DUE" | "CANCELED";
 
@@ -18,6 +19,7 @@ export interface ResolvedTenant {
   city?: string | null;
   cuit?: string | null;
   plan: {
+    hubManaged: boolean;
     code: string;
     name: string;
     maxVehicles: number;
@@ -26,6 +28,7 @@ export interface ResolvedTenant {
     features: string[];
   };
   features: Set<string>;
+  managedModules: Record<string, boolean>;
   settings?: {
     appName: string;
     logoUrl: string | null;
@@ -197,11 +200,7 @@ export async function resolveTenantByHostname(hostname: string): Promise<TenantR
 
     const plan = tenantData.subscription?.plan;
     const planFeatures: string[] = Array.isArray(plan?.features) ? (plan?.features as string[]) : [];
-    const enabledFeatures = tenantData.features.filter((f) => f.isEnabled).map((f) => f.featureKey);
-    const disabledFeatures = new Set(tenantData.features.filter((f) => !f.isEnabled).map((f) => f.featureKey));
-    const combinedFeatures = new Set<string>(
-      [...planFeatures, ...enabledFeatures].filter((f) => !disabledFeatures.has(f))
-    );
+    const combinedFeatures = effectiveFeatureSet(effectivePlanFeatures(planFeatures, !!plan?.hubManaged), tenantData.features);
 
     const resolved: ResolvedTenant = {
       id: tenantData.id,
@@ -215,6 +214,7 @@ export async function resolveTenantByHostname(hostname: string): Promise<TenantR
       city: tenantData.city,
       cuit: tenantData.cuit,
       plan: {
+        hubManaged: plan?.hubManaged ?? false,
         code: plan?.code || "STARTER",
         name: plan?.name || "Plan Inicial",
         maxVehicles: plan?.maxVehicles || 50,
@@ -223,6 +223,7 @@ export async function resolveTenantByHostname(hostname: string): Promise<TenantR
         features: Array.from(combinedFeatures),
       },
       features: combinedFeatures,
+      managedModules: Object.fromEntries(HUB_MODULES.map(key => [key, !!plan?.hubManaged || !!tenantData.features.find(f => f.featureKey === key)?.hubManaged])),
       settings: tenantData.settings
         ? {
             appName: tenantData.settings.appName,

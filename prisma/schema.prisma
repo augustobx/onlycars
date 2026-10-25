@@ -81,6 +81,7 @@ model Plan {
   maxUsers     Int      @default(5)
   features     Json
   isActive     Boolean  @default(true)
+  hubManaged   Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -133,6 +134,8 @@ model TenantFeature {
   tenantId   String
   featureKey String
   isEnabled  Boolean  @default(true)
+  hubManaged Boolean  @default(false)
+  hubInherit Boolean  @default(false)
   config     Json?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt

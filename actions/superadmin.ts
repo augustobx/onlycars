@@ -5,6 +5,7 @@ import { requireSuperAdmin, hashUserPassword } from '@/lib/user-auth';
 import { buildTenantHostname, getPlatformHost, getTenantBaseDomain } from '@/lib/domain-config';
 import { revalidatePath } from 'next/cache';
 import { RolMembresia } from '@prisma/client';
+import { syncInheritedFeatures } from '@/lib/hub-features';
 
 export type SaaSStatus = 'ACTIVE' | 'TRIAL' | 'PAST_DUE' | 'SUSPENDED' | 'CANCELED';
 
@@ -226,11 +227,14 @@ export async function toggleTenantFeatureAction(
   featureKey: string,
   isEnabled: boolean
 ) {
-  await requireSuperAdmin();
-  await prisma.tenantFeature.upsert({
+  const actor = await requireSuperAdmin();
+  await prisma.$transaction(async tx => {
+  await tx.tenantFeature.upsert({
     where: { tenantId_featureKey: { tenantId, featureKey } },
-    update: { isEnabled },
-    create: { tenantId, featureKey, isEnabled },
+    update: { isEnabled, hubManaged: true, hubInherit: false },
+    create: { tenantId, featureKey, isEnabled, hubManaged: true, hubInherit: false },
+  });
+  await tx.platformAuditLog.create({ data: { tenantId, userId: actor.id, action: 'TENANT_FEATURE_UPDATED', resource: 'TenantFeature', details: { featureKey, isEnabled } } });
   });
   revalidateSuperAdmin(tenantId);
   return { success: true };
@@ -480,6 +484,11 @@ export async function updateTenantAction(tenantId: string, data: {
         },
       });
 
+      if (data.planId) {
+        const assigned = await tx.plan.findUniqueOrThrow({ where: { id: data.planId } });
+        await syncInheritedFeatures(tx, [tenantId], assigned.features, assigned.hubManaged);
+      }
+
       await tx.platformAuditLog.create({
         data: {
           tenantId,
@@ -632,6 +641,9 @@ export async function updatePlanAction(planId: string, data: {
           isActive: Boolean(data.isActive),
         },
       });
+
+      const subscribers = await tx.subscription.findMany({ where: { planId }, select: { tenantId: true } });
+      await syncInheritedFeatures(tx, subscribers.map(s => s.tenantId), features, plan.hubManaged);
 
       await tx.platformAuditLog.create({
         data: {

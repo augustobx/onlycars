@@ -5,6 +5,7 @@ import { getTenantContext } from '@/lib/tenant-context';
 import { requireTenantRole } from '@/lib/user-auth';
 import { EstadoProspecto, RolMembresia } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
+import { assertManagedModuleEnabled } from '@/lib/hub-features';
 
 const PWA_ROLES = [RolMembresia.OWNER, RolMembresia.MANAGER, RolMembresia.VENDEDOR];
 const FOLLOWUP_STATES = new Set<string>(['CONTACTADO', 'COTIZADO', 'NEGOCIACION', 'PERDIDO']);
@@ -24,6 +25,7 @@ function revalidatePwa(prospectoId?: number, vehiculoId?: number) {
 export async function guardarNotaVehiculo(id_vehiculo: number, nota: string) {
   try {
     const tenant = await getTenantContext();
+    assertManagedModuleEnabled(tenant, 'seller_pwa');
     await requireTenantRole(tenant.id, PWA_ROLES);
     const updated = await db.vehiculo.updateMany({
       where: { id_vehiculo, tenantId: tenant.id },
@@ -58,6 +60,7 @@ export async function guardarCotizacionPwa(data: {
 }) {
   try {
     const tenant = await getTenantContext();
+    assertManagedModuleEnabled(tenant, 'seller_pwa');
     const { user, role } = await requireTenantRole(tenant.id, PWA_ROLES);
     const precio = Number(data.precio_final_usd);
     const rate = Number(data.cotizacion_dolar);
@@ -193,6 +196,7 @@ export async function actualizarSeguimientoPwa(data: {
 }) {
   try {
     const tenant = await getTenantContext();
+    assertManagedModuleEnabled(tenant, 'seller_pwa');
     const { user, role } = await requireTenantRole(tenant.id, PWA_ROLES);
     const prospecto = await db.prospecto.findFirst({ where: { id_prospecto: Number(data.prospectoId), tenantId: tenant.id } });
     if (!prospecto) return { success: false, error: 'Oportunidad inexistente.' };

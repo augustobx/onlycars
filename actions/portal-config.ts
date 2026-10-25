@@ -42,6 +42,8 @@ export async function guardarPortalClientesConfigAction(input: ClientPwaConfig) 
         tenantId: tenant.id,
         featureKey: CLIENT_PWA_FEATURE_KEY,
         isEnabled: true,
+        hubManaged: tenant.plan.hubManaged,
+        hubInherit: tenant.plan.hubManaged,
         config,
       },
     });

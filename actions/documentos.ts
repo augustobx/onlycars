@@ -2,6 +2,7 @@
 
 import { prisma as db } from '@/lib/prisma';
 import { getTenantContext } from '@/lib/tenant-context';
+import { managedModuleEnabled } from '@/lib/hub-features';
 import { requireTenantRole } from '@/lib/user-auth';
 import { RolMembresia } from '@prisma/client';
 
@@ -14,7 +15,7 @@ async function contextoDocumental() {
     db.tenantSettings.findUnique({ where: { tenantId: tenant.id } }),
     db.tenantFeature.findUnique({ where: { tenantId_featureKey: { tenantId: tenant.id, featureKey: 'branding_documentos' } } }),
   ]);
-  const branding = (brandingFeature?.config as any) || {};
+  const branding = managedModuleEnabled(tenant, 'branding_documentos') ? (brandingFeature?.config as any) || {} : {};
   return { tenant, settings, branding };
 }
 
