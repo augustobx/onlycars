@@ -164,8 +164,8 @@ export default async function BoletoPrestamoPage({
           </div>
           <div className="space-y-1.5 text-xs bg-slate-50 p-3 rounded-lg border">
             <div className="flex justify-between py-1 border-b">
-              <span>TNA acordada</span>
-              <strong>{Number(prestamo.tna_aplicada || 0)}% nominal anual</strong>
+              <span>Interés compensatorio pactado</span>
+              <strong>{capitalUsd > 0 ? ((interesUsd / capitalUsd) * 100).toFixed(1) : '0'}% (USD {money(interesUsd)})</strong>
             </div>
             <div className="flex justify-between py-1 border-b">
               <span>Cantidad de cuotas pactadas</span>
