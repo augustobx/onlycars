@@ -38,6 +38,7 @@ export interface ResolvedTenant {
     telefonoContacto: string | null;
     emailContacto: string | null;
     whatsappLead: string | null;
+    paletteId?: string | null;
   } | null;
   primaryLocationId?: string;
 }
@@ -235,6 +236,7 @@ export async function resolveTenantByHostname(hostname: string): Promise<TenantR
             telefonoContacto: tenantData.settings.telefonoContacto,
             emailContacto: tenantData.settings.emailContacto,
             whatsappLead: tenantData.settings.whatsappLead,
+            paletteId: (tenantData.settings as any).paletteId || null,
           }
         : null,
       primaryLocationId: tenantData.locations[0]?.id,
