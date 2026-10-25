@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { guardarProspecto, actualizarEstadoProspecto } from '@/actions/prospectos';
 import DualMoney from '@/components/common/DualMoney';
@@ -19,6 +20,7 @@ import {
   Search,
   Tag,
   UserRound,
+  X,
 } from 'lucide-react';
 
 const estados = ['TODOS', 'NUEVO', 'CONTACTADO', 'COTIZADO', 'NEGOCIACION', 'RESERVADO', 'GANADO', 'PERDIDO'];
@@ -47,6 +49,11 @@ export default function ProspectosClient({
   vehiculos: any[];
   dolarActual: number;
 }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const [prospectos, setProspectos] = useState(initialProspectos);
   const [filtro, setFiltro] = useState('TODOS');
   const [search, setSearch] = useState('');
@@ -271,68 +278,79 @@ export default function ProspectosClient({
         )}
       </div>
 
-      {open && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-2xl p-6 sm:p-8 shadow-2xl space-y-5">
-            <div className="flex items-center justify-between">
+      {mounted && open && createPortal(
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-[9999] flex justify-center items-start p-4 sm:p-6 overflow-y-auto min-h-screen">
+          <form
+            onSubmit={handleSubmit}
+            className="relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-2xl shadow-2xl my-auto flex flex-col max-h-[92vh] overflow-hidden"
+          >
+            <div className="p-5 sm:p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
               <div>
                 <h3 className="text-xl font-black text-slate-900 dark:text-slate-100">Nuevo prospecto</h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Alta comercial clara, con búsqueda de unidad y presupuesto bimonetario.</p>
               </div>
-              <button type="button" onClick={() => setOpen(false)} className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">✕</button>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <label className="sm:col-span-2">
-                <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">Nombre y apellido *</span>
-                <input required value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} placeholder="Ej: Juan Pérez" className="mt-1.5 w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--bg-primary-default,#FF6600)]" />
-              </label>
-              <label>
-                <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">Teléfono / WhatsApp</span>
-                <div className="relative mt-1.5">
-                  <Phone className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
-                  <input value={form.telefono} onChange={(e) => setForm({ ...form, telefono: e.target.value })} placeholder="Teléfono" className="w-full pl-9 pr-3 py-2.5 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--bg-primary-default,#FF6600)]" />
-                </div>
-              </label>
-              <label>
-                <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">Email</span>
-                <div className="relative mt-1.5">
-                  <Mail className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
-                  <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="Email" className="w-full pl-9 pr-3 py-2.5 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--bg-primary-default,#FF6600)]" />
-                </div>
-              </label>
-              <label className="sm:col-span-2">
-                <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">Origen</span>
-                <select value={form.origen} onChange={(e) => setForm({ ...form, origen: e.target.value })} className="mt-1.5 w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--bg-primary-default,#FF6600)]">
-                  <option value="SHOWROOM">Showroom</option>
-                  <option value="WHATSAPP">WhatsApp</option>
-                  <option value="WEB">Web</option>
-                  <option value="MERCADOLIBRE">Mercado Libre</option>
-                  <option value="INSTAGRAM">Instagram</option>
-                </select>
+            <div className="p-6 overflow-y-auto custom-scrollbar space-y-5 flex-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <label className="sm:col-span-2">
+                  <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">Nombre y apellido *</span>
+                  <input required value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} placeholder="Ej: Juan Pérez" className="mt-1.5 w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--bg-primary-default,#FF6600)]" />
+                </label>
+                <label>
+                  <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">Teléfono / WhatsApp</span>
+                  <div className="relative mt-1.5">
+                    <Phone className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+                    <input value={form.telefono} onChange={(e) => setForm({ ...form, telefono: e.target.value })} placeholder="Teléfono" className="w-full pl-9 pr-3 py-2.5 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--bg-primary-default,#FF6600)]" />
+                  </div>
+                </label>
+                <label>
+                  <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">Email</span>
+                  <div className="relative mt-1.5">
+                    <Mail className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+                    <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="Email" className="w-full pl-9 pr-3 py-2.5 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--bg-primary-default,#FF6600)]" />
+                  </div>
+                </label>
+                <label className="sm:col-span-2">
+                  <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">Origen</span>
+                  <select value={form.origen} onChange={(e) => setForm({ ...form, origen: e.target.value })} className="mt-1.5 w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--bg-primary-default,#FF6600)]">
+                    <option value="SHOWROOM">Showroom</option>
+                    <option value="WHATSAPP">WhatsApp</option>
+                    <option value="WEB">Web</option>
+                    <option value="MERCADOLIBRE">Mercado Libre</option>
+                    <option value="INSTAGRAM">Instagram</option>
+                  </select>
+                </label>
+              </div>
+
+              <SearchCombobox label="Vehículo de interés" value={form.id_vehiculo_interes} onChange={(value) => setForm({ ...form, id_vehiculo_interes: value })} options={vehicleOptions} placeholder="Buscar por marca, modelo, patente o año..." helper="Podés dejarlo vacío si todavía no definieron una unidad." />
+
+              <DualCurrencyInput label="Presupuesto estimado" ars={form.presupuesto_ars} usd={form.presupuesto_usd} rate={dolarActual} onChange={({ ars, usd }) => setForm({ ...form, presupuesto_ars: ars, presupuesto_usd: usd })} helper="Referencia comercial; no fija el precio final de la operación." />
+
+              <div className="rounded-xl border border-amber-200 dark:border-amber-800/40 bg-amber-50/70 dark:bg-amber-950/20 p-4 space-y-3">
+                <label className="flex items-center gap-2 text-sm font-bold text-amber-900 dark:text-amber-200 cursor-pointer">
+                  <input type="checkbox" checked={form.tiene_permuta} onChange={(e) => setForm({ ...form, tiene_permuta: e.target.checked })} className="w-4 h-4 rounded text-[var(--bg-primary-default,#FF6600)]" />
+                  Tiene vehículo para permuta
+                </label>
+                {form.tiene_permuta && (
+                  <input value={form.detalle_permuta} onChange={(e) => setForm({ ...form, detalle_permuta: e.target.value })} placeholder="Marca, modelo, año, kilometraje, patente..." className="w-full border border-amber-200 dark:border-amber-800/40 rounded-xl px-3.5 py-2.5 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100" />
+                )}
+              </div>
+
+              <label className="block">
+                <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">Notas comerciales</span>
+                <textarea value={form.notas} onChange={(e) => setForm({ ...form, notas: e.target.value })} placeholder="Necesidades, condiciones, observaciones..." className="mt-1.5 w-full min-h-24 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--bg-primary-default,#FF6600)]" />
               </label>
             </div>
 
-            <SearchCombobox label="Vehículo de interés" value={form.id_vehiculo_interes} onChange={(value) => setForm({ ...form, id_vehiculo_interes: value })} options={vehicleOptions} placeholder="Buscar por marca, modelo, patente o año..." helper="Podés dejarlo vacío si todavía no definieron una unidad." />
-
-            <DualCurrencyInput label="Presupuesto estimado" ars={form.presupuesto_ars} usd={form.presupuesto_usd} rate={dolarActual} onChange={({ ars, usd }) => setForm({ ...form, presupuesto_ars: ars, presupuesto_usd: usd })} helper="Referencia comercial; no fija el precio final de la operación." />
-
-            <div className="rounded-xl border border-amber-200 dark:border-amber-800/40 bg-amber-50/70 dark:bg-amber-950/20 p-4 space-y-3">
-              <label className="flex items-center gap-2 text-sm font-bold text-amber-900 dark:text-amber-200 cursor-pointer">
-                <input type="checkbox" checked={form.tiene_permuta} onChange={(e) => setForm({ ...form, tiene_permuta: e.target.checked })} className="w-4 h-4 rounded text-[var(--bg-primary-default,#FF6600)]" />
-                Tiene vehículo para permuta
-              </label>
-              {form.tiene_permuta && (
-                <input value={form.detalle_permuta} onChange={(e) => setForm({ ...form, detalle_permuta: e.target.value })} placeholder="Marca, modelo, año, kilometraje, patente..." className="w-full border border-amber-200 dark:border-amber-800/40 rounded-xl px-3.5 py-2.5 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100" />
-              )}
-            </div>
-
-            <label className="block">
-              <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">Notas comerciales</span>
-              <textarea value={form.notas} onChange={(e) => setForm({ ...form, notas: e.target.value })} placeholder="Necesidades, condiciones, observaciones..." className="mt-1.5 w-full min-h-24 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--bg-primary-default,#FF6600)]" />
-            </label>
-
-            <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+            <div className="flex justify-end gap-3 p-4 sm:p-5 border-t border-slate-100 dark:border-slate-800 shrink-0 bg-slate-50/50 dark:bg-slate-850">
               <button type="button" onClick={() => setOpen(false)} className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-bold transition-colors">
                 Cancelar
               </button>
@@ -341,7 +359,8 @@ export default function ProspectosClient({
               </button>
             </div>
           </form>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

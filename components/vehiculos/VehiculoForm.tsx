@@ -272,20 +272,40 @@ export default function VehiculoForm({ vehiculo }: { vehiculo?: any }) {
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    <div className="bg-emerald-50/60 dark:bg-emerald-950/20 p-6 rounded-2xl border border-emerald-200 dark:border-emerald-800/40 shadow-sm flex flex-col h-auto">
-                        <h3 className="text-lg font-black text-emerald-900 dark:text-emerald-300 border-b border-emerald-200 dark:border-emerald-800/40 pb-3 mb-2">
-                            Valores (ARS / USD)
+            {/* SECCIÓN HORIZONTAL SIMÉTRICA DE VALORES Y COSTOS */}
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
+                    <div>
+                        <h3 className="text-lg font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                            <Banknote className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                            Valores Comerciales y Rentabilidad
                         </h3>
-                        <p className="text-xs text-emerald-700 dark:text-emerald-400 mb-5">
-                            Cotización actual: $ {rate.toLocaleString('es-AR')}. Al actualizar el dólar se recalcula la moneda derivada.
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                            Cotización dólar de referencia: <strong className="font-mono text-slate-700 dark:text-slate-300">$ {rate.toLocaleString('es-AR')}</strong>. La moneda derivada se calcula en tiempo real.
                         </p>
-                        <div className="space-y-4 flex-1">
-                            {tipoIngreso === 'Propio' && (
-                                <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-emerald-100 dark:border-emerald-900/40 shadow-sm space-y-3">
-                                    <label className="block text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                                        Costo de Compra Base
-                                    </label>
+                    </div>
+                    {tipoIngreso === 'Propio' && currentVentaUsd > 0 && currentCompraUsd > 0 && (
+                        <div className="flex items-center gap-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 px-4 py-2 rounded-xl self-start sm:self-auto">
+                            <span className="text-xs font-black uppercase tracking-wider text-emerald-800 dark:text-emerald-300">Margen Bruto:</span>
+                            <span className={`text-base font-black ${margenBrutoUsd >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                                U$S {margenBrutoUsd.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                        </div>
+                    )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+                    {/* COSTO COMPRA (SI ES PROPIO) */}
+                    {tipoIngreso === 'Propio' && (
+                        <div className="bg-slate-50 dark:bg-slate-800/40 p-5 rounded-2xl border border-slate-200 dark:border-slate-700/60 space-y-3 flex flex-col justify-between">
+                            <div>
+                                <label className="block text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                                    Costo de Compra Base
+                                </label>
+                                <div className="space-y-3">
                                     <div>
                                         <div className="relative">
                                             <span className="absolute left-3 top-2.5 text-xs font-black text-slate-400 dark:text-slate-500 pointer-events-none">ARS $</span>
@@ -294,12 +314,12 @@ export default function VehiculoForm({ vehiculo }: { vehiculo?: any }) {
                                                 step="any"
                                                 value={compraArs}
                                                 onChange={(e) => handleCompraArs(e.target.value)}
-                                                className="w-full pl-14 pr-3 py-2 text-sm sm:text-base border border-slate-300 dark:border-slate-700 rounded-lg font-bold text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 tabular-nums focus:outline-none focus:ring-2 focus:ring-[var(--bg-primary-default,#FF6600)]"
+                                                className="w-full pl-14 pr-3 py-2 text-sm border border-slate-300 dark:border-slate-700 rounded-xl font-bold text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 tabular-nums focus:outline-none focus:ring-2 focus:ring-[var(--bg-primary-default,#FF6600)]"
                                                 placeholder="0.00"
                                             />
                                         </div>
                                         {Number(compraArs || 0) > 0 && (
-                                            <p className="text-[11px] font-bold text-slate-600 dark:text-slate-400 mt-1 pl-1 truncate">
+                                            <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 mt-1 pl-1 truncate">
                                                 $ {Number(compraArs).toLocaleString('es-AR', { maximumFractionDigits: 2 })} ARS
                                             </p>
                                         )}
@@ -312,7 +332,7 @@ export default function VehiculoForm({ vehiculo }: { vehiculo?: any }) {
                                                 step="any"
                                                 value={compraUsd}
                                                 onChange={(e) => handleCompraUsd(e.target.value)}
-                                                className="w-full pl-14 pr-3 py-2 text-sm sm:text-base border border-emerald-200 dark:border-emerald-800/60 rounded-lg font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/30 tabular-nums focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                                className="w-full pl-14 pr-3 py-2 text-sm border border-emerald-200 dark:border-emerald-800/60 rounded-xl font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/30 tabular-nums focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                                 placeholder="0.00"
                                             />
                                         </div>
@@ -323,12 +343,17 @@ export default function VehiculoForm({ vehiculo }: { vehiculo?: any }) {
                                         )}
                                     </div>
                                 </div>
-                            )}
+                            </div>
+                        </div>
+                    )}
 
-                            <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-emerald-100 dark:border-emerald-900/40 shadow-sm space-y-3">
-                                <label className="block text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                                    Precio Venta Sugerido
-                                </label>
+                    {/* PRECIO VENTA SUGERIDO */}
+                    <div className="bg-slate-50 dark:bg-slate-800/40 p-5 rounded-2xl border border-slate-200 dark:border-slate-700/60 space-y-3 flex flex-col justify-between">
+                        <div>
+                            <label className="block text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                                Precio Venta Sugerido
+                            </label>
+                            <div className="space-y-3">
                                 <div>
                                     <div className="relative">
                                         <span className="absolute left-3 top-2.5 text-xs font-black text-slate-400 dark:text-slate-500 pointer-events-none">ARS $</span>
@@ -337,12 +362,12 @@ export default function VehiculoForm({ vehiculo }: { vehiculo?: any }) {
                                             step="any"
                                             value={ventaArs}
                                             onChange={(e) => handleVentaArs(e.target.value)}
-                                            className="w-full pl-14 pr-3 py-2 text-sm sm:text-base border border-slate-300 dark:border-slate-700 rounded-lg font-bold text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 tabular-nums focus:outline-none focus:ring-2 focus:ring-[var(--bg-primary-default,#FF6600)]"
+                                            className="w-full pl-14 pr-3 py-2 text-sm border border-slate-300 dark:border-slate-700 rounded-xl font-bold text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 tabular-nums focus:outline-none focus:ring-2 focus:ring-[var(--bg-primary-default,#FF6600)]"
                                             placeholder="0.00"
                                         />
                                     </div>
                                     {Number(ventaArs || 0) > 0 && (
-                                        <p className="text-[11px] font-bold text-slate-600 dark:text-slate-400 mt-1 pl-1 truncate">
+                                        <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 mt-1 pl-1 truncate">
                                             $ {Number(ventaArs).toLocaleString('es-AR', { maximumFractionDigits: 2 })} ARS
                                         </p>
                                     )}
@@ -355,7 +380,7 @@ export default function VehiculoForm({ vehiculo }: { vehiculo?: any }) {
                                             step="any"
                                             value={ventaUsd}
                                             onChange={(e) => handleVentaUsd(e.target.value)}
-                                            className="w-full pl-14 pr-3 py-2 text-sm sm:text-base border border-emerald-200 dark:border-emerald-800/60 rounded-lg font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/30 tabular-nums focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                            className="w-full pl-14 pr-3 py-2 text-sm border border-emerald-200 dark:border-emerald-800/60 rounded-xl font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/30 tabular-nums focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                             placeholder="0.00"
                                         />
                                     </div>
@@ -366,24 +391,24 @@ export default function VehiculoForm({ vehiculo }: { vehiculo?: any }) {
                                     )}
                                 </div>
                             </div>
-
-                            {tipoIngreso === 'Propio' && currentVentaUsd > 0 && currentCompraUsd > 0 && (
-                                <div className="pt-3 border-t border-emerald-200/50 dark:border-emerald-800/40">
-                                    <div className="flex justify-between items-center text-sm">
-                                        <span className="font-bold text-emerald-900 dark:text-emerald-200">Margen Bruto (Est.)</span>
-                                        <span className={`font-black ${margenBrutoUsd >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
-                                            U$S {margenBrutoUsd.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                        </span>
-                                    </div>
-                                </div>
-                            )}
                         </div>
+                    </div>
 
-                        <div className="mt-6 pt-4 border-t border-emerald-200 dark:border-emerald-800/40">
+                    {/* CONFIRMAR / GUARDAR */}
+                    <div className="bg-slate-50 dark:bg-slate-800/40 p-5 rounded-2xl border border-slate-200 dark:border-slate-700/60 flex flex-col justify-between">
+                        <div>
+                            <label className="block text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                                Guardar Registro
+                            </label>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                Los cambios actualizarán automáticamente la cartera de vehículos, catálogo y cotizador.
+                            </p>
+                        </div>
+                        <div className="pt-4">
                             <button
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="w-full py-3.5 bg-[var(--bg-primary-default,#FF6600)] hover:bg-[var(--bg-primary-bold,#e25700)] text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-md hover:shadow-lg disabled:opacity-70 active:scale-[0.99] transition-all"
+                                className="w-full py-3.5 bg-[var(--bg-primary-default,#FF6600)] hover:bg-[var(--bg-primary-bold,#e25700)] text-white rounded-xl font-black flex items-center justify-center gap-2 shadow-sm hover:shadow-md disabled:opacity-70 active:scale-[0.99] transition-all cursor-pointer"
                             >
                                 {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                                 {vehiculo ? 'Guardar Cambios' : 'Registrar Vehículo'}

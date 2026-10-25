@@ -52,7 +52,6 @@ function ERPThemeShellContent({
         canSyncDolar={canSyncDolar}
         initialDolar={initialDolar}
         initialTipo={initialTipo}
-        onSwitchTheme={(t) => setTheme(t)}
       >
         {children}
       </LayoutNanoLabs>
@@ -94,7 +93,7 @@ function ERPThemeShellContent({
 }
 
 export default function ERPThemeShell({
-  initialTheme = '1',
+  initialTheme = '2',
   initialPaletteId,
   ...props
 }: ERPThemeShellProps) {

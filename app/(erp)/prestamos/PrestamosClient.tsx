@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import {
   HandCoins,
@@ -19,6 +20,7 @@ import {
   Loader2,
   DollarSign,
   Phone,
+  Printer,
 } from 'lucide-react';
 import DualMoney from '@/components/common/DualMoney';
 import { cambiarEstadoSolicitudWebAction, aprobarYGenerarPrestamoAction } from '@/actions/prestamos-admin';
@@ -32,10 +34,15 @@ export default function PrestamosClient({
   solicitudes?: any[];
   dolarActual: number;
 }) {
+  const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<'CARTERA' | 'SOLICITUDES'>('CARTERA');
   const [searchTerm, setSearchTerm] = useState('');
   const [filtroEstado, setFiltroEstado] = useState<'ACTIVOS' | 'FINALIZADOS'>('ACTIVOS');
   const [filtroSolicitudes, setFiltroSolicitudes] = useState<string>('TODAS');
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Approval modal state
   const [modalAprobar, setModalAprobar] = useState<any | null>(null);
@@ -353,12 +360,22 @@ export default function PrestamosClient({
                     <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
                       Cuotas pagadas: {p.resumen.pagadas}/{p.resumen.total}
                     </span>
-                    <Link
-                      href={`/cuotas?q=${encodeURIComponent(p.cliente?.nombre_completo || '')}`}
-                      className="text-xs font-black text-[var(--color-primary-default,#FF6600)] flex items-center gap-1 hover:underline"
-                    >
-                      Ver cobranzas <ArrowRight className="w-3 h-3" />
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/documentos/prestamo/${p.id_prestamo}`}
+                        target="_blank"
+                        className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 text-xs font-bold flex items-center gap-1.5 transition-colors"
+                        title="Imprimir contrato / boleto de préstamo"
+                      >
+                        <Printer className="w-3.5 h-3.5" /> Boleto
+                      </Link>
+                      <Link
+                        href={`/cuotas?q=${encodeURIComponent(p.cliente?.nombre_completo || '')}`}
+                        className="text-xs font-black text-[var(--color-primary-default,#FF6600)] flex items-center gap-1 hover:underline ml-1"
+                      >
+                        Ver cobranzas <ArrowRight className="w-3 h-3" />
+                      </Link>
+                    </div>
                   </div>
                 </div>
               );
@@ -560,9 +577,9 @@ export default function PrestamosClient({
       )}
 
       {/* Modal de Aprobación y Creación Formal de Préstamo */}
-      {modalAprobar && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-slate-200 dark:border-slate-800">
+      {mounted && modalAprobar && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[9999] bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in-95 duration-150">
             <div>
               <span className="text-[10px] font-black uppercase text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/40">
                 Aprobación Directa
@@ -652,7 +669,8 @@ export default function PrestamosClient({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

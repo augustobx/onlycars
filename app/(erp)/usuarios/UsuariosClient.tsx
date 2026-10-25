@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { cambiarClaveUsuario, crearUsuario, eliminarUsuario } from '@/actions/usuarios';
 import { KeyRound, Loader2, Lock, Mail, Percent, Search, Trash2, UserPlus, Users, X } from 'lucide-react';
 import SearchCombobox from '@/components/common/SearchCombobox';
@@ -16,12 +17,17 @@ export default function UsuariosClient({
   maxUsers: number;
   canCreateOwner: boolean;
 }) {
+  const [mounted, setMounted] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [search, setSearch] = useState('');
   const [form, setForm] = useState({ nombre: '', email: '', password: '', rol: 'VENDEDOR', locationId: '', commissionPct: '0' });
   const [passwordTarget, setPasswordTarget] = useState<any | null>(null);
   const [newPassword, setNewPassword] = useState('');
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -184,9 +190,9 @@ export default function UsuariosClient({
         </div>
       </div>
 
-      {passwordTarget && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <form onSubmit={handlePasswordReset} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden">
+      {mounted && passwordTarget && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 overflow-y-auto">
+          <form onSubmit={handlePasswordReset} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center">
               <div>
                 <h2 className="text-xl font-black text-slate-900 dark:text-slate-100">Cambiar contraseña</h2>
@@ -226,13 +232,14 @@ export default function UsuariosClient({
               </div>
             </div>
           </form>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center">
+      {mounted && isModalOpen && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm flex justify-center items-start z-[9999] p-4 sm:p-6 overflow-y-auto min-h-screen">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-xl shadow-2xl my-auto max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center shrink-0">
               <div>
                 <h2 className="text-xl font-black text-slate-900 dark:text-slate-100">Alta de colaborador</h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400">Definí acceso, rol y ámbito operativo.</p>
@@ -241,46 +248,48 @@ export default function UsuariosClient({
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleCrear} className="p-6 space-y-4">
-              <div>
-                <label className={label}>Nombre completo *</label>
-                <input required value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} className={input} />
-              </div>
-              <div>
-                <label className={label}>Email de acceso *</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
-                  <input type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={`${input} pl-9`} />
-                </div>
-              </div>
-              <div>
-                <label className={label}>Contraseña inicial *</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
-                  <input type="password" minLength={8} required value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className={`${input} pl-9`} placeholder="Mínimo 8 caracteres" />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form onSubmit={handleCrear} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="p-6 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
                 <div>
-                  <label className={label}>Rol *</label>
-                  <select value={form.rol} onChange={(e) => setForm({ ...form, rol: e.target.value })} className={input}>
-                    <option value="VENDEDOR">Vendedor</option>
-                    <option value="ADMINISTRATIVO">Administrativo</option>
-                    <option value="TALLER">Taller</option>
-                    <option value="MANAGER">Manager</option>
-                    {canCreateOwner && <option value="OWNER">Owner</option>}
-                  </select>
+                  <label className={label}>Nombre completo *</label>
+                  <input required value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} className={input} />
                 </div>
                 <div>
-                  <label className={label}>Comisión %</label>
+                  <label className={label}>Email de acceso *</label>
                   <div className="relative">
-                    <Percent className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
-                    <input type="number" min="0" step="0.01" value={form.commissionPct} onChange={(e) => setForm({ ...form, commissionPct: e.target.value })} className={`${input} pl-9`} />
+                    <Mail className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+                    <input type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={`${input} pl-9`} />
                   </div>
                 </div>
+                <div>
+                  <label className={label}>Contraseña inicial *</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+                    <input type="password" minLength={8} required value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className={`${input} pl-9`} placeholder="Mínimo 8 caracteres" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className={label}>Rol *</label>
+                    <select value={form.rol} onChange={(e) => setForm({ ...form, rol: e.target.value })} className={input}>
+                      <option value="VENDEDOR">Vendedor</option>
+                      <option value="ADMINISTRATIVO">Administrativo</option>
+                      <option value="TALLER">Taller</option>
+                      <option value="MANAGER">Manager</option>
+                      {canCreateOwner && <option value="OWNER">Owner</option>}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={label}>Comisión %</label>
+                    <div className="relative">
+                      <Percent className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+                      <input type="number" min="0" step="0.01" value={form.commissionPct} onChange={(e) => setForm({ ...form, commissionPct: e.target.value })} className={`${input} pl-9`} />
+                    </div>
+                  </div>
+                </div>
+                <SearchCombobox label="Sucursal asignada" placeholder="Buscar sucursal..." value={form.locationId} onChange={value => setForm({ ...form, locationId: value })} options={locationOptions} emptyText="No hay sucursales activas." />
               </div>
-              <SearchCombobox label="Sucursal asignada" placeholder="Buscar sucursal..." value={form.locationId} onChange={value => setForm({ ...form, locationId: value })} options={locationOptions} emptyText="No hay sucursales activas." />
-              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3">
+              <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex justify-end gap-3 shrink-0">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold transition-colors">
                   Cancelar
                 </button>
@@ -290,7 +299,8 @@ export default function UsuariosClient({
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

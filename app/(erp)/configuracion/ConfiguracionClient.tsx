@@ -2,21 +2,40 @@
 
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Building2, DollarSign, Eye, EyeOff, Image as ImageIcon, Loader2, Palette, Save, Smartphone, Sparkles, ShieldAlert, Globe, CheckCircle2 } from 'lucide-react';
-import { guardarConfiguracion, guardarPwaVendedorConfig, subirLogoTenant } from '@/actions/config';
+import { Building2, DollarSign, Eye, EyeOff, Image as ImageIcon, Loader2, Palette, Save, Smartphone, Sparkles, ShieldAlert, Globe, CheckCircle2, Check, FileText, HandCoins } from 'lucide-react';
+import { guardarConfiguracion, guardarPwaVendedorConfig, subirLogoTenant, subirLogoDocumento, guardarBrandingDocumentosAction } from '@/actions/config';
 import { guardarPortalClientesConfigAction } from '@/actions/portal-config';
 import { SellerPwaConfig } from '@/lib/seller-pwa-config';
 import { ClientPwaConfig, normalizeClientPwaConfig } from '@/lib/client-pwa-config';
 import { useConfigStore } from '@/store/useConfigStore';
+import { PALETTE_LIST, ColorPalette } from '@/components/theme/palettes';
+import { useERPTheme } from '@/components/theme/ThemeContext';
 
 export default function ConfiguracionClient({ initial }: { initial: any }) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
+  const fileVentaRef = useRef<HTMLInputElement>(null);
+  const filePrestamoRef = useRef<HTMLInputElement>(null);
   const { setDolar, setTipoDolar, setLogo, setTema } = useConfigStore();
+  const { palette: activeThemePalette, setPalette } = useERPTheme();
+
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingLogoVenta, setUploadingLogoVenta] = useState(false);
+  const [uploadingLogoPrestamo, setUploadingLogoPrestamo] = useState(false);
   const [error, setError] = useState('');
   const [copiedLink, setCopiedLink] = useState(false);
+
+  const [selectedPaletteId, setSelectedPaletteId] = useState<string>(
+    initial.branding?.paletteId || 'orange'
+  );
+  const [logoVenta, setLogoVenta] = useState<string>(
+    initial.branding?.logoVenta || initial.logoUrl || ''
+  );
+  const [logoPrestamo, setLogoPrestamo] = useState<string>(
+    initial.branding?.logoPrestamo || initial.logoUrl || ''
+  );
+
   const [form, setForm] = useState({
     appName: initial.appName || initial.tenantName || 'OnlyCars',
     dolarActual: String(initial.dolarActual || 1400),
@@ -40,18 +59,35 @@ export default function ConfiguracionClient({ initial }: { initial: any }) {
   const input = 'w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[var(--border-focus,#FF6600)]';
   const label = 'block text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5';
 
-  const handleLogo = async (file?: File) => {
+  const handleLogoVenta = async (file?: File) => {
     if (!file) return;
     setError('');
-    setUploadingLogo(true);
+    setUploadingLogoVenta(true);
     const data = new FormData();
     data.append('file', file);
-    const res = await subirLogoTenant(data);
-    setUploadingLogo(false);
-    if (!res.success || !res.url) return setError(res.error || 'No se pudo subir el logo.');
-    setForm((prev) => ({ ...prev, logoUrl: res.url! }));
-    setLogo(res.url);
-    if (fileRef.current) fileRef.current.value = '';
+    const res = await subirLogoDocumento('venta', data);
+    setUploadingLogoVenta(false);
+    if (!res.success || !res.url) return setError(res.error || 'No se pudo subir el logo para boleto de venta.');
+    setLogoVenta(res.url);
+    if (fileVentaRef.current) fileVentaRef.current.value = '';
+  };
+
+  const handleLogoPrestamo = async (file?: File) => {
+    if (!file) return;
+    setError('');
+    setUploadingLogoPrestamo(true);
+    const data = new FormData();
+    data.append('file', file);
+    const res = await subirLogoDocumento('prestamo', data);
+    setUploadingLogoPrestamo(false);
+    if (!res.success || !res.url) return setError(res.error || 'No se pudo subir el logo para boleto de préstamos.');
+    setLogoPrestamo(res.url);
+    if (filePrestamoRef.current) filePrestamoRef.current.value = '';
+  };
+
+  const handlePaletteSelect = (palId: string) => {
+    setSelectedPaletteId(palId);
+    setPalette(palId);
   };
 
   const save = async (e: React.FormEvent) => {
@@ -61,6 +97,7 @@ export default function ConfiguracionClient({ initial }: { initial: any }) {
     const savePromises: Promise<any>[] = [
       guardarConfiguracion({ ...form, dolarActual: Number(form.dolarActual), tnaFinanciacion: Number(form.tnaFinanciacion), comisionVentaDefecto: Number(form.comisionVentaDefecto), logoUrl: form.logoUrl || null }),
       guardarPwaVendedorConfig(sellerPwa),
+      guardarBrandingDocumentosAction({ logoVenta, logoPrestamo, paletteId: selectedPaletteId }),
     ];
 
     if (initial.isClientPwaEnabled) {
@@ -70,17 +107,20 @@ export default function ConfiguracionClient({ initial }: { initial: any }) {
     const results = await Promise.all(savePromises);
     const res = results[0];
     const pwaRes = results[1];
-    const clientRes = results[2];
+    const brandingRes = results[2];
+    const clientRes = results[3];
 
     setSaving(false);
     if (!res.success) return setError(res.error || 'No se pudo guardar la configuración.');
     if (!pwaRes.success) return setError(pwaRes.error || 'No se pudo guardar la configuración de vendedores.');
+    if (brandingRes && !brandingRes.success) return setError(brandingRes.error || 'No se pudo guardar los logos de boletos.');
     if (clientRes && !clientRes.success) return setError(clientRes.error || 'No se pudo guardar la configuración del portal de clientes.');
 
     setDolar(Number(form.dolarActual));
     setTipoDolar(form.tipoDolar);
     setLogo(form.logoUrl || null);
     setTema({ primary: form.primaryColor, secondary: form.secondaryColor });
+    setPalette(selectedPaletteId);
     router.refresh();
   };
 
@@ -272,15 +312,223 @@ export default function ConfiguracionClient({ initial }: { initial: any }) {
         )}
       </section>
 
+      {/* SECCIÓN IDENTIDAD VISUAL: PALETA DE COLORES Y LOGOS DE BOLETOS */}
       <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
-        <header className="p-5 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 flex items-center gap-2"><Palette className="w-5 h-5 text-violet-600 dark:text-violet-400" /><div><h2 className="font-black text-slate-900 dark:text-slate-100">Identidad visual</h2><p className="text-xs text-slate-500 dark:text-slate-400">Logo en Cloudflare y colores aplicados al ERP, documentos y PWA.</p></div></header>
-        <div className="p-5 grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div><label className={label}>Logo</label><button type="button" disabled={uploadingLogo} onClick={() => fileRef.current?.click()} className="w-full min-h-40 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl flex items-center justify-center bg-slate-50 dark:bg-slate-800/50 hover:border-blue-400 overflow-hidden disabled:opacity-60">{uploadingLogo ? <div className="text-center text-blue-600 dark:text-blue-400"><Loader2 className="w-9 h-9 mx-auto mb-2 animate-spin" /><p className="text-sm font-black">Subiendo a Cloudflare...</p></div> : form.logoUrl ? <img src={form.logoUrl} alt="Logo" className="max-h-32 max-w-[80%] object-contain" /> : <div className="text-center text-slate-400"><ImageIcon className="w-9 h-9 mx-auto mb-2" /><p className="text-sm font-bold">Seleccionar imagen</p><p className="text-xs">JPG, PNG, WebP o AVIF · máximo 10 MB</p></div>}</button><input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/avif" hidden onChange={(e) => handleLogo(e.target.files?.[0])} />{form.logoUrl && <button type="button" onClick={() => setForm({ ...form, logoUrl: '' })} className="text-xs font-bold text-red-600 dark:text-red-400 mt-2">Quitar logo</button>}</div>
-          <div className="space-y-4"><div><label className={label}>Color principal</label><div className="flex gap-2"><input type="color" value={form.primaryColor} onChange={(e) => setForm({ ...form, primaryColor: e.target.value })} className="w-14 h-11 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-xl p-1" /><input className={input} value={form.primaryColor} onChange={(e) => setForm({ ...form, primaryColor: e.target.value })} /></div></div><div><label className={label}>Color secundario</label><div className="flex gap-2"><input type="color" value={form.secondaryColor} onChange={(e) => setForm({ ...form, secondaryColor: e.target.value })} className="w-14 h-11 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-xl p-1" /><input className={input} value={form.secondaryColor} onChange={(e) => setForm({ ...form, secondaryColor: e.target.value })} /></div></div><div className="rounded-2xl p-5 text-white" style={{ backgroundColor: form.primaryColor }}><p className="text-xs uppercase font-black opacity-70">Vista previa</p><p className="text-xl font-black mt-1">{form.appName || 'Concesionaria'}</p><p className="text-sm opacity-80 mt-1">OnlyCars Dealer Management System</p></div></div>
+        <header className="p-5 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 flex items-center gap-2">
+          <Palette className="w-5 h-5 text-[var(--color-primary-default,#FF6600)]" />
+          <div>
+            <h2 className="font-black text-slate-900 dark:text-slate-100">Identidad visual y boletos</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Elegí la paleta de colores corporativa y subí los logos oficiales para los boletos de venta y de préstamos.
+            </p>
+          </div>
+        </header>
+
+        <div className="p-6 space-y-8">
+          {/* 1. SELECCIÓN DE PALETA DE COLORES */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                  Paleta de colores del sistema
+                </label>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Define los colores de acento, botones, degradés y detalles luminosos en toda la plataforma.
+                </p>
+              </div>
+              <span className="text-xs font-bold text-[var(--color-primary-default,#FF6600)] bg-[var(--bg-primary-light,#FFF5EB)] dark:bg-slate-800 px-2.5 py-1 rounded-lg">
+                Activa: {activeThemePalette.name}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              {PALETTE_LIST.map((pal) => {
+                const isSelected = selectedPaletteId === pal.id;
+                return (
+                  <button
+                    key={pal.id}
+                    type="button"
+                    onClick={() => handlePaletteSelect(pal.id)}
+                    className={`p-3.5 rounded-2xl border text-left transition-all relative flex flex-col justify-between gap-3 cursor-pointer ${
+                      isSelected
+                        ? 'border-slate-900 dark:border-white ring-2 ring-[var(--color-primary-default,#FF6600)] bg-slate-50/80 dark:bg-slate-800/60 shadow-sm'
+                        : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div
+                        className="w-8 h-8 rounded-full shadow-sm flex items-center justify-center"
+                        style={{
+                          background: pal.gradient,
+                          boxShadow: `0 2px 8px ${pal.glow}`,
+                        }}
+                      />
+                      {isSelected && (
+                        <span className="w-5 h-5 rounded-full bg-[var(--color-primary-default,#FF6600)] text-white flex items-center justify-center">
+                          <Check size={12} strokeWidth={3} />
+                        </span>
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-black text-xs text-slate-900 dark:text-slate-100">{pal.name}</p>
+                      <p className="text-[10px] font-mono text-slate-400 mt-0.5">{pal.primary}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 2. LOGOS PARA BOLETOS: VENTA Y PRÉSTAMOS */}
+          <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
+            <div className="mb-4">
+              <label className="block text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                Logotipos para documentos oficiales
+              </label>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Subí imágenes con fondo transparente (PNG, WebP o JPG) para imprimir en los contratos.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* LOGO BOLETO DE VENTA */}
+              <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl flex flex-col justify-between space-y-4">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black uppercase text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+                      <FileText size={16} /> Boleto de Venta
+                    </span>
+                    {logoVenta && (
+                      <span className="text-[10px] bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-bold px-2 py-0.5 rounded-full">
+                        Cargado
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100 mt-1">
+                    Logo para Boleto de Venta
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Se imprime en el encabezado del boleto de compra-venta vehicular.
+                  </p>
+                </div>
+
+                <div>
+                  <button
+                    type="button"
+                    disabled={uploadingLogoVenta}
+                    onClick={() => fileVentaRef.current?.click()}
+                    className="w-full min-h-36 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl flex items-center justify-center bg-white dark:bg-slate-800/50 hover:border-blue-400 overflow-hidden disabled:opacity-60 transition-colors cursor-pointer"
+                  >
+                    {uploadingLogoVenta ? (
+                      <div className="text-center text-blue-600 dark:text-blue-400">
+                        <Loader2 className="w-8 h-8 mx-auto mb-2 animate-spin" />
+                        <p className="text-xs font-black">Subiendo a Cloudflare...</p>
+                      </div>
+                    ) : logoVenta ? (
+                      <img src={logoVenta} alt="Logo Venta" className="max-h-24 max-w-[80%] object-contain" />
+                    ) : (
+                      <div className="text-center text-slate-400 p-4">
+                        <ImageIcon className="w-8 h-8 mx-auto mb-2" />
+                        <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Seleccionar logo de venta</p>
+                        <p className="text-[11px] text-slate-400 mt-0.5">PNG, JPG o WebP</p>
+                      </div>
+                    )}
+                  </button>
+                  <input
+                    ref={fileVentaRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/avif"
+                    hidden
+                    onChange={(e) => handleLogoVenta(e.target.files?.[0])}
+                  />
+                  {logoVenta && (
+                    <button
+                      type="button"
+                      onClick={() => setLogoVenta('')}
+                      className="text-xs font-bold text-red-600 dark:text-red-400 mt-2 hover:underline cursor-pointer"
+                    >
+                      Quitar logo de venta
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* LOGO BOLETO DE PRÉSTAMOS */}
+              <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl flex flex-col justify-between space-y-4">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black uppercase text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                      <HandCoins size={16} /> Boleto de Préstamos
+                    </span>
+                    {logoPrestamo && (
+                      <span className="text-[10px] bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-bold px-2 py-0.5 rounded-full">
+                        Cargado
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100 mt-1">
+                    Logo para Boleto de Préstamos
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Se imprime en el contrato de mutuo dinerario y plan de cuotas.
+                  </p>
+                </div>
+
+                <div>
+                  <button
+                    type="button"
+                    disabled={uploadingLogoPrestamo}
+                    onClick={() => filePrestamoRef.current?.click()}
+                    className="w-full min-h-36 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl flex items-center justify-center bg-white dark:bg-slate-800/50 hover:border-emerald-400 overflow-hidden disabled:opacity-60 transition-colors cursor-pointer"
+                  >
+                    {uploadingLogoPrestamo ? (
+                      <div className="text-center text-emerald-600 dark:text-emerald-400">
+                        <Loader2 className="w-8 h-8 mx-auto mb-2 animate-spin" />
+                        <p className="text-xs font-black">Subiendo a Cloudflare...</p>
+                      </div>
+                    ) : logoPrestamo ? (
+                      <img src={logoPrestamo} alt="Logo Préstamo" className="max-h-24 max-w-[80%] object-contain" />
+                    ) : (
+                      <div className="text-center text-slate-400 p-4">
+                        <ImageIcon className="w-8 h-8 mx-auto mb-2" />
+                        <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Seleccionar logo de préstamos</p>
+                        <p className="text-[11px] text-slate-400 mt-0.5">PNG, JPG o WebP</p>
+                      </div>
+                    )}
+                  </button>
+                  <input
+                    ref={filePrestamoRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/avif"
+                    hidden
+                    onChange={(e) => handleLogoPrestamo(e.target.files?.[0])}
+                  />
+                  {logoPrestamo && (
+                    <button
+                      type="button"
+                      onClick={() => setLogoPrestamo('')}
+                      className="text-xs font-bold text-red-600 dark:text-red-400 mt-2 hover:underline cursor-pointer"
+                    >
+                      Quitar logo de préstamos
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-t border-slate-200 dark:border-slate-800 p-4 flex justify-end z-50"><button type="submit" disabled={saving || uploadingLogo} className="px-7 py-3 bg-[var(--bg-primary-default,#FF6600)] hover:bg-[var(--bg-primary-bold,#e25700)] text-white rounded-xl font-black flex items-center gap-2 disabled:opacity-50 transition-colors shadow-sm">{saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />} Guardar configuración</button></div>
+      <div className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-t border-slate-200 dark:border-slate-800 p-4 flex justify-end z-50">
+        <button
+          type="submit"
+          disabled={saving || uploadingLogo || uploadingLogoVenta || uploadingLogoPrestamo}
+          className="px-7 py-3 bg-[var(--bg-primary-default,#FF6600)] hover:bg-[var(--bg-primary-bold,#e25700)] text-white rounded-xl font-black flex items-center gap-2 disabled:opacity-50 transition-colors shadow-sm cursor-pointer"
+        >
+          {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+          Guardar configuración
+        </button>
+      </div>
     </form>
   );
 }

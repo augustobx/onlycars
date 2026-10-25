@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { registrarMovimiento } from '@/actions/caja';
 import { Wallet, TrendingUp, TrendingDown, Plus, Search, Calendar, Loader2, X, Receipt } from 'lucide-react';
@@ -10,6 +11,7 @@ import SearchCombobox from '@/components/common/SearchCombobox';
 
 export default function CajaClient({ transacciones, vehiculos, dolarActual }: { transacciones: any[]; vehiculos: any[]; dolarActual: number }) {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filtroMes, setFiltroMes] = useState('todos');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -19,6 +21,10 @@ export default function CajaClient({ transacciones, vehiculos, dolarActual }: { 
   const [tipoMov, setTipoMov] = useState<'INGRESO' | 'EGRESO'>('EGRESO');
   const [monto, setMonto] = useState({ ars: '', usd: '' });
   const [vehiculoId, setVehiculoId] = useState('');
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const txFiltradas = useMemo(() => {
     const now = new Date();
@@ -166,9 +172,9 @@ export default function CajaClient({ transacciones, vehiculos, dolarActual }: { 
         </div>
       </div>
 
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <form onSubmit={handleGuardarMovimiento} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-2xl p-6 space-y-5 shadow-2xl">
+      {mounted && isModalOpen && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[9999] bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <form onSubmit={handleGuardarMovimiento} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-2xl p-6 space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
             <div className="flex justify-between items-start">
               <div>
                 <h3 className="text-xl font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
@@ -252,7 +258,8 @@ export default function CajaClient({ transacciones, vehiculos, dolarActual }: { 
               </button>
             </div>
           </form>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

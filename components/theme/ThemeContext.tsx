@@ -16,7 +16,7 @@ interface ERPThemeContextType {
 }
 
 const ERPThemeContext = createContext<ERPThemeContextType>({
-  theme: '1',
+  theme: '2',
   setTheme: () => {},
   toggleERPTheme: () => {},
   palette: PALETTES[DEFAULT_PALETTE_ID],
@@ -28,7 +28,7 @@ const ERPThemeContext = createContext<ERPThemeContextType>({
 export const useERPTheme = () => useContext(ERPThemeContext);
 
 export function ERPThemeProvider({
-  initialTheme = '1',
+  initialTheme = '2',
   initialPaletteId = DEFAULT_PALETTE_ID,
   children,
 }: {

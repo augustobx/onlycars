@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Search, Plus, Users, UserRound, Phone, Mail, MapPin, Edit, Loader2, Save, X } from 'lucide-react';
@@ -12,11 +13,16 @@ export default function ClientesClient({ clientes }: { clientes: any[] }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [mounted, setMounted] = useState(false);
   const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [formData, setFormData] = useState<any>(EMPTY);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -178,10 +184,10 @@ export default function ClientesClient({ clientes }: { clientes: any[] }) {
         </div>
       </div>
 
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl w-full max-w-3xl my-6 overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center">
+      {mounted && isModalOpen && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-[9999] flex justify-center items-start p-4 sm:p-6 overflow-y-auto min-h-screen">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl w-full max-w-3xl my-auto max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center shrink-0">
               <div>
                 <h3 className="text-xl font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
                   <UserRound className="w-5 h-5 text-[var(--text-primary-default,#FF6600)]" />
@@ -193,51 +199,53 @@ export default function ClientesClient({ clientes }: { clientes: any[] }) {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-5">
-              {errorMsg && (
-                <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-300 p-3 rounded-xl text-sm font-bold">
-                  {errorMsg}
-                </div>
-              )}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <label className={label}>Nombre completo *</label>
-                  <input required className={input} value={formData.nombre_completo} onChange={(e) => setFormData({ ...formData, nombre_completo: e.target.value })} />
-                </div>
-                <div>
-                  <label className={label}>DNI</label>
-                  <input className={input} value={formData.dni} onChange={(e) => setFormData({ ...formData, dni: e.target.value })} />
-                </div>
-                <div>
-                  <label className={label}>CUIT / CUIL</label>
-                  <input className={input} value={formData.cuit_cuil} onChange={(e) => setFormData({ ...formData, cuit_cuil: e.target.value })} />
-                </div>
-                <div>
-                  <label className={label}>Teléfono</label>
-                  <input className={input} value={formData.telefono} onChange={(e) => setFormData({ ...formData, telefono: e.target.value })} />
-                </div>
-                <div>
-                  <label className={label}>Email</label>
-                  <input type="email" className={input} value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
-                </div>
-                <div className="md:col-span-2">
-                  <label className={label}>Domicilio</label>
-                  <input className={input} value={formData.domicilio} onChange={(e) => setFormData({ ...formData, domicilio: e.target.value })} />
-                </div>
-                <div>
-                  <label className={label}>Localidad</label>
-                  <input className={input} value={formData.localidad} onChange={(e) => setFormData({ ...formData, localidad: e.target.value })} />
-                </div>
-                <div>
-                  <label className={label}>Provincia</label>
-                  <input className={input} value={formData.provincia} onChange={(e) => setFormData({ ...formData, provincia: e.target.value })} />
-                </div>
-                <div className="md:col-span-2">
-                  <label className={label}>Notas internas</label>
-                  <textarea className={`${input} min-h-24`} value={formData.notas} onChange={(e) => setFormData({ ...formData, notas: e.target.value })} />
+            <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="p-6 space-y-5 overflow-y-auto flex-1">
+                {errorMsg && (
+                  <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-300 p-3 rounded-xl text-sm font-bold">
+                    {errorMsg}
+                  </div>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <label className={label}>Nombre completo *</label>
+                    <input required className={input} value={formData.nombre_completo} onChange={(e) => setFormData({ ...formData, nombre_completo: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className={label}>DNI</label>
+                    <input className={input} value={formData.dni} onChange={(e) => setFormData({ ...formData, dni: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className={label}>CUIT / CUIL</label>
+                    <input className={input} value={formData.cuit_cuil} onChange={(e) => setFormData({ ...formData, cuit_cuil: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className={label}>Teléfono</label>
+                    <input className={input} value={formData.telefono} onChange={(e) => setFormData({ ...formData, telefono: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className={label}>Email</label>
+                    <input type="email" className={input} value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className={label}>Domicilio</label>
+                    <input className={input} value={formData.domicilio} onChange={(e) => setFormData({ ...formData, domicilio: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className={label}>Localidad</label>
+                    <input className={input} value={formData.localidad} onChange={(e) => setFormData({ ...formData, localidad: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className={label}>Provincia</label>
+                    <input className={input} value={formData.provincia} onChange={(e) => setFormData({ ...formData, provincia: e.target.value })} />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className={label}>Notas internas</label>
+                    <textarea className={`${input} min-h-24`} value={formData.notas} onChange={(e) => setFormData({ ...formData, notas: e.target.value })} />
+                  </div>
                 </div>
               </div>
-              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3">
+              <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex justify-end gap-3 shrink-0">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold transition-colors">
                   Cancelar
                 </button>
@@ -251,7 +259,8 @@ export default function ClientesClient({ clientes }: { clientes: any[] }) {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

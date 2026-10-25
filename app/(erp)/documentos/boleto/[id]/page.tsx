@@ -31,13 +31,22 @@ export default async function BoletoCompraVentaPage({ params }: { params: Promis
       </div>
 
       <div className="max-w-4xl mx-auto bg-white border border-slate-300 print:border-none p-8 sm:p-12 rounded-2xl shadow-xl print:shadow-none space-y-6 text-sm leading-relaxed">
-        <div className="flex items-start justify-between border-b-2 border-slate-900 pb-6">
-          <div>
-            <h1 className="text-2xl font-black tracking-tight text-slate-950 uppercase">{concesionaria.nombre}</h1>
-            <p className="text-xs text-slate-600 mt-1 font-medium">CUIT: {concesionaria.cuit} · {concesionaria.direccion}{concesionaria.ciudad ? ` · ${concesionaria.ciudad}` : ''}</p>
-            {concesionaria.telefono && <p className="text-xs text-slate-600 font-medium">Tel: {concesionaria.telefono}</p>}
+        <div className="flex items-start justify-between border-b-2 border-slate-900 pb-6 gap-4">
+          <div className="flex items-center gap-4">
+            {concesionaria.logoUrl && (
+              <img
+                src={concesionaria.logoUrl}
+                alt={concesionaria.nombre}
+                className="max-h-16 max-w-[180px] object-contain"
+              />
+            )}
+            <div>
+              <h1 className="text-2xl font-black tracking-tight text-slate-950 uppercase">{concesionaria.nombre}</h1>
+              <p className="text-xs text-slate-600 mt-1 font-medium">CUIT: {concesionaria.cuit} · {concesionaria.direccion}{concesionaria.ciudad ? ` · ${concesionaria.ciudad}` : ''}</p>
+              {concesionaria.telefono && <p className="text-xs text-slate-600 font-medium">Tel: {concesionaria.telefono}</p>}
+            </div>
           </div>
-          <div className="text-right">
+          <div className="text-right shrink-0">
             <span className="inline-block px-3 py-1 bg-slate-900 text-white font-black text-xs uppercase tracking-wider rounded">Boleto Compra-Venta</span>
             <p className="text-sm font-black text-slate-900 mt-2 font-mono">{venta.numero_boleto || `BOL-${venta.id_venta}`}</p>
             <p className="text-xs text-slate-500 mt-0.5">Fecha: {new Date(venta.fecha_venta).toLocaleDateString('es-AR')}</p>

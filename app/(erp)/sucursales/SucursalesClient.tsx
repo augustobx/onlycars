@@ -1,14 +1,20 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { crearSucursal } from '@/actions/sucursales';
 import { Building, Plus, MapPin, Phone, Loader2, Search, X, Warehouse, BadgeDollarSign } from 'lucide-react';
 
 export default function SucursalesClient({ initialSucursales, maxLocations }: { initialSucursales: any[]; maxLocations: number }) {
+  const [mounted, setMounted] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [search, setSearch] = useState('');
   const [form, setForm] = useState({ name: '', code: '', address: '', phone: '', isMain: false });
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return initialSucursales.filter((s) => !q || `${s.name} ${s.code} ${s.address || ''} ${s.phone || ''}`.toLowerCase().includes(q));
@@ -93,9 +99,9 @@ export default function SucursalesClient({ initialSucursales, maxLocations }: { 
         )}
       </div>
 
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-lg w-full shadow-2xl overflow-hidden">
+      {mounted && isModalOpen && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-lg w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
               <div>
                 <h3 className="font-black text-xl text-slate-900 dark:text-slate-100">Nueva sucursal</h3>
@@ -149,7 +155,8 @@ export default function SucursalesClient({ initialSucursales, maxLocations }: { 
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

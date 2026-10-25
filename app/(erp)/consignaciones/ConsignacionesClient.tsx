@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { CarFront, Plus, Search, UserRound, Loader2, X } from 'lucide-react';
 import { registrarConsignacion, liquidarConsignacion } from '@/actions/consignaciones';
@@ -10,12 +11,17 @@ import DualMoney from '@/components/common/DualMoney';
 
 export default function ConsignacionesClient({ vehiculos, clientes, dolarActual }: { vehiculos: any[]; clientes: any[]; dolarActual: number }) {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [clienteId, setClienteId] = useState('');
   const [precio, setPrecio] = useState({ ars: '', usd: '' });
   const [form, setForm] = useState({ tipo_vehiculo: 'Auto', marca: '', modelo: '', anio: String(new Date().getFullYear()), patente: '', km: '', comision_pct: '5' });
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const clientOptions = useMemo(() => clientes.map(c => ({
     value: String(c.id_cliente),
@@ -187,10 +193,10 @@ export default function ConsignacionesClient({ vehiculos, clientes, dolarActual 
         </div>
       </div>
 
-      {open && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <form onSubmit={submit} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-3xl rounded-3xl p-6 shadow-2xl space-y-5 max-h-[95vh] overflow-y-auto custom-scrollbar">
-            <div className="flex justify-between items-start">
+      {mounted && open && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[9999] bg-slate-950/70 backdrop-blur-sm flex justify-center items-start p-4 sm:p-6 overflow-y-auto min-h-screen">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-full max-w-3xl rounded-3xl shadow-2xl my-auto max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-start shrink-0">
               <div>
                 <h3 className="text-xl font-black text-slate-900 dark:text-slate-100">Nueva consignación</h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Seleccioná propietario, tipo de unidad y condiciones comerciales.</p>
@@ -199,64 +205,69 @@ export default function ConsignacionesClient({ vehiculos, clientes, dolarActual 
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <SearchCombobox label="Propietario / consignante" required value={clienteId} onChange={setClienteId} options={clientOptions} placeholder="Buscar por nombre, DNI, CUIT o teléfono..." />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <label>
-                <span className={fieldLabel}>Tipo de vehículo *</span>
-                <select value={form.tipo_vehiculo} onChange={(e) => setForm({ ...form, tipo_vehiculo: e.target.value })} className={input}>
-                  <option>Auto</option>
-                  <option>Moto</option>
-                  <option>Camioneta</option>
-                  <option>Utilitario</option>
-                  <option>Camion</option>
-                </select>
-              </label>
-              <label>
-                <span className={fieldLabel}>Marca *</span>
-                <input required value={form.marca} onChange={(e) => setForm({ ...form, marca: e.target.value })} className={input} />
-              </label>
-              <label>
-                <span className={fieldLabel}>Modelo *</span>
-                <input required value={form.modelo} onChange={(e) => setForm({ ...form, modelo: e.target.value })} className={input} />
-              </label>
-              <label>
-                <span className={fieldLabel}>Año *</span>
-                <input type="number" required value={form.anio} onChange={(e) => setForm({ ...form, anio: e.target.value })} className={input} />
-              </label>
-              <label>
-                <span className={fieldLabel}>Patente</span>
-                <input value={form.patente} onChange={(e) => setForm({ ...form, patente: e.target.value.toUpperCase() })} className={`${input} uppercase font-mono`} />
-              </label>
-              <label>
-                <span className={fieldLabel}>Kilometraje</span>
-                <input type="number" min="0" value={form.km} onChange={(e) => setForm({ ...form, km: e.target.value })} className={input} />
-              </label>
-              <label className="md:col-span-2">
-                <span className={fieldLabel}>Comisión agencia (%) *</span>
-                <input type="number" min="0" max="100" step="0.01" value={form.comision_pct} onChange={(e) => setForm({ ...form, comision_pct: e.target.value })} className={input} />
-              </label>
-            </div>
-            <DualCurrencyInput label="Precio de publicación" required ars={precio.ars} usd={precio.usd} rate={dolarActual} onChange={setPrecio} />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-xl p-3">
-                <p className="text-[10px] uppercase font-black text-amber-700 dark:text-amber-400">Monto estimado del propietario</p>
-                <DualMoney ars={ownerArs} rate={dolarActual} />
+            <form onSubmit={submit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="p-6 space-y-5 overflow-y-auto flex-1 custom-scrollbar">
+                <SearchCombobox label="Propietario / consignante" required value={clienteId} onChange={setClienteId} options={clientOptions} placeholder="Buscar por nombre, DNI, CUIT o teléfono..." />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <label>
+                    <span className={fieldLabel}>Tipo de vehículo *</span>
+                    <select value={form.tipo_vehiculo} onChange={(e) => setForm({ ...form, tipo_vehiculo: e.target.value })} className={input}>
+                      <option>Auto</option>
+                      <option>Moto</option>
+                      <option>Camioneta</option>
+                      <option>Utilitario</option>
+                      <option>Camion</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span className={fieldLabel}>Marca *</span>
+                    <input required value={form.marca} onChange={(e) => setForm({ ...form, marca: e.target.value })} className={input} />
+                  </label>
+                  <label>
+                    <span className={fieldLabel}>Modelo *</span>
+                    <input required value={form.modelo} onChange={(e) => setForm({ ...form, modelo: e.target.value })} className={input} />
+                  </label>
+                  <label>
+                    <span className={fieldLabel}>Año *</span>
+                    <input type="number" required value={form.anio} onChange={(e) => setForm({ ...form, anio: e.target.value })} className={input} />
+                  </label>
+                  <label>
+                    <span className={fieldLabel}>Patente</span>
+                    <input value={form.patente} onChange={(e) => setForm({ ...form, patente: e.target.value.toUpperCase() })} className={`${input} uppercase font-mono`} />
+                  </label>
+                  <label>
+                    <span className={fieldLabel}>Kilometraje</span>
+                    <input type="number" min="0" value={form.km} onChange={(e) => setForm({ ...form, km: e.target.value })} className={input} />
+                  </label>
+                  <label className="md:col-span-2">
+                    <span className={fieldLabel}>Comisión agencia (%) *</span>
+                    <input type="number" min="0" max="100" step="0.01" value={form.comision_pct} onChange={(e) => setForm({ ...form, comision_pct: e.target.value })} className={input} />
+                  </label>
+                </div>
+                <DualCurrencyInput label="Precio de publicación" required ars={precio.ars} usd={precio.usd} rate={dolarActual} onChange={setPrecio} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-xl p-3">
+                    <p className="text-[10px] uppercase font-black text-amber-700 dark:text-amber-400">Monto estimado del propietario</p>
+                    <DualMoney ars={ownerArs} rate={dolarActual} />
+                  </div>
+                  <div className="bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 rounded-xl p-3">
+                    <p className="text-[10px] uppercase font-black text-emerald-700 dark:text-emerald-400">Comisión estimada agencia</p>
+                    <DualMoney ars={agencyArs} rate={dolarActual} />
+                  </div>
+                </div>
               </div>
-              <div className="bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 rounded-xl p-3">
-                <p className="text-[10px] uppercase font-black text-emerald-700 dark:text-emerald-400">Comisión estimada agencia</p>
-                <DualMoney ars={agencyArs} rate={dolarActual} />
+              <div className="flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800 px-6 py-4 bg-slate-50/50 dark:bg-slate-800/30 shrink-0">
+                <button type="button" onClick={() => setOpen(false)} className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold transition-colors">
+                  Cancelar
+                </button>
+                <button disabled={saving} type="submit" className="px-5 py-2.5 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-xl font-black flex items-center gap-2 shadow-sm transition-all disabled:opacity-50">
+                  {saving && <Loader2 className="w-4 h-4 animate-spin" />} Registrar
+                </button>
               </div>
-            </div>
-            <div className="flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800 pt-4">
-              <button type="button" onClick={() => setOpen(false)} className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold transition-colors">
-                Cancelar
-              </button>
-              <button disabled={saving} type="submit" className="px-5 py-2.5 bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-xl font-black flex items-center gap-2 shadow-sm transition-all disabled:opacity-50">
-                {saving && <Loader2 className="w-4 h-4 animate-spin" />} Registrar
-              </button>
-            </div>
-          </form>
-        </div>
+            </form>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );

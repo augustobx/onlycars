@@ -200,3 +200,79 @@ export async function syncDolarApi(tipo: string = 'blue') {
     return { success: false, error: 'No se pudo actualizar la cotización.' };
   }
 }
+
+export interface BrandingDocumentosConfig {
+  logoVenta?: string | null;
+  logoPrestamo?: string | null;
+  paletteId?: string | null;
+}
+
+export async function subirLogoDocumento(tipo: 'venta' | 'prestamo', formData: FormData) {
+  try {
+    const tenant = await getTenantContext();
+    await requireTenantRole(tenant.id, CONFIG_ROLES);
+    const file = formData.get('file') as File | null;
+    if (!file || !file.size) return { success: false, error: 'Seleccioná una imagen.' };
+
+    const extension = file.name.split('.').pop() || 'png';
+    const uploaded = await getObjectStorage().upload({
+      tenantId: tenant.id,
+      folder: 'documentos',
+      fileName: `logo_${tipo}_${Date.now()}.${extension}`,
+      mimeType: file.type,
+      buffer: Buffer.from(await file.arrayBuffer()),
+    });
+
+    const feature = await db.tenantFeature.findUnique({
+      where: { tenantId_featureKey: { tenantId: tenant.id, featureKey: 'branding_documentos' } },
+    });
+    const currentConfig = (feature?.config as any) || {};
+    const newConfig = {
+      ...currentConfig,
+      [tipo === 'venta' ? 'logoVenta' : 'logoPrestamo']: uploaded.url,
+    };
+
+    await db.tenantFeature.upsert({
+      where: { tenantId_featureKey: { tenantId: tenant.id, featureKey: 'branding_documentos' } },
+      update: { isEnabled: true, config: newConfig },
+      create: { tenantId: tenant.id, featureKey: 'branding_documentos', isEnabled: true, config: newConfig },
+    });
+
+    revalidatePath('/configuracion');
+    revalidatePath('/documentos', 'layout');
+    return { success: true, url: uploaded.url };
+  } catch (error: any) {
+    console.error('Error subiendo logo de documento:', error);
+    return { success: false, error: error?.message || 'No se pudo subir el logo.' };
+  }
+}
+
+export async function guardarBrandingDocumentosAction(branding: BrandingDocumentosConfig) {
+  try {
+    const tenant = await getTenantContext();
+    await requireTenantRole(tenant.id, CONFIG_ROLES);
+
+    const feature = await db.tenantFeature.findUnique({
+      where: { tenantId_featureKey: { tenantId: tenant.id, featureKey: 'branding_documentos' } },
+    });
+    const currentConfig = (feature?.config as any) || {};
+    const newConfig = {
+      ...currentConfig,
+      ...branding,
+    };
+
+    await db.tenantFeature.upsert({
+      where: { tenantId_featureKey: { tenantId: tenant.id, featureKey: 'branding_documentos' } },
+      update: { isEnabled: true, config: newConfig },
+      create: { tenantId: tenant.id, featureKey: 'branding_documentos', isEnabled: true, config: newConfig },
+    });
+
+    revalidatePath('/configuracion');
+    revalidatePath('/documentos', 'layout');
+    return { success: true, config: newConfig };
+  } catch (error: any) {
+    console.error('Error guardando branding de documentos:', error);
+    return { success: false, error: error?.message || 'No se pudo guardar la configuración de marca.' };
+  }
+}
+

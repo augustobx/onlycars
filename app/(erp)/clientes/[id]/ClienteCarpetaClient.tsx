@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { ArrowLeft, UserRound, Phone, Mail, MapPin, BadgeDollarSign, CarFront, HandCoins, CalendarClock, Printer, Target, ShieldCheck, KeyRound, Copy, Check, MessageSquare, Loader2, X } from 'lucide-react';
 import DualMoney from '@/components/common/DualMoney';
@@ -9,12 +10,17 @@ import { resetearPasswordClienteAdminAction } from '@/actions/clientes';
 type Tab = 'resumen' | 'oportunidades' | 'ventas' | 'senias' | 'prestamos';
 
 export default function ClienteCarpetaClient({ cliente, dolarActual }: { cliente: any; dolarActual: number }) {
+  const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('resumen');
   const [modalResetOpen, setModalResetOpen] = useState(false);
   const [passwordManual, setPasswordManual] = useState('');
   const [loadingReset, setLoadingReset] = useState(false);
   const [resetResult, setResetResult] = useState<{ passwordGenerada: string } | null>(null);
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const cleanPhone = (cliente.telefono || '').replace(/[^0-9]/g, '');
 
@@ -126,9 +132,9 @@ export default function ClienteCarpetaClient({ cliente, dolarActual }: { cliente
 
       {activeTab === 'prestamos' && <Panel title="Préstamos">{cliente.prestamos.length === 0 ? <Empty text="No hay préstamos registrados." /> : cliente.prestamos.map((p: any) => { const pendientes = p.cuotas.filter((c: any) => c.estado === 'PENDIENTE').reduce((s: number, c: any) => s + Number(c.monto_usd || 0), 0); return <div key={p.id_prestamo} className="flex flex-col md:flex-row md:items-center justify-between gap-4 border rounded-xl p-4"><div className="flex items-center gap-3"><CalendarClock className="w-5 h-5 text-blue-600" /><div><p className="font-black text-slate-900">Préstamo #{p.id_prestamo}</p><p className="text-xs text-slate-500">{new Date(p.fecha_prestamo).toLocaleDateString('es-AR')} · {p.estado}</p></div></div><div className="text-right"><p className="text-[10px] uppercase font-black text-slate-400">Saldo equivalente hoy</p><DualMoney usd={pendientes} rate={dolarActual} compact /></div></div>; })}</Panel>}
 
-      {modalResetOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-slate-950 border border-slate-800 rounded-3xl max-w-md w-full p-6 text-white shadow-2xl relative space-y-5">
+      {mounted && modalResetOpen && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[9999] bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-slate-950 border border-slate-800 rounded-3xl max-w-md w-full p-6 text-white shadow-2xl relative space-y-5 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
@@ -233,7 +239,8 @@ export default function ClienteCarpetaClient({ cliente, dolarActual }: { cliente
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

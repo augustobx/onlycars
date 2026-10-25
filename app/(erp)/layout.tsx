@@ -39,7 +39,7 @@ export default async function ERPLayout({ children }: { children: React.ReactNod
 
   const cookieStore = await cookies();
   const cookieTheme = cookieStore.get('onlycars_theme')?.value;
-  const initialTheme = (cookieTheme === '2' ? '2' : '1') as '1' | '2';
+  const initialTheme = (cookieTheme === '1' ? '1' : '2') as '1' | '2';
   const initialPaletteId = cookieStore.get('onlycars_palette')?.value || 'orange';
 
   return (

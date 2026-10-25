@@ -135,25 +135,47 @@ export function LayoutNanoLabs({
 
   const role = currentRole as Role;
 
-  const menuItems = [
-    { ruta: '/', nombre: 'Centro de Operaciones', Icono: LayoutDashboard, roles: ALL },
-    { ruta: '/prospectos', nombre: 'Pipeline y Prospectos', Icono: UserCheck, roles: COMMERCIAL },
-    { ruta: '/clientes', nombre: 'Clientes', Icono: Users, roles: COMMERCIAL },
-    { ruta: '/vehiculos', nombre: 'Vehículos', Icono: Car, roles: ALL },
-    { ruta: '/motos', nombre: 'Motos', Icono: Bike, roles: ALL },
-    { ruta: '/consignaciones', nombre: 'Consignaciones', Icono: CarFront, roles: COMMERCIAL },
-    { ruta: '/ventas', nombre: 'Ventas y Cotizador', Icono: BadgeDollarSign, roles: COMMERCIAL },
-    { ruta: '/cuotas', nombre: 'Cobranzas y Cuotas', Icono: CalendarClock, roles: ADMIN },
-    { ruta: '/prestamos', nombre: 'Financiación', Icono: HandCoins, roles: ADMIN },
-    { ruta: '/caja', nombre: 'Caja y Gastos', Icono: Wallet, roles: ADMIN },
-    { ruta: '/sucursales', nombre: 'Sucursales', Icono: Building, roles: MANAGEMENT },
-    { ruta: '/usuarios', nombre: 'Usuarios y Accesos', Icono: ShieldCheck, roles: MANAGEMENT },
-    ...(canConfigure ? [{ ruta: '/configuracion', nombre: 'Configuración', Icono: Settings, roles: ALL }] : []),
-    { ruta: '/manual', nombre: 'Manual de usuario', Icono: BookOpen, roles: ALL },
-    ...(isSuperAdmin ? [{ ruta: '/superadmin', nombre: 'SuperAdmin Plataforma', Icono: ShieldAlert, roles: ALL }] : []),
-  ];
+  interface MenuCategory {
+    categoria: string;
+    items: {
+      ruta: string;
+      nombre: string;
+      Icono: any;
+      roles: Role[];
+    }[];
+  }
 
-  const visibleItems = menuItems.filter((item) => isSuperAdmin || item.roles.includes(role));
+  const menuSections: MenuCategory[] = [
+    {
+      categoria: 'Comercial & Ventas',
+      items: [
+        { ruta: '/', nombre: 'Centro de Operaciones', Icono: LayoutDashboard, roles: ALL },
+        { ruta: '/prospectos', nombre: 'Pipeline y Prospectos', Icono: UserCheck, roles: COMMERCIAL },
+        { ruta: '/clientes', nombre: 'Clientes', Icono: Users, roles: COMMERCIAL },
+        { ruta: '/vehiculos', nombre: 'Vehículos', Icono: Car, roles: ALL },
+        { ruta: '/motos', nombre: 'Motos', Icono: Bike, roles: ALL },
+        { ruta: '/consignaciones', nombre: 'Consignaciones', Icono: CarFront, roles: COMMERCIAL },
+        { ruta: '/ventas', nombre: 'Ventas y Cotizador', Icono: BadgeDollarSign, roles: COMMERCIAL },
+      ],
+    },
+    {
+      categoria: 'Finanzas & Cobranzas',
+      items: [
+        { ruta: '/cuotas', nombre: 'Cobranzas y Cuotas', Icono: CalendarClock, roles: ADMIN },
+        { ruta: '/prestamos', nombre: 'Financiación', Icono: HandCoins, roles: ADMIN },
+        { ruta: '/caja', nombre: 'Caja y Gastos', Icono: Wallet, roles: ADMIN },
+      ],
+    },
+    {
+      categoria: 'Gestión & Sistema',
+      items: [
+        { ruta: '/sucursales', nombre: 'Sucursales', Icono: Building, roles: MANAGEMENT },
+        { ruta: '/usuarios', nombre: 'Usuarios y Accesos', Icono: ShieldCheck, roles: MANAGEMENT },
+        { ruta: '/manual', nombre: 'Manual de usuario', Icono: BookOpen, roles: ALL },
+        ...(isSuperAdmin ? [{ ruta: '/superadmin', nombre: 'SuperAdmin Plataforma', Icono: ShieldAlert, roles: ALL }] : []),
+      ],
+    },
+  ];
 
   const isActive = (ruta: string) => {
     if (ruta === '/') return pathname === '/';
@@ -204,22 +226,6 @@ export function LayoutNanoLabs({
           {/* Color Palette Selector */}
           <PaletteSelector />
 
-          {/* Theme Switcher Button */}
-          {onSwitchTheme && (
-            <button
-              type="button"
-              onClick={() => onSwitchTheme('1')}
-              className="bh-btn bh-btn-secondary bh-btn--small flex items-center gap-2 font-bold cursor-pointer"
-              title="Estás en Tema 2 (NanoLabs Visual). Clic para volver a Tema 1 (Clásico)"
-            >
-              <Palette size={14} className="text-amber-500 shrink-0" />
-              <span className="hidden md:inline text-xs">Tema 2</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-extrabold uppercase tracking-wider">
-                Volver a Tema 1
-              </span>
-            </button>
-          )}
-
           {/* User info */}
           <div className="ot-usuario" title={userEmail}>
             <div className="bh-list-primary font-bold">{userName}</div>
@@ -253,33 +259,66 @@ export function LayoutNanoLabs({
           aria-label="Pantallas"
           style={plegado ? { ['--bh-sidebar-width' as string]: `${PLEGADO_W}px` } : undefined}
         >
-          <div className="flex-1 overflow-y-auto space-y-1">
-            {visibleItems.map(({ ruta, nombre, Icono: I }) => {
-              const active = isActive(ruta);
+          <div className="flex-1 overflow-y-auto space-y-4 py-2 custom-scrollbar">
+            {menuSections.map((sec, secIdx) => {
+              const secItems = sec.items.filter((item) => isSuperAdmin || item.roles.includes(role));
+              if (secItems.length === 0) return null;
+
               return (
-                <Link
-                  key={ruta}
-                  href={ruta}
-                  aria-label={nombre}
-                  className={`bh-sidebar__item${active ? ' active' : ''}${plegado ? ' bh-sidebar__item--collapsed' : ''}`}
-                  onMouseEnter={(e) => {
-                    if (!plegado) return;
-                    const r = e.currentTarget.getBoundingClientRect();
-                    setTooltip({ texto: nombre, top: r.top + r.height / 2 });
-                  }}
-                  onMouseLeave={() => setTooltip(null)}
-                >
-                  <span className="bh-sidebar__icon-chip">
-                    <I size={17} strokeWidth={2} />
-                  </span>
-                  {!plegado && <span className="truncate">{nombre}</span>}
-                </Link>
+                <div key={sec.categoria} className="space-y-1">
+                  {!plegado ? (
+                    <div className="px-3 pt-2 pb-1 text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                      {sec.categoria}
+                    </div>
+                  ) : secIdx > 0 ? (
+                    <div className="my-2 border-t border-slate-200/60 dark:border-slate-800/60 mx-2" />
+                  ) : null}
+
+                  {secItems.map(({ ruta, nombre, Icono: I }) => {
+                    const active = isActive(ruta);
+                    return (
+                      <Link
+                        key={ruta}
+                        href={ruta}
+                        aria-label={nombre}
+                        className={`bh-sidebar__item${active ? ' active' : ''}${plegado ? ' bh-sidebar__item--collapsed' : ''}`}
+                        onMouseEnter={(e) => {
+                          if (!plegado) return;
+                          const r = e.currentTarget.getBoundingClientRect();
+                          setTooltip({ texto: nombre, top: r.top + r.height / 2 });
+                        }}
+                        onMouseLeave={() => setTooltip(null)}
+                      >
+                        <span className="bh-sidebar__icon-chip">
+                          <I size={17} strokeWidth={2} />
+                        </span>
+                        {!plegado && <span className="truncate">{nombre}</span>}
+                      </Link>
+                    );
+                  })}
+                </div>
               );
             })}
           </div>
 
-          {/* SIDEBAR FOOTER: THEME (LIGHT/DARK) + COLLAPSE */}
+          {/* SIDEBAR FOOTER: SETTINGS + THEME (LIGHT/DARK) + COLLAPSE */}
           <div className={`bh-sidebar__footer${plegado ? ' bh-sidebar__footer--collapsed' : ''}`}>
+            {canConfigure && (
+              <Link
+                href="/configuracion"
+                className={`bh-sidebar__icon-btn${isActive('/configuracion') ? ' active text-[var(--color-primary-default,#FF6600)]' : ''}`}
+                aria-label="Configuración"
+                title="Configuración"
+                onMouseEnter={(e) => {
+                  if (!plegado) return;
+                  const r = e.currentTarget.getBoundingClientRect();
+                  setTooltip({ texto: 'Configuración', top: r.top + r.height / 2 });
+                }}
+                onMouseLeave={() => setTooltip(null)}
+              >
+                <Settings size={18} />
+              </Link>
+            )}
             <button
               type="button"
               className="bh-sidebar__icon-btn"
