@@ -1,13 +1,17 @@
 import type { Metadata, Viewport } from 'next';
 import { notFound, redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import { getTenantContext } from '@/lib/tenant-context';
 import { prisma as db } from '@/lib/prisma';
 import { CLIENT_PWA_FEATURE_KEY, normalizeClientPwaConfig } from '@/lib/client-pwa-config';
 import { getLoggedCliente } from '@/lib/client-auth';
+import { getPalette } from '@/components/theme/palettes';
 import PortalBottomNav from './PortalBottomNav';
 import PortalSplash from './PortalSplash';
+import PortalHeader from './PortalHeader';
 import PwaInstallPrompt from '@/components/pwa/PwaInstallPrompt';
-import { ShieldAlert, Phone, Sparkles } from 'lucide-react';
+import { NanoLabsMark } from '@/components/intro/NanoLabsMark';
+import { ShieldAlert, Phone, Sparkles, ShieldCheck } from 'lucide-react';
 
 export async function generateMetadata(): Promise<Metadata> {
   let tenantName = 'OnlyCars';
@@ -80,6 +84,21 @@ export default async function PortalLayout({ children }: { children: React.React
     );
   }
 
+  // Detectar si estamos en la ruta de login para renderizarla a pantalla completa con el estándar oficial de NanoLabs
+  const reqHeaders = await headers();
+  const pathname = reqHeaders.get('x-pathname') || '';
+  const isLoginPage = pathname === '/portal/login' || pathname.startsWith('/portal/login');
+
+  if (isLoginPage) {
+    return (
+      <>
+        <link rel="manifest" href="/api/pwa/manifest/client" />
+        <link rel="apple-touch-icon" href="/icons/client-192.png" />
+        {children}
+      </>
+    );
+  }
+
   const featureRecord = await db.tenantFeature.findUnique({
     where: {
       tenantId_featureKey: {
@@ -90,70 +109,71 @@ export default async function PortalLayout({ children }: { children: React.React
   });
   const config = normalizeClientPwaConfig(featureRecord?.config);
   const currentCliente = await getLoggedCliente(tenant.id);
-  const brandColor = tenant.settings?.primaryColor || '#10b981';
+  const palette = getPalette(tenant.settings?.paletteId);
+  const brandColor = palette.primary;
   const dolarActual = Number(tenant.settings?.dolarActual || 1400);
+
+  const themeStyles = `
+    :root {
+      --color-brand: ${palette.primary};
+      --color-brand-hover: ${palette.hover};
+      --color-brand-ring: ${palette.glow};
+      --nl-mark-gradient: ${palette.gradient};
+      --nl-mark-glow: ${palette.glow};
+    }
+  `;
 
   return (
     <>
       <link rel="manifest" href="/api/pwa/manifest/client" />
       <link rel="apple-touch-icon" href="/icons/client-192.png" />
-      <div className="min-h-screen bg-slate-950 text-slate-100 antialiased select-none">
-        <div className="max-w-md mx-auto min-h-screen bg-slate-900 border-x border-slate-800/60 shadow-2xl flex flex-col relative pb-20">
-          <PortalSplash
-            logo={tenant.settings?.logoUrl || null}
+      <style dangerouslySetInnerHTML={{ __html: themeStyles }} />
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-orange-500/20 selection:text-orange-200">
+        <PortalSplash
+          logo={tenant.settings?.logoUrl || null}
+          tenantName={tenant.name}
+          brandColor={brandColor}
+        >
+          {/* Header Responsivo (Móvil y Desktop) */}
+          <PortalHeader
             tenantName={tenant.name}
-            brandColor={brandColor}
-          >
-            <header className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-xl border-b border-slate-800/80 px-4 py-3 flex items-center justify-between">
+            logoUrl={tenant.settings?.logoUrl || null}
+            dolarActual={dolarActual}
+            currentCliente={currentCliente}
+            config={config}
+            palette={palette}
+          />
+
+          {/* Área Principal de Contenido Responsiva */}
+          <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex flex-col pb-24 md:pb-8">
+            {children}
+          </main>
+
+          {/* Footer Desktop Oficial de NanoLabs */}
+          <footer className="hidden md:block border-t border-slate-900 bg-slate-950/60 py-8 mt-12 text-xs text-slate-500">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                {tenant.settings?.logoUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={tenant.settings.logoUrl}
-                    alt={tenant.name}
-                    className="w-9 h-9 rounded-xl object-contain bg-slate-850 p-1 border border-slate-750 shadow-md"
-                  />
-                ) : (
-                  <div
-                    className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-xs text-white shadow-md shadow-emerald-950/40"
-                    style={{ backgroundColor: brandColor }}
-                  >
-                    {tenant.name.slice(0, 2).toUpperCase()}
-                  </div>
-                )}
-                <div>
-                  <p className="text-xs font-black text-white leading-none tracking-tight">{tenant.name}</p>
-                  <p className="text-[10px] text-emerald-400 font-bold leading-none mt-1">Portal Clientes</p>
-                </div>
+                <NanoLabsMark size={20} />
+                <p className="text-slate-400">
+                  Powered by <strong className="text-white font-bold">NanoLabs</strong> · Automotive Cloud Platform
+                </p>
               </div>
-
-              <div className="flex items-center gap-2">
-                {dolarActual > 0 && (
-                  <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-lg">
-                    USD $ {dolarActual.toLocaleString('es-AR')}
-                  </span>
-                )}
-                {currentCliente ? (
-                  <span className="text-[11px] font-bold text-slate-300 bg-slate-800/80 px-2.5 py-1 rounded-full border border-slate-700">
-                    {currentCliente.nombre_completo.split(' ')[0]}
-                  </span>
-                ) : (
-                  <a
-                    href="/portal/login"
-                    className="text-[11px] font-black text-white px-3 py-1.5 rounded-xl border border-emerald-500/30 bg-emerald-600/20 hover:bg-emerald-600/30 transition active:scale-95 shadow-sm"
-                  >
-                    Ingresar
-                  </a>
-                )}
+              <div className="flex items-center gap-4 text-[11px] text-slate-500">
+                <span className="flex items-center gap-1 text-slate-400">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Conexión Segura TLS 1.3
+                </span>
+                <span>© {new Date().getFullYear()} {tenant.name}.</span>
               </div>
-            </header>
+            </div>
+          </footer>
 
-            <main className="flex-1 flex flex-col">{children}</main>
+          <PwaInstallPrompt appType="client" appName={tenant.name} />
 
-            <PwaInstallPrompt appType="client" appName={tenant.name} />
+          {/* Barra de Navegación Inferior (Sólo en Móviles) */}
+          <div className="md:hidden">
             <PortalBottomNav isLoggedIn={Boolean(currentCliente)} config={config} />
-          </PortalSplash>
-        </div>
+          </div>
+        </PortalSplash>
       </div>
     </>
   );

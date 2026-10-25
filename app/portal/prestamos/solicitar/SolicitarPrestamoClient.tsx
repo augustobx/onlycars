@@ -124,17 +124,17 @@ export default function SolicitarPrestamoClient({
   };
 
   return (
-    <div className="p-4 space-y-4 max-w-md mx-auto w-full pb-8">
-      <div className="flex items-center gap-2">
+    <div className="space-y-5 max-w-2xl mx-auto w-full pb-8">
+      <div className="flex items-center gap-3">
         <Link
           href="/portal/prestamos"
-          className="p-2 rounded-xl bg-slate-850 hover:bg-slate-800 text-slate-400 hover:text-white transition"
+          className="p-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-850 text-slate-400 hover:text-white border border-slate-800 transition shadow-sm"
         >
           <ChevronLeft className="w-5 h-5" />
         </Link>
         <div>
-          <h1 className="text-xl font-black text-white flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-emerald-400" /> Solicitar Préstamo
+          <h1 className="text-2xl font-black text-white flex items-center gap-2">
+            <Sparkles className="w-5 h-5" style={{ color: 'var(--color-brand, #ff6600)' }} /> Solicitar Préstamo
           </h1>
           <p className="text-xs text-slate-400">Completá el monto y adjuntá tu documentación.</p>
         </div>
@@ -352,7 +352,11 @@ export default function SolicitarPrestamoClient({
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-4 px-6 rounded-2xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 text-sm font-black transition flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/25"
+          className="w-full py-4 px-6 rounded-2xl disabled:opacity-50 text-white text-sm font-black transition flex items-center justify-center gap-2 shadow-xl active:scale-95"
+          style={{
+            background: 'var(--nl-mark-gradient, linear-gradient(135deg, #FF8A2B, #E25700))',
+            boxShadow: '0 4px 14px var(--nl-mark-glow, rgba(243,115,32,0.35))',
+          }}
         >
           {loading ? (
             <>

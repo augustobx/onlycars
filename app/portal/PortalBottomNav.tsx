@@ -85,14 +85,33 @@ export default function PortalBottomNav({ isLoggedIn, config }: PortalBottomNavP
               href={item.href}
               className={`flex-1 flex flex-col items-center justify-center py-1.5 px-1 rounded-2xl transition-all duration-200 active:scale-95 ${
                 item.active
-                  ? 'text-emerald-400 font-black bg-emerald-500/15 border border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.15)]'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60 font-semibold border border-transparent'
+                  ? 'font-black border shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60 font-semibold border-transparent'
               }`}
+              style={
+                item.active
+                  ? {
+                      color: 'var(--color-brand, #ff6600)',
+                      backgroundColor: 'var(--color-brand-ring, rgba(255,102,0,0.15))',
+                      borderColor: 'var(--color-brand, #ff6600)',
+                      boxShadow: '0 0 12px var(--color-brand-ring, rgba(255,102,0,0.2))',
+                    }
+                  : undefined
+              }
             >
               <div className="relative">
-                <Icon className={`w-5 h-5 transition-transform duration-200 ${item.active ? 'scale-110 text-emerald-400' : 'text-slate-400'}`} />
+                <Icon
+                  className="w-5 h-5 transition-transform duration-200"
+                  style={item.active ? { color: 'var(--color-brand, #ff6600)', transform: 'scale(1.1)' } : undefined}
+                />
                 {item.active && (
-                  <span className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />
+                  <span
+                    className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full"
+                    style={{
+                      backgroundColor: 'var(--color-brand, #ff6600)',
+                      boxShadow: '0 0 6px var(--color-brand, #ff6600)',
+                    }}
+                  />
                 )}
               </div>
               <span className="text-[10px] mt-1 tracking-tight truncate max-w-full leading-none">

@@ -18,10 +18,14 @@ export function Login({
   modo,
   ingreso,
   config,
+  children,
+  renderTarjeta,
 }: {
   modo: 'verificando' | 'ingreso' | 'saliendo'
   ingreso?: PropsIngreso
   config?: Partial<ConfigIntro>
+  children?: React.ReactNode
+  renderTarjeta?: (props: { visible: boolean; producto: string }) => React.ReactNode
 }) {
   const conf: ConfigIntro = {
     producto: config?.producto || INTRO_DEFAULT.producto,
@@ -94,12 +98,20 @@ export function Login({
         )}
       </div>
 
-      {modo !== 'verificando' && ingreso && (
-        <Tarjeta
-          visible={tarjeta || modo === 'saliendo'}
-          producto={conf.producto}
-          {...ingreso}
-        />
+      {modo !== 'verificando' && (
+        renderTarjeta ? (
+          renderTarjeta({ visible: tarjeta || modo === 'saliendo', producto: conf.producto })
+        ) : children ? (
+          <main className={`bh2-tarjeta${tarjeta || modo === 'saliendo' ? ' bh2-tarjeta--visible' : ''}`} aria-hidden={!(tarjeta || modo === 'saliendo')}>
+            {children}
+          </main>
+        ) : ingreso ? (
+          <Tarjeta
+            visible={tarjeta || modo === 'saliendo'}
+            producto={conf.producto}
+            {...ingreso}
+          />
+        ) : null
       )}
 
       <p className="bh2-pie">NanoLabs · Automotive Cloud · Multi-Tenant Platform</p>

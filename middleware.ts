@@ -28,6 +28,7 @@ export function middleware(request: NextRequest) {
   if (isPublicPath) {
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set("x-tenant-host", host || "localhost");
+    requestHeaders.set("x-pathname", path);
     return NextResponse.next({
       request: {
         headers: requestHeaders,
@@ -47,6 +48,7 @@ export function middleware(request: NextRequest) {
     }
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set("x-tenant-host", host || "localhost");
+    requestHeaders.set("x-pathname", path);
     return NextResponse.next({
       request: {
         headers: requestHeaders,
@@ -93,6 +95,7 @@ export function middleware(request: NextRequest) {
   // Copiamos el host resuelto para Server Components y Server Actions.
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-tenant-host", host || "localhost");
+  requestHeaders.set("x-pathname", path);
 
   return NextResponse.next({
     request: {

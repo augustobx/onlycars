@@ -15,10 +15,14 @@ export function Intro({
   estado,
   ingreso,
   config,
+  children,
+  renderTarjeta,
 }: {
   estado: 'verificando' | 'ingreso' | 'adentro'
   ingreso?: PropsIngreso
   config?: Partial<ConfigIntro>
+  children?: React.ReactNode
+  renderTarjeta?: (props: { visible: boolean; producto: string }) => React.ReactNode
 }) {
   const [salida, setSalida] = useState<'no' | 'saliendo' | 'fuera'>('no')
   const [splashListo, setSplashListo] = useState(false)
@@ -49,7 +53,14 @@ export function Intro({
 
   return (
     <div className={adentro ? 'bh2-capa' : undefined}>
-      <Login modo={modo} ingreso={ingreso} config={config} />
+      <Login
+        modo={modo}
+        ingreso={ingreso}
+        config={config}
+        renderTarjeta={renderTarjeta}
+      >
+        {children}
+      </Login>
     </div>
   )
 }

@@ -115,14 +115,17 @@ export default function ValidacionesClienteView({
           <div className="pt-2">
             <Link
               href="/portal/prestamos/solicitar"
-              className="inline-flex items-center gap-1.5 py-2.5 px-4 rounded-xl bg-emerald-500 text-slate-950 text-xs font-black shadow-lg shadow-emerald-500/20"
+              className="inline-flex items-center gap-1.5 py-2.5 px-5 rounded-xl text-white text-xs font-black shadow-md transition active:scale-95"
+              style={{
+                background: 'var(--nl-mark-gradient, linear-gradient(135deg, #FF8A2B, #E25700))',
+              }}
             >
               Iniciar nueva solicitud <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {solicitudes.map((sol) => {
             const isExpanded = expandedId === sol.id;
             const badge = getStatusBadge(sol.estado);

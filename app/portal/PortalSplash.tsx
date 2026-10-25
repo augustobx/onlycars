@@ -49,7 +49,14 @@ export default function PortalSplash({
         </div>
 
         <div className="text-center px-4 z-10 space-y-1.5">
-          <span className="text-[10px] uppercase tracking-widest font-black px-2.5 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 inline-block">
+          <span
+            className="text-[10px] uppercase tracking-widest font-black px-2.5 py-1 rounded-full border inline-block"
+            style={{
+              borderColor: `${brandColor}40`,
+              backgroundColor: `${brandColor}15`,
+              color: brandColor,
+            }}
+          >
             Portal Oficial de Clientes
           </span>
           <h1 className="text-2xl font-black text-white tracking-tight">{tenantName}</h1>
@@ -58,9 +65,9 @@ export default function PortalSplash({
 
         {/* Indicadores de carga */}
         <div className="mt-8 flex gap-2 z-10">
-          <div className="w-2 h-2 rounded-full bg-emerald-400/50 animate-bounce" style={{ animationDelay: '0ms' }} />
-          <div className="w-2 h-2 rounded-full bg-emerald-400/80 animate-bounce" style={{ animationDelay: '150ms' }} />
-          <div className="w-2 h-2 rounded-full bg-emerald-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+          <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: brandColor, opacity: 0.5, animationDelay: '0ms' }} />
+          <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: brandColor, opacity: 0.8, animationDelay: '150ms' }} />
+          <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: brandColor, opacity: 1, animationDelay: '300ms' }} />
         </div>
       </div>
 

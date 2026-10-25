@@ -24,6 +24,9 @@ export default async function PortalLoginPage({
     <PortalLoginClient
       tenantName={tenant.name}
       redirectTo={returnUrl}
+      logoUrl={tenant.settings?.logoUrl || null}
+      brandColor={tenant.settings?.primaryColor || '#FF6600'}
+      paletteId={tenant.settings?.paletteId || 'orange'}
     />
   );
 }
