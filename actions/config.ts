@@ -217,7 +217,7 @@ export async function subirLogoDocumento(tipo: 'venta' | 'prestamo', formData: F
     const extension = file.name.split('.').pop() || 'png';
     const uploaded = await getObjectStorage().upload({
       tenantId: tenant.id,
-      folder: 'documentos',
+      folder: 'branding',
       fileName: `logo_${tipo}_${Date.now()}.${extension}`,
       mimeType: file.type,
       buffer: Buffer.from(await file.arrayBuffer()),
