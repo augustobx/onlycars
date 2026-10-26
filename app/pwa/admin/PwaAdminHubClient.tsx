@@ -17,6 +17,7 @@ import {
 import PwaBottomNav from '../PwaBottomNav';
 import PwaInstallPrompt from '@/components/pwa/PwaInstallPrompt';
 import { logoutAction } from '@/actions/auth';
+import { useSellerPwaEnabled } from '../PwaCapabilities';
 
 export default function PwaAdminHubClient({
   tenantName,
@@ -33,6 +34,7 @@ export default function PwaAdminHubClient({
   cuotasPendientesCount: number;
   prestamosActivosCount: number;
 }) {
+  const sellerEnabled = useSellerPwaEnabled();
   return (
     <div className="flex flex-col min-h-screen bg-slate-950 text-white pb-24 select-none">
       {/* HEADER MÓVIL ADMIN */}
@@ -118,7 +120,7 @@ export default function PwaAdminHubClient({
         </Link>
 
         {/* 3. STOCK E INVENTARIO */}
-        <Link
+        {sellerEnabled && <Link
           href="/pwa/dashboard"
           className="flex items-center justify-between p-4 bg-slate-900/80 border border-slate-800 rounded-2xl hover:border-slate-700 transition-all active:scale-98"
         >
@@ -132,10 +134,10 @@ export default function PwaAdminHubClient({
             </div>
           </div>
           <ArrowRight className="w-5 h-5 text-slate-500" />
-        </Link>
+        </Link>}
 
         {/* 4. COTIZADOR Y OPERACIONES */}
-        <div className="grid grid-cols-2 gap-2 pt-1">
+        {sellerEnabled && <div className="grid grid-cols-2 gap-2 pt-1">
           <Link
             href="/pwa/cotizador"
             className="p-3.5 bg-slate-900 border border-slate-800 rounded-2xl flex flex-col justify-between space-y-3 hover:border-slate-700 active:scale-98"
@@ -156,7 +158,7 @@ export default function PwaAdminHubClient({
               <p className="text-[10px] text-slate-500">Reservas y señas</p>
             </div>
           </Link>
-        </div>
+        </div>}
 
         {/* ACCESO A VERSIÓN DE ESCRITORIO */}
         <a

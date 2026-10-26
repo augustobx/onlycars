@@ -1,4 +1,5 @@
 'use server';
+import { assertFeatureConfigurationAllowed } from '@/lib/hub-features';
 
 import { prisma as db } from '@/lib/prisma';
 import { getTenantContext } from '@/lib/tenant-context';
@@ -137,8 +138,10 @@ export async function guardarPwaVendedorConfig(input: SellerPwaConfig) {
   try {
     const tenant = await getTenantContext();
     await requireTenantRole(tenant.id, CONFIG_ROLES);
+    const feature = await db.tenantFeature.findUnique({ where: { tenantId_featureKey: { tenantId: tenant.id, featureKey: 'seller_pwa' } } });
+    assertFeatureConfigurationAllowed(feature, tenant.plan.hubManaged, tenant.features.has('seller_pwa'));
     const config = normalizeSellerPwaConfig(input);
-    await db.tenantFeature.upsert({ where: { tenantId_featureKey: { tenantId: tenant.id, featureKey: 'seller_pwa' } }, update: { isEnabled: true, config }, create: { tenantId: tenant.id, featureKey: 'seller_pwa', isEnabled: true, config } });
+    await db.tenantFeature.upsert({ where: { tenantId_featureKey: { tenantId: tenant.id, featureKey: 'seller_pwa' } }, update: { isEnabled: true, config }, create: { tenantId: tenant.id, featureKey: 'seller_pwa', isEnabled: true, config, hubManaged: tenant.plan.hubManaged, hubInherit: tenant.plan.hubManaged } });
     revalidatePath('/configuracion');
     revalidatePath('/pwa', 'layout');
     return { success: true, config };
@@ -211,6 +214,8 @@ export async function subirLogoDocumento(tipo: 'venta' | 'prestamo', formData: F
   try {
     const tenant = await getTenantContext();
     await requireTenantRole(tenant.id, CONFIG_ROLES);
+    const permission = await db.tenantFeature.findUnique({ where: { tenantId_featureKey: { tenantId: tenant.id, featureKey: 'branding_documentos' } } });
+    assertFeatureConfigurationAllowed(permission, tenant.plan.hubManaged, tenant.features.has('branding_documentos'));
     const file = formData.get('file') as File | null;
     if (!file || !file.size) return { success: false, error: 'Seleccioná una imagen.' };
 
@@ -235,7 +240,7 @@ export async function subirLogoDocumento(tipo: 'venta' | 'prestamo', formData: F
     await db.tenantFeature.upsert({
       where: { tenantId_featureKey: { tenantId: tenant.id, featureKey: 'branding_documentos' } },
       update: { isEnabled: true, config: newConfig },
-      create: { tenantId: tenant.id, featureKey: 'branding_documentos', isEnabled: true, config: newConfig },
+      create: { tenantId: tenant.id, featureKey: 'branding_documentos', isEnabled: true, config: newConfig, hubManaged: tenant.plan.hubManaged, hubInherit: tenant.plan.hubManaged },
     });
 
     revalidatePath('/configuracion');
@@ -251,6 +256,8 @@ export async function guardarBrandingDocumentosAction(branding: BrandingDocument
   try {
     const tenant = await getTenantContext();
     await requireTenantRole(tenant.id, CONFIG_ROLES);
+    const permission = await db.tenantFeature.findUnique({ where: { tenantId_featureKey: { tenantId: tenant.id, featureKey: 'branding_documentos' } } });
+    assertFeatureConfigurationAllowed(permission, tenant.plan.hubManaged, tenant.features.has('branding_documentos'));
 
     const feature = await db.tenantFeature.findUnique({
       where: { tenantId_featureKey: { tenantId: tenant.id, featureKey: 'branding_documentos' } },
@@ -264,7 +271,7 @@ export async function guardarBrandingDocumentosAction(branding: BrandingDocument
     await db.tenantFeature.upsert({
       where: { tenantId_featureKey: { tenantId: tenant.id, featureKey: 'branding_documentos' } },
       update: { isEnabled: true, config: newConfig },
-      create: { tenantId: tenant.id, featureKey: 'branding_documentos', isEnabled: true, config: newConfig },
+      create: { tenantId: tenant.id, featureKey: 'branding_documentos', isEnabled: true, config: newConfig, hubManaged: tenant.plan.hubManaged, hubInherit: tenant.plan.hubManaged },
     });
 
     revalidatePath('/configuracion');

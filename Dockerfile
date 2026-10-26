@@ -36,6 +36,8 @@ COPY scripts ./scripts
 CMD ["sh", "-c", "./node_modules/.bin/prisma generate && ./node_modules/.bin/prisma db push && node scripts/seed-saas.mjs && node scripts/fix-tenant-domains.mjs && node scripts/ensure-auth-users.mjs && node scripts/check-auth-bootstrap.mjs"]
 
 FROM base AS runner
+ARG BUILD_REVISION=unknown
+LABEL org.opencontainers.image.revision="$BUILD_REVISION"
 WORKDIR /app
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \

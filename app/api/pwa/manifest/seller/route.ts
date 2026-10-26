@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getTenantContext } from '@/lib/tenant-context';
+import { managedModuleEnabled } from '@/lib/hub-features';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,6 +11,7 @@ export async function GET() {
 
   try {
     const tenant = await getTenantContext();
+    if (!managedModuleEnabled(tenant, 'seller_pwa')) return NextResponse.json({ success: false, error: 'Módulo deshabilitado.' }, { status: 404, headers: { 'Cache-Control': 'no-store' } });
     appName = `${tenant.name} · Ventas`;
     shortName = `${tenant.name.slice(0, 10)} Ventas`;
     primaryColor = tenant.settings?.primaryColor || '#ea580c';

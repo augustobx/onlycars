@@ -15,6 +15,8 @@ export function middleware(request: NextRequest) {
   const isPlatformHost = host === platformHost;
 
   const isPublicPath =
+    path === "/api/integrations/nanolabs/tenants" ||
+    path === "/api/integrations/nanolabs/management" ||
     path === "/login" ||
     path === "/manifest.json" ||
     path.startsWith("/api/pwa/") ||

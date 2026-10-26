@@ -1,0 +1,14 @@
+.git
+node_modules
+.next
+.env*
+!.env*.example
+*.sql
+*.sql.gz
+*.dump
+*.sqlite*
+*.log
+coverage
+test-results
+playwright-report
+prisma/database.json

@@ -1,0 +1,68 @@
+name: Verify OnlyCars Hub integration
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contract-and-native-api:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      mariadb:
+        image: mariadb:11.8.9
+        env:
+          MARIADB_ROOT_PASSWORD: onlycars-fixture-root-not-production
+          MARIADB_DATABASE: onlycars_hub_fixture
+          MARIADB_USER: hub_fixture
+          MARIADB_PASSWORD: onlycars-fixture-db-not-production
+        ports:
+          - 3307:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+    env:
+      DATABASE_URL: mysql://hub_fixture:onlycars-fixture-db-not-production@127.0.0.1:3307/onlycars_hub_fixture
+      HUB_TEST_FIXTURE: "true"
+      HUB_TEST_API_BASE: http://127.0.0.1:3115
+      PLATFORM_HOST: onlycars.fixture.invalid
+      TENANT_BASE_DOMAIN: fixture.invalid
+      BASE_URL: http://127.0.0.1:3115
+      HUB_INTEGRATION_ENABLED: "true"
+      HUB_MANAGEMENT_ENABLED: "true"
+      HUB_INTEGRATION_TOKEN: onlycars-fixture-readonly-not-production-123456789
+      HUB_MANAGEMENT_TOKEN: onlycars-fixture-management-not-production-987654321
+      STORAGE_PROVIDER: local
+      ALLOW_LOCAL_STORAGE: "true"
+      STORAGE_PREFIX: onlycars-fixture
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run test:hub
+      - run: npx tsc --noEmit
+      - run: npx eslint lib/hub-*.ts app/api/integrations/nanolabs/*/route.ts --max-warnings=0
+      - run: npm audit --omit=dev --audit-level=moderate
+      - name: Initialize only the isolated CI database
+        run: |
+          node -e "const a=new URL(process.env.DATABASE_URL);if(process.env.HUB_TEST_FIXTURE!=='true'||a.hostname!=='127.0.0.1'||a.pathname!=='/onlycars_hub_fixture')process.exit(1)"
+          npx prisma db push --skip-generate
+      - run: npm run build
+      - name: Start loopback fixture app
+        run: |
+          cp -r public .next/standalone/public
+          mkdir -p .next/standalone/.next
+          cp -r .next/static .next/standalone/.next/static
+          HOSTNAME=127.0.0.1 PORT=3115 node .next/standalone/server.js > "$RUNNER_TEMP/onlycars-fixture-server.log" 2>&1 &
+          for attempt in $(seq 1 40); do if curl -fsS http://127.0.0.1:3115/api/health >/dev/null; then exit 0; fi; sleep 1; done
+          exit 1
+      - name: Real signed HTTP commands, sessions, isolation and module gates
+        env:
+          HUB_TEST_REPORT: ${{ runner.temp }}/onlycars-api-report.json
+          HUB_TEST_UI_FIXTURE: ${{ runner.temp }}/onlycars-ui-fixture.json
+        run: node scripts/hub-api-smoke.cjs

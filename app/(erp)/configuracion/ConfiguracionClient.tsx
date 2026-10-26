@@ -96,8 +96,8 @@ export default function ConfiguracionClient({ initial }: { initial: any }) {
 
     const savePromises: Promise<any>[] = [
       guardarConfiguracion({ ...form, dolarActual: Number(form.dolarActual), tnaFinanciacion: Number(form.tnaFinanciacion), comisionVentaDefecto: Number(form.comisionVentaDefecto), logoUrl: form.logoUrl || null }),
-      guardarPwaVendedorConfig(sellerPwa),
-      guardarBrandingDocumentosAction({ logoVenta, logoPrestamo, paletteId: selectedPaletteId }),
+      initial.isSellerPwaEnabled ? guardarPwaVendedorConfig(sellerPwa) : Promise.resolve({ success: true }),
+      initial.isBrandingEnabled ? guardarBrandingDocumentosAction({ logoVenta, logoPrestamo, paletteId: selectedPaletteId }) : Promise.resolve({ success: true }),
     ];
 
     if (initial.isClientPwaEnabled) {
@@ -120,7 +120,7 @@ export default function ConfiguracionClient({ initial }: { initial: any }) {
     setTipoDolar(form.tipoDolar);
     setLogo(form.logoUrl || null);
     setTema({ primary: form.primaryColor, secondary: form.secondaryColor });
-    setPalette(selectedPaletteId);
+    if (initial.isBrandingEnabled) setPalette(selectedPaletteId);
     router.refresh();
   };
 
@@ -175,9 +175,9 @@ export default function ConfiguracionClient({ initial }: { initial: any }) {
 
       <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
         <header className="p-5 bg-blue-50 dark:bg-blue-950/30 border-b border-blue-100 dark:border-blue-800/40 flex items-center gap-2"><Smartphone className="w-5 h-5 text-[var(--color-primary-default,#FF6600)]" /><div><h2 className="font-black text-slate-900 dark:text-slate-100">App de vendedores</h2><p className="text-xs text-slate-500 dark:text-slate-400">Configuración visual y operativa de la PWA.</p></div></header>
-        <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-3">
+        {!initial.isSellerPwaEnabled ? <p className="p-5 text-sm text-slate-500">La app de vendedores está desactivada por la plataforma. Su configuración se conserva.</p> : <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-3">
           {pwaOptions.map((option) => { const enabled = sellerPwa[option.key]; return <button key={option.key} type="button" onClick={() => togglePwa(option.key)} className={`text-left rounded-2xl border p-4 flex items-start justify-between gap-4 transition-colors ${enabled ? 'border-orange-200 dark:border-orange-900/60 bg-[var(--bg-primary-light,#FFF5EB)] dark:bg-orange-950/30' : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50'}`}><div><p className="font-black text-slate-900 dark:text-slate-100">{option.title}</p><p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">{option.detail}</p></div><span className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center ${enabled ? 'bg-[var(--bg-primary-default,#FF6600)] text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>{enabled ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}</span></button>; })}
-        </div>
+        </div>}
       </section>
 
       {/* App de Clientes y Catálogo (Módulo Premium) */}
@@ -324,7 +324,7 @@ export default function ConfiguracionClient({ initial }: { initial: any }) {
           </div>
         </header>
 
-        <div className="p-6 space-y-8">
+        {!initial.isBrandingEnabled ? <p className="p-5 text-sm text-slate-500">La personalización de documentos está desactivada por la plataforma. Los logos y la configuración se conservan.</p> : <div className="p-6 space-y-8">
           {/* 1. SELECCIÓN DE PALETA DE COLORES */}
           <div>
             <div className="flex items-center justify-between mb-3">
@@ -516,7 +516,7 @@ export default function ConfiguracionClient({ initial }: { initial: any }) {
               </div>
             </div>
           </div>
-        </div>
+        </div>}
       </section>
 
       <div className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-t border-slate-200 dark:border-slate-800 p-4 flex justify-end z-50">

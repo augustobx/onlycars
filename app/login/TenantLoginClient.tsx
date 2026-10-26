@@ -55,11 +55,15 @@ function TenantLoginForm({
 
     setEstado('adentro')
     const homePath = res.user?.homePath || '/'
-    const destino = redirectParam || homePath
+    // Complete authentication with a fresh document. Concurrent push/refresh
+    // during the root redirect can cancel the destination stylesheet load.
+    const requested = redirectParam || homePath
+    const destino = requested.startsWith('/') && !requested.startsWith('//') && !requested.includes('\\')
+      ? requested
+      : homePath
 
     setTimeout(() => {
-      router.push(destino)
-      router.refresh()
+      window.location.assign(destino)
     }, 650)
   }
 
