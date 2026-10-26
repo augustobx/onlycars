@@ -217,7 +217,12 @@ export function createHubManagement(db: PrismaClient) {
         return result;
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, maxWait: 10000, timeout: 20000 });
     } catch (e) {
-      if (e instanceof Prisma.PrismaClientKnownRequestError && ['P2002', 'P2034'].includes(e.code)) { const result = await replay(); if (result) return result; fail('CONFLICT', 'Los datos cambiaron o el identificador ya existe. Actualizá antes de reintentar.', 409); }
+      // MariaDB can report a competing receipt insert as connector error 1020
+      // (PrismaClientUnknownRequestError). A committed receipt proves that the
+      // identical command completed atomically, regardless of the losing error.
+      // Never repeat mutations here or weaken Serializable isolation.
+      const result = await replay(); if (result) return result;
+      if (e instanceof Prisma.PrismaClientKnownRequestError && ['P2002', 'P2034'].includes(e.code)) { fail('CONFLICT', 'Los datos cambiaron o el identificador ya existe. Actualizá antes de reintentar.', 409); }
       throw e;
     }
   }

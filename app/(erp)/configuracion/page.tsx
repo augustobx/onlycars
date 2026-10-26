@@ -5,6 +5,7 @@ import { requireTenantRole } from '@/lib/user-auth';
 import { prisma as db } from '@/lib/prisma';
 import { normalizeSellerPwaConfig } from '@/lib/seller-pwa-config';
 import ConfiguracionClient from './ConfiguracionClient';
+import { managedModuleEnabled } from '@/lib/hub-features';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,6 +44,8 @@ export default async function ConfiguracionPage() {
     sellerPwa: normalizeSellerPwaConfig(sellerPwaFeature?.config),
     clientPwa: clientPwaFeature?.config,
     isClientPwaEnabled: tenant.features.has('pwa_clientes'),
+    isSellerPwaEnabled: managedModuleEnabled(tenant, 'seller_pwa'),
+    isBrandingEnabled: managedModuleEnabled(tenant, 'branding_documentos'),
     branding: (brandingFeature?.config as any) || {},
   }} />;
 }

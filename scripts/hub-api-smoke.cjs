@@ -15,7 +15,7 @@ async function raw(path,{method='GET',body,token=key,signature=true,headers={},s
  const text=body?JSON.stringify(body):'',timestamp=String(Date.now()),h={'Content-Type':'application/json','X-Forwarded-Host':platform,Authorization:'Bearer '+token,...headers};
  if(signature){h['X-NanoLabs-Timestamp']=timestamp;h['X-NanoLabs-Actor']=actor;h['X-NanoLabs-Signature']=crypto.createHmac('sha256',key).update([timestamp,method,path,actor,text].join('\n')).digest('hex');}
  const r=await fetch(new URL(path,base),{method,headers:h,...(text?{body:text}:{}),redirect:'manual',signal:AbortSignal.timeout(30000)});
- const j=await r.json();assert.equal(r.status,status,path+' '+(j.code||''));assertions++;return j;
+ const j=await r.json();assert.equal(r.status,status,path+' '+(body?.operation||'')+' '+(j.code||''));assertions++;return j;
 }
 const endpoint='/api/integrations/nanolabs/management';
 async function read(resource,extra={}){const j=await raw(endpoint+'?'+new URLSearchParams({resource,...extra}));assert.equal(j.contract,'nanolabs.saas.management.v1');assert.equal(j.product,'onlycars');return j.data;}
@@ -31,7 +31,7 @@ async function main(){
  const catalog=await read('catalog');assert.equal(catalog.currency,'USD');assert.deepEqual(catalog.modules,modules);assert(catalog.operations.includes('domain.add'));assert.equal(catalog.destructiveDelete,false);await read('plans');
  assert.equal(JSON.stringify(await db.tenant.findMany({orderBy:{id:'asc'},select:{id:true,status:true,updatedAt:true,subscription:{select:{status:true,updatedAt:true}}}})),before);assert.equal(await db.platformAuditLog.count(),beforeAudit);
  const planInput={code:'QA-'+nonce.toUpperCase(),name:'QA OnlyCars '+nonce,description:'Isolated fixture',priceCents:1550,currency:'USD',active:true,modules:Object.fromEntries(modules.map(k=>[k,true])),limits:{maxVehicles:20,maxLocations:2,maxUsers:5}},requestId=crypto.randomUUID();
- const duplicate=await Promise.all([command('plan.create',planInput,{requestId}),command('plan.create',planInput,{requestId})]);assert.equal(duplicate[0].data.planId,duplicate[1].data.planId);const planId=duplicate[0].data.planId;assert.equal(await db.plan.count({where:{code:planInput.code}}),1);
+ const duplicate=await Promise.all(Array.from({length:8},()=>command('plan.create',planInput,{requestId})));assert(duplicate.every(r=>r.data.planId===duplicate[0].data.planId));const planId=duplicate[0].data.planId;assert.equal(await db.plan.count({where:{code:planInput.code}}),1);
  await command('plan.create',{...planInput,name:'Conflict'},{requestId,status:409});
  const password='Fixture-only-'+crypto.randomBytes(12).toString('hex'),start=new Date(Date.now()-60000).toISOString(),end=new Date(Date.now()+30*86400000).toISOString();
  const createA={name:'QA agency A '+nonce,slug:'qa-a-'+nonce,planId,ownerName:'QA Owner A',ownerEmail:'qa-a-'+nonce+'@example.invalid',password,status:'ACTIVE',start,end};
