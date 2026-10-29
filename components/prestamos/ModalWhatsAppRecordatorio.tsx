@@ -33,7 +33,7 @@ export interface ModalWhatsAppProps {
   };
   cuota?: {
     numero_cuota: number;
-    total_cuotas: number;
+    total_cuotas?: number;
     monto_usd: number;
     monto_ars: number;
     fecha_vencimiento: string;
@@ -44,6 +44,7 @@ export interface ModalWhatsAppProps {
   } | null;
   tenantName: string;
   tenantCuit?: string;
+  dolarActual?: number;
   datosBancarios?: {
     banco?: string;
     titular?: string;

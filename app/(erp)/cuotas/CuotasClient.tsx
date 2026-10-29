@@ -196,7 +196,7 @@ export default function CuotasClient({
                                   telefono: op.cliente.telefono,
                                   dni: op.cliente.dni,
                                 },
-                                cuota: proximaCuota,
+                                cuota: proximaCuota ? { ...proximaCuota, total_cuotas: op.cuotas.length } : null,
                               });
                             }}
                             title="Enviar aviso por WhatsApp"
@@ -274,7 +274,7 @@ export default function CuotasClient({
                                             telefono: op.cliente.telefono,
                                             dni: op.cliente.dni,
                                           },
-                                          cuota: c,
+                                          cuota: { ...c, total_cuotas: op.cuotas.length },
                                         })}
                                         title="Aviso WhatsApp para esta cuota"
                                         className="p-2.5 rounded-xl border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 transition-colors"
@@ -341,6 +341,7 @@ export default function CuotasClient({
           cliente={cuotaWhatsApp.cliente}
           cuota={{
             numero_cuota: cuotaWhatsApp.cuota.numero_cuota,
+            total_cuotas: cuotaWhatsApp.cuota.total_cuotas || 1,
             fecha_vencimiento: cuotaWhatsApp.cuota.fecha_vto_str || cuotaWhatsApp.cuota.fecha_vencimiento,
             monto_usd: cuotaWhatsApp.cuota.monto_usd,
             monto_ars: Number(cuotaWhatsApp.cuota.monto_usd || 0) * dolarActual,
