@@ -34,11 +34,12 @@ function ERPThemeShellContent({
   initialTipo,
   userName,
   userEmail,
-  brandPrimary = '#2563eb',
+  brandPrimary = '#FF6600',
   children,
-}: Omit<ERPThemeShellProps, 'initialTheme'>) {
+}: Omit<ERPThemeShellProps, 'initialTheme' | 'initialPaletteId'>) {
   const { theme, setTheme } = useERPTheme();
 
+  // THEME 2 (Oficial NanoLabs)
   if (theme === '2') {
     return (
       <LayoutNanoLabs

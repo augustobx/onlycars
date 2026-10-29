@@ -69,6 +69,11 @@ services:
       R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
       R2_PUBLIC_URL: ${R2_PUBLIC_URL:-}
       TZ: ${TZ:-America/Argentina/Buenos_Aires}
+      HUB_INTEGRATION_ENABLED: ${HUB_INTEGRATION_ENABLED:-true}
+      HUB_MANAGEMENT_ENABLED: ${HUB_MANAGEMENT_ENABLED:-true}
+      HUB_INTEGRATION_TOKEN: ${HUB_INTEGRATION_TOKEN}
+      HUB_MANAGEMENT_TOKEN: ${HUB_MANAGEMENT_TOKEN}
+      HUB_ANNOUNCEMENT_URL: ${HUB_ANNOUNCEMENT_URL:-https://hub.nanoapps.ar/api/announcements/onlycars}
     networks:
       proxy:
         aliases:

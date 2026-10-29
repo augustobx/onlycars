@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { Inter } from "next/font/google";
 import { resolveTenantByHostname, normalizeHostname } from "@/lib/tenant-context";
+import AnnouncementModal from "@/components/theme/AnnouncementModal";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -51,8 +52,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className={`${inter.className} antialiased`}>
-        {/* Sin Sidebar ni TopBar. Solo carga las rutas hijas */}
         {children}
+        <AnnouncementModal />
       </body>
     </html>
   );
