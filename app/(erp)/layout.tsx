@@ -57,6 +57,7 @@ export default async function ERPLayout({ children }: { children: React.ReactNod
       userName={user.name || user.email.split('@')[0]}
       userEmail={user.email}
       brandPrimary={brandPrimary}
+      features={Array.from(tenant.features)}
     >
       {children}
     </ERPThemeShell>

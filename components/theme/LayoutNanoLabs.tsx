@@ -38,6 +38,7 @@ import { useConfigStore } from '@/store/useConfigStore';
 import { syncDolarApi } from '@/actions/config';
 import { PaletteSelector } from './PaletteSelector';
 import { useERPTheme } from './ThemeContext';
+import { tenantIsFinancialOnly } from '@/lib/tenant-modules';
 import './nanolabs-theme.css';
 import './nanolabs-theme-extra.css';
 
@@ -74,6 +75,7 @@ export interface LayoutNanoLabsProps {
   initialDolar?: number;
   initialTipo?: string;
   onSwitchTheme?: (theme: '1' | '2') => void;
+  features?: string[];
   children: ReactNode;
 }
 
@@ -87,6 +89,7 @@ export function LayoutNanoLabs({
   canSyncDolar = false,
   initialDolar = 1400,
   initialTipo = 'blue',
+  features = [],
   onSwitchTheme,
   children,
 }: LayoutNanoLabsProps) {
@@ -142,6 +145,7 @@ export function LayoutNanoLabs({
   };
 
   const role = currentRole as Role;
+  const isFinancialOnly = tenantIsFinancialOnly(features);
 
   interface MenuCategory {
     categoria: string;
@@ -153,37 +157,65 @@ export function LayoutNanoLabs({
     }[];
   }
 
-  const menuSections: MenuCategory[] = [
-    {
-      categoria: 'Comercial & Ventas',
-      items: [
-        { ruta: '/', nombre: 'Centro de Operaciones', Icono: LayoutDashboard, roles: ALL },
-        { ruta: '/prospectos', nombre: 'Pipeline y Prospectos', Icono: UserCheck, roles: COMMERCIAL },
-        { ruta: '/clientes', nombre: 'Clientes', Icono: Users, roles: COMMERCIAL },
-        { ruta: '/vehiculos', nombre: 'Vehículos', Icono: Car, roles: ALL },
-        { ruta: '/motos', nombre: 'Motos', Icono: Bike, roles: ALL },
-        { ruta: '/consignaciones', nombre: 'Consignaciones', Icono: CarFront, roles: COMMERCIAL },
-        { ruta: '/ventas', nombre: 'Ventas y Cotizador', Icono: BadgeDollarSign, roles: COMMERCIAL },
-      ],
-    },
-    {
-      categoria: 'Finanzas & Cobranzas',
-      items: [
-        { ruta: '/cuotas', nombre: 'Cobranzas y Cuotas', Icono: CalendarClock, roles: ADMIN },
-        { ruta: '/prestamos', nombre: 'Financiación', Icono: HandCoins, roles: ADMIN },
-        { ruta: '/caja', nombre: 'Caja y Gastos', Icono: Wallet, roles: ADMIN },
-      ],
-    },
-    {
-      categoria: 'Gestión & Sistema',
-      items: [
-        { ruta: '/sucursales', nombre: 'Sucursales', Icono: Building, roles: MANAGEMENT },
-        { ruta: '/usuarios', nombre: 'Usuarios y Accesos', Icono: ShieldCheck, roles: MANAGEMENT },
-        { ruta: '/manual', nombre: 'Manual de usuario', Icono: BookOpen, roles: ALL },
-        ...(isSuperAdmin ? [{ ruta: '/superadmin', nombre: 'SuperAdmin Plataforma', Icono: ShieldAlert, roles: ALL }] : []),
-      ],
-    },
-  ];
+  const menuSections: MenuCategory[] = isFinancialOnly
+    ? [
+        {
+          categoria: 'Finanzas & Créditos',
+          items: [
+            { ruta: '/', nombre: 'Centro de Operaciones', Icono: LayoutDashboard, roles: ALL },
+            { ruta: '/prestamos', nombre: 'Préstamos y Créditos', Icono: HandCoins, roles: ADMIN },
+            { ruta: '/cuotas', nombre: 'Cobranzas y Cuotas', Icono: CalendarClock, roles: ADMIN },
+            { ruta: '/caja', nombre: 'Caja y Gastos', Icono: Wallet, roles: ADMIN },
+          ],
+        },
+        {
+          categoria: 'Contactos & Clientes',
+          items: [
+            { ruta: '/clientes', nombre: 'Clientes', Icono: Users, roles: COMMERCIAL },
+            { ruta: '/prospectos', nombre: 'Prospectos y Solicitudes', Icono: UserCheck, roles: COMMERCIAL },
+          ],
+        },
+        {
+          categoria: 'Gestión & Sistema',
+          items: [
+            { ruta: '/sucursales', nombre: 'Sucursales', Icono: Building, roles: MANAGEMENT },
+            { ruta: '/usuarios', nombre: 'Usuarios y Accesos', Icono: ShieldCheck, roles: MANAGEMENT },
+            { ruta: '/manual', nombre: 'Manual de usuario', Icono: BookOpen, roles: ALL },
+            ...(isSuperAdmin ? [{ ruta: '/superadmin', nombre: 'SuperAdmin Plataforma', Icono: ShieldAlert, roles: ALL }] : []),
+          ],
+        },
+      ]
+    : [
+        {
+          categoria: 'Comercial & Ventas',
+          items: [
+            { ruta: '/', nombre: 'Centro de Operaciones', Icono: LayoutDashboard, roles: ALL },
+            { ruta: '/prospectos', nombre: 'Pipeline y Prospectos', Icono: UserCheck, roles: COMMERCIAL },
+            { ruta: '/clientes', nombre: 'Clientes', Icono: Users, roles: COMMERCIAL },
+            { ruta: '/vehiculos', nombre: 'Vehículos', Icono: Car, roles: ALL },
+            { ruta: '/motos', nombre: 'Motos', Icono: Bike, roles: ALL },
+            { ruta: '/consignaciones', nombre: 'Consignaciones', Icono: CarFront, roles: COMMERCIAL },
+            { ruta: '/ventas', nombre: 'Ventas y Cotizador', Icono: BadgeDollarSign, roles: COMMERCIAL },
+          ],
+        },
+        {
+          categoria: 'Finanzas & Cobranzas',
+          items: [
+            { ruta: '/cuotas', nombre: 'Cobranzas y Cuotas', Icono: CalendarClock, roles: ADMIN },
+            { ruta: '/prestamos', nombre: 'Financiación', Icono: HandCoins, roles: ADMIN },
+            { ruta: '/caja', nombre: 'Caja y Gastos', Icono: Wallet, roles: ADMIN },
+          ],
+        },
+        {
+          categoria: 'Gestión & Sistema',
+          items: [
+            { ruta: '/sucursales', nombre: 'Sucursales', Icono: Building, roles: MANAGEMENT },
+            { ruta: '/usuarios', nombre: 'Usuarios y Accesos', Icono: ShieldCheck, roles: MANAGEMENT },
+            { ruta: '/manual', nombre: 'Manual de usuario', Icono: BookOpen, roles: ALL },
+            ...(isSuperAdmin ? [{ ruta: '/superadmin', nombre: 'SuperAdmin Plataforma', Icono: ShieldAlert, roles: ALL }] : []),
+          ],
+        },
+      ];
 
   const isActive = (ruta: string) => {
     if (ruta === '/') return pathname === '/';
@@ -214,12 +246,12 @@ export function LayoutNanoLabs({
                   boxShadow: `0 4px 14px ${palette.glow}`,
                 }}
               >
-                <Car size={22} strokeWidth={2.2} />
+                {isFinancialOnly ? <HandCoins size={22} strokeWidth={2.2} /> : <Car size={22} strokeWidth={2.2} />}
               </span>
             </div>
             <div className="bh-logo__text">
               {tenantName}
-              <span>NanoLabs Multi-Tenant Cloud</span>
+              <span>{isFinancialOnly ? 'Gestión de Préstamos y Créditos' : 'NanoLabs Multi-Tenant Cloud'}</span>
             </div>
           </Link>
         </div>

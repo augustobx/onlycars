@@ -24,6 +24,7 @@ import {
   Globe2,
   KeyRound,
   Sparkles,
+  HandCoins,
 } from 'lucide-react';
 
 function asDateInput(value: Date | string | null | undefined) {
@@ -113,6 +114,25 @@ export default function TenantDetailClient({ initialData }: { initialData: any }
     router.refresh();
   };
 
+  const [soloPrestamosActive, setSoloPrestamosActive] = useState<boolean>(() => {
+    const f = tenant.features?.find((item: any) => item.featureKey === 'solo_prestamos');
+    return f ? Boolean(f.isEnabled) : false;
+  });
+
+  const toggleSoloPrestamos = async () => {
+    const nextVal = !soloPrestamosActive;
+    setSoloPrestamosActive(nextVal);
+    setSaving(true);
+    await toggleTenantFeatureAction(tenant.id, 'solo_prestamos', nextVal);
+    setSaving(false);
+    setMessage(
+      nextVal
+        ? 'Modo Solo Préstamos & Caja activado: catálogo e inventario vehicular ocultos.'
+        : 'Modo Solo Préstamos & Caja desactivado: acceso vehicular completo restaurado.'
+    );
+    router.refresh();
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
@@ -169,7 +189,31 @@ export default function TenantDetailClient({ initialData }: { initialData: any }
                 <p className="text-xs text-slate-500 mt-0.5">Control de acceso modular por concesionaria.</p>
               </div>
             </div>
-            <div className="p-5">
+            <div className="p-5 space-y-4">
+              <div className="flex items-center justify-between p-4 rounded-xl border border-slate-800 bg-slate-950/40">
+                <div className="pr-4">
+                  <div className="flex items-center gap-2">
+                    <HandCoins className="w-4 h-4 text-amber-400" />
+                    <p className="text-sm font-black text-white">Modo Financiera / Solo Préstamos y Caja</p>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Desactiva el catálogo e inventario vehicular, ventas y cotizadores de autos. La plataforma opera exclusivamente para préstamos, cobranzas, cuotas, clientes y arqueos de caja.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={toggleSoloPrestamos}
+                  disabled={saving}
+                  className={`px-4 py-2 rounded-xl text-xs font-black transition shrink-0 ${
+                    soloPrestamosActive
+                      ? 'bg-amber-600 text-white hover:bg-amber-500'
+                      : 'bg-slate-800 text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {soloPrestamosActive ? 'ACTIVADO' : 'DESACTIVADO'}
+                </button>
+              </div>
+
               <div className="flex items-center justify-between p-4 rounded-xl border border-slate-800 bg-slate-950/40">
                 <div>
                   <p className="text-sm font-black text-white">App PWA Clientes & Catálogo Web</p>

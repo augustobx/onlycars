@@ -20,6 +20,7 @@ export interface ERPThemeShellProps {
   userName: string;
   userEmail: string;
   brandPrimary?: string;
+  features?: string[];
   children: React.ReactNode;
 }
 
@@ -35,6 +36,7 @@ function ERPThemeShellContent({
   userName,
   userEmail,
   brandPrimary = '#FF6600',
+  features = [],
   children,
 }: Omit<ERPThemeShellProps, 'initialTheme' | 'initialPaletteId'>) {
   const { theme, setTheme } = useERPTheme();
@@ -53,6 +55,7 @@ function ERPThemeShellContent({
         canSyncDolar={canSyncDolar}
         initialDolar={initialDolar}
         initialTipo={initialTipo}
+        features={features}
       >
         {children}
       </LayoutNanoLabs>
@@ -71,6 +74,7 @@ function ERPThemeShellContent({
           tenantLogo={tenantLogo}
           isSuperAdmin={isSuperAdmin}
           currentRole={currentRole}
+          features={features}
         />
       </div>
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">

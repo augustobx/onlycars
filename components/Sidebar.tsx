@@ -10,6 +10,7 @@ import {
   LogOut, Wallet, CarFront, ShieldCheck, Bike, UserCheck, Building, ShieldAlert,
   BriefcaseBusiness, Warehouse, Landmark, ChevronRight, BookOpen,
 } from 'lucide-react';
+import { tenantIsFinancialOnly } from '@/lib/tenant-modules';
 
 type Role = 'OWNER' | 'MANAGER' | 'VENDEDOR' | 'ADMINISTRATIVO' | 'TALLER';
 type MenuItem = { name: string; href: string; icon: ComponentType<{ className?: string }>; roles: Role[] };
@@ -25,53 +26,81 @@ export default function Sidebar({
   tenantLogo,
   isSuperAdmin,
   currentRole = 'VENDEDOR',
+  features = [],
 }: {
   tenantName?: string;
   tenantLogo?: string | null;
   isSuperAdmin?: boolean;
   currentRole?: Role | string;
+  features?: string[];
 }) {
   const pathname = usePathname();
   const { logo } = useConfigStore();
   const displayLogo = tenantLogo || logo;
   const role = currentRole as Role;
+  const isFinancialOnly = tenantIsFinancialOnly(features);
 
-  const groups: MenuGroup[] = [
-    {
-      label: 'Comercial', icon: BriefcaseBusiness,
-      items: [
-        { name: 'Pipeline y Prospectos', href: '/prospectos', icon: UserCheck, roles: COMMERCIAL },
-        { name: 'Clientes', href: '/clientes', icon: Users, roles: COMMERCIAL },
-      ],
-    },
-    {
-      label: 'Inventario', icon: Warehouse,
-      items: [
-        { name: 'Vehículos', href: '/vehiculos', icon: Car, roles: ALL },
-        { name: 'Motos', href: '/motos', icon: Bike, roles: ALL },
-        { name: 'Consignaciones', href: '/consignaciones', icon: CarFront, roles: COMMERCIAL },
-      ],
-    },
-    {
-      label: 'Operaciones', icon: BadgeDollarSign,
-      items: [{ name: 'Ventas y Cotizador', href: '/ventas', icon: BadgeDollarSign, roles: COMMERCIAL }],
-    },
-    {
-      label: 'Administración', icon: Landmark,
-      items: [
-        { name: 'Cobranzas y Cuotas', href: '/cuotas', icon: CalendarClock, roles: ADMIN },
-        { name: 'Financiación', href: '/prestamos', icon: HandCoins, roles: ADMIN },
-        { name: 'Caja y Gastos', href: '/caja', icon: Wallet, roles: ADMIN },
-      ],
-    },
-    {
-      label: 'Gestión', icon: Settings,
-      items: [
-        { name: 'Sucursales', href: '/sucursales', icon: Building, roles: MANAGEMENT },
-        { name: 'Usuarios y Accesos', href: '/usuarios', icon: ShieldCheck, roles: MANAGEMENT },
-      ],
-    },
-  ];
+  const groups: MenuGroup[] = isFinancialOnly
+    ? [
+        {
+          label: 'Finanzas', icon: Landmark,
+          items: [
+            { name: 'Financiación y Préstamos', href: '/prestamos', icon: HandCoins, roles: ADMIN },
+            { name: 'Cobranzas y Cuotas', href: '/cuotas', icon: CalendarClock, roles: ADMIN },
+            { name: 'Caja y Gastos', href: '/caja', icon: Wallet, roles: ADMIN },
+          ],
+        },
+        {
+          label: 'Comercial', icon: BriefcaseBusiness,
+          items: [
+            { name: 'Clientes', href: '/clientes', icon: Users, roles: COMMERCIAL },
+            { name: 'Pipeline y Prospectos', href: '/prospectos', icon: UserCheck, roles: COMMERCIAL },
+          ],
+        },
+        {
+          label: 'Gestión', icon: Settings,
+          items: [
+            { name: 'Sucursales', href: '/sucursales', icon: Building, roles: MANAGEMENT },
+            { name: 'Usuarios y Accesos', href: '/usuarios', icon: ShieldCheck, roles: MANAGEMENT },
+          ],
+        },
+      ]
+    : [
+        {
+          label: 'Comercial', icon: BriefcaseBusiness,
+          items: [
+            { name: 'Pipeline y Prospectos', href: '/prospectos', icon: UserCheck, roles: COMMERCIAL },
+            { name: 'Clientes', href: '/clientes', icon: Users, roles: COMMERCIAL },
+          ],
+        },
+        {
+          label: 'Inventario', icon: Warehouse,
+          items: [
+            { name: 'Vehículos', href: '/vehiculos', icon: Car, roles: ALL },
+            { name: 'Motos', href: '/motos', icon: Bike, roles: ALL },
+            { name: 'Consignaciones', href: '/consignaciones', icon: CarFront, roles: COMMERCIAL },
+          ],
+        },
+        {
+          label: 'Operaciones', icon: BadgeDollarSign,
+          items: [{ name: 'Ventas y Cotizador', href: '/ventas', icon: BadgeDollarSign, roles: COMMERCIAL }],
+        },
+        {
+          label: 'Administración', icon: Landmark,
+          items: [
+            { name: 'Cobranzas y Cuotas', href: '/cuotas', icon: CalendarClock, roles: ADMIN },
+            { name: 'Financiación', href: '/prestamos', icon: HandCoins, roles: ADMIN },
+            { name: 'Caja y Gastos', href: '/caja', icon: Wallet, roles: ADMIN },
+          ],
+        },
+        {
+          label: 'Gestión', icon: Settings,
+          items: [
+            { name: 'Sucursales', href: '/sucursales', icon: Building, roles: MANAGEMENT },
+            { name: 'Usuarios y Accesos', href: '/usuarios', icon: ShieldCheck, roles: MANAGEMENT },
+          ],
+        },
+      ];
 
   const visibleGroups = groups
     .map((group) => ({ ...group, items: group.items.filter((item) => isSuperAdmin || item.roles.includes(role)) }))
@@ -86,8 +115,8 @@ export default function Sidebar({
       <div className="h-20 flex items-center px-5 border-b border-slate-800 shrink-0">
         <Link href="/" className="flex items-center gap-3 w-full min-w-0">
           {displayLogo ? <img src={displayLogo} alt="Logo concesionaria" className="max-h-10 max-w-[150px] object-contain" /> : <>
-            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shrink-0"><Car className="w-5 h-5" /></div>
-            <div className="min-w-0"><span className="font-black text-lg tracking-tight text-white block truncate leading-tight">{tenantName || 'OnlyCars'}</span><span className="text-[10px] font-bold uppercase tracking-[0.16em] text-blue-400">Dealer Management System</span></div>
+            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shrink-0">{isFinancialOnly ? <HandCoins className="w-5 h-5" /> : <Car className="w-5 h-5" />}</div>
+            <div className="min-w-0"><span className="font-black text-lg tracking-tight text-white block truncate leading-tight">{tenantName || 'OnlyCars'}</span><span className="text-[10px] font-bold uppercase tracking-[0.16em] text-blue-400">{isFinancialOnly ? 'Gestión de Préstamos' : 'Dealer Management System'}</span></div>
           </>}
         </Link>
       </div>

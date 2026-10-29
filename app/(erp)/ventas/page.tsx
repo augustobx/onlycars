@@ -1,5 +1,7 @@
 import { prisma as db } from "@/lib/prisma";
 import { getTenantContext } from "@/lib/tenant-context";
+import { tenantIsFinancialOnly } from "@/lib/tenant-modules";
+import { redirect } from "next/navigation";
 import VentasClient from "./VentasClient";
 import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
@@ -8,6 +10,9 @@ export const dynamic = "force-dynamic";
 
 export default async function VentasPage() {
     const tenant = await getTenantContext();
+    if (tenantIsFinancialOnly(tenant.features)) {
+        redirect('/prestamos');
+    }
     const dolarActual = Number(tenant.settings?.dolarActual || 1400);
 
     const ventasDb = await db.venta.findMany({

@@ -1,5 +1,6 @@
 import { prisma as db } from '@/lib/prisma';
 import { getTenantContext } from '@/lib/tenant-context';
+import { tenantIsFinancialOnly } from '@/lib/tenant-modules';
 import { requireTenantRole } from '@/lib/user-auth';
 import CajaClient from './CajaClient';
 import { Suspense } from 'react';
@@ -127,7 +128,8 @@ export default async function CajaPage() {
   }));
 
   transacciones.sort((a, b) => new Date(b.fecha_str).getTime() - new Date(a.fecha_str).getTime());
-  const vehiculos = vehiculosDb.map((v) => ({ id_vehiculo: v.id_vehiculo, label: `${v.marca || ''} ${v.modelo || ''}`.trim(), description: `${v.anio || 'S/A'} · ${v.patente || 'S/P'} · ${v.estado.replace(/_/g, ' ')}` }));
+  const isFinancialOnly = tenantIsFinancialOnly(tenant.features);
+  const vehiculos = isFinancialOnly ? [] : vehiculosDb.map((v) => ({ id_vehiculo: v.id_vehiculo, label: `${v.marca || ''} ${v.modelo || ''}`.trim(), description: `${v.anio || 'S/A'} · ${v.patente || 'S/P'} · ${v.estado.replace(/_/g, ' ')}` }));
 
-  return <Suspense fallback={<div className="flex justify-center items-center h-screen"><Loader2 className="w-10 h-10 animate-spin text-blue-600" /></div>}><CajaClient transacciones={transacciones} vehiculos={vehiculos} dolarActual={dolarActual} /></Suspense>;
+  return <Suspense fallback={<div className="flex justify-center items-center h-screen"><Loader2 className="w-10 h-10 animate-spin text-blue-600" /></div>}><CajaClient transacciones={transacciones} vehiculos={vehiculos} dolarActual={dolarActual} isFinancialOnly={isFinancialOnly} /></Suspense>;
 }

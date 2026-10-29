@@ -9,7 +9,7 @@ import DualMoney from '@/components/common/DualMoney';
 import DualCurrencyInput from '@/components/common/DualCurrencyInput';
 import SearchCombobox from '@/components/common/SearchCombobox';
 
-export default function CajaClient({ transacciones, vehiculos, dolarActual }: { transacciones: any[]; vehiculos: any[]; dolarActual: number }) {
+export default function CajaClient({ transacciones, vehiculos, dolarActual, isFinancialOnly = false }: { transacciones: any[]; vehiculos: any[]; dolarActual: number; isFinancialOnly?: boolean }) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -231,14 +231,16 @@ export default function CajaClient({ transacciones, vehiculos, dolarActual }: { 
                   <option>Otros</option>
                 </select>
               </label>
-              <SearchCombobox
-                label="Vincular a vehículo"
-                value={vehiculoId}
-                onChange={setVehiculoId}
-                options={vehicleOptions}
-                placeholder="Buscar marca, modelo o patente..."
-                helper="Opcional. Si es un egreso, se suma al costo real de esa unidad."
-              />
+              {!isFinancialOnly && (
+                <SearchCombobox
+                  label="Vincular a vehículo"
+                  value={vehiculoId}
+                  onChange={setVehiculoId}
+                  options={vehicleOptions}
+                  placeholder="Buscar marca, modelo o patente..."
+                  helper="Opcional. Si es un egreso, se suma al costo real de esa unidad."
+                />
+              )}
             </div>
             <DualCurrencyInput label="Monto" required ars={monto.ars} usd={monto.usd} rate={dolarActual} onChange={setMonto} />
             <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">

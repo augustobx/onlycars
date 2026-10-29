@@ -3,6 +3,8 @@ import VehiculosClient from "../vehiculos/VehiculosClient";
 import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
 import { getTenantContext } from "@/lib/tenant-context";
+import { tenantIsFinancialOnly } from "@/lib/tenant-modules";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +12,9 @@ export default async function MotosPage({ searchParams }: { searchParams: Promis
     const params = await searchParams;
     const tab = params.tab || 'en_preparacion';
     const tenant = await getTenantContext();
+    if (tenantIsFinancialOnly(tenant.features)) {
+        redirect('/prestamos');
+    }
     const dolarBlue = Number(tenant.settings?.dolarActual || 1400);
     const where: any = { tenantId: tenant.id, tipo_vehiculo: 'Moto' };
 
