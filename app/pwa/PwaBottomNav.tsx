@@ -58,12 +58,12 @@ export default function PwaBottomNav({
       {/* SEGÚN SUSCRIPCIÓN: SOLO PRÉSTAMOS (FINANCIERA) */}
       {!sellerEnabled && item('prestamos', '/pwa/prestamos', 'Préstamos', <HandCoins className="h-5 w-5" />)}
       {!sellerEnabled && item('cuotas', '/pwa/cuotas', 'Cuotas', <CalendarClock className="h-5 w-5" />)}
-      {!sellerEnabled && item('caja', '/caja', 'Caja', <Wallet className="h-5 w-5" />)}
-      {!sellerEnabled && item('clientes', '/clientes', 'Clientes', <Users className="h-5 w-5" />)}
+      {!sellerEnabled && item('caja', '/pwa/caja', 'Caja', <Wallet className="h-5 w-5" />)}
+      {!sellerEnabled && item('clientes', '/pwa/clientes', 'Clientes', <Users className="h-5 w-5" />)}
 
       {/* SEGÚN SUSCRIPCIÓN: CONCESIONARIA COMPLETA (ONLYCARS VEHICULAR) */}
       {sellerEnabled && item('stock', '/pwa/dashboard', 'Stock', <LayoutGrid className="h-5 w-5" />)}
-      {sellerEnabled && item('quote', '/pwa/cotizador', 'Cotizar', <Calculator className="h-5 w-5" />)}
+      {sellerEnabled && item('caja', '/pwa/caja', 'Caja', <Wallet className="h-5 w-5" />)}
       {sellerEnabled && item('cuotas', '/pwa/cuotas', 'Cuotas', <CalendarClock className="h-5 w-5" />)}
       {sellerEnabled && item('prestamos', '/pwa/prestamos', 'Préstamos', <HandCoins className="h-5 w-5" />)}
     </nav>

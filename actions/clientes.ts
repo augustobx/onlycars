@@ -32,6 +32,8 @@ export async function guardarCliente(data: any) {
 
     const cliente = await db.cliente.create({ data: { tenantId: tenant.id, ...normalized } });
     revalidatePath('/clientes');
+    revalidatePath('/pwa/clientes');
+    revalidatePath('/pwa/admin');
     return { success: true, id_cliente: cliente.id_cliente };
   } catch (error: any) {
     if (error.code === 'P2002') return { success: false, error: 'El DNI ya está registrado en esta concesionaria.' };
@@ -52,6 +54,7 @@ export async function actualizarCliente(id_cliente: number, data: any) {
 
     await db.cliente.update({ where: { id_cliente }, data: normalized });
     revalidatePath('/clientes');
+    revalidatePath('/pwa/clientes');
     revalidatePath(`/clientes/${id_cliente}`);
     return { success: true };
   } catch (error: any) {

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import PwaBottomNav from '../PwaBottomNav';
 import PwaInstallPrompt from '@/components/pwa/PwaInstallPrompt';
+import ModalWhatsAppRecordatorio from '@/components/prestamos/ModalWhatsAppRecordatorio';
 import { registrarPagoCuota, registrarPagoCuotaPrestamo } from '@/actions/cuotas';
 import { useRouter } from 'next/navigation';
 
@@ -42,15 +43,20 @@ export default function PwaCuotasClient({
   cuotasIniciales,
   dolarActual,
   tenantName,
+  tenantCuit,
 }: {
   cuotasIniciales: PwaCuotaItem[];
   dolarActual: number;
   tenantName: string;
+  tenantCuit?: string;
 }) {
   const router = useRouter();
   const [cuotas, setCuotas] = useState(cuotasIniciales);
-  const [filtro, setFiltro] = useState<'TODAS' | 'VENCIDAS' | 'PENDIENTES' | 'PAGADAS'>('VENCIDAS');
+  const [filtro, setFiltro] = useState<'TODAS' | 'VENCE_HOY' | 'VENCIDAS' | 'PENDIENTES' | 'PAGADAS'>('VENCIDAS');
   const [busqueda, setBusqueda] = useState('');
+
+  // Modal de aviso WhatsApp prearmado
+  const [cuotaAvisar, setCuotaAvisar] = useState<any | null>(null);
 
   // Modal de cobro rápido
   const [cuotaACobrar, setCuotaACobrar] = useState<PwaCuotaItem | null>(null);
@@ -61,17 +67,21 @@ export default function PwaCuotasClient({
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
 
-  // Cuotas enriquecidas con flag de vencida
+  // Cuotas enriquecidas con flag de vencida, vence hoy y días de atraso
   const cuotasCalculadas = useMemo(() => {
     return cuotas.map((c) => {
       const vtoDate = new Date(c.fecha_vencimiento);
-      const isVencida = c.estado === 'PENDIENTE' && vtoDate < hoy;
-      return { ...c, isVencida };
+      vtoDate.setHours(0, 0, 0, 0);
+      const diffDays = Math.floor((hoy.getTime() - vtoDate.getTime()) / (1000 * 60 * 60 * 24));
+      const isVencida = c.estado === 'PENDIENTE' && diffDays > 0;
+      const isHoy = c.estado === 'PENDIENTE' && diffDays === 0;
+      return { ...c, isVencida, isHoy, diasMora: Math.max(0, diffDays) };
     });
   }, [cuotas, hoy]);
 
   // Contadores
   const totalVencidas = useMemo(() => cuotasCalculadas.filter((c) => c.isVencida).length, [cuotasCalculadas]);
+  const totalVenceHoy = useMemo(() => cuotasCalculadas.filter((c) => c.isHoy).length, [cuotasCalculadas]);
   const totalPendientes = useMemo(() => cuotasCalculadas.filter((c) => c.estado === 'PENDIENTE').length, [cuotasCalculadas]);
   const totalPagadas = useMemo(() => cuotasCalculadas.filter((c) => c.estado === 'PAGADA').length, [cuotasCalculadas]);
 
@@ -84,8 +94,9 @@ export default function PwaCuotasClient({
   // Filtrado
   const cuotasFiltradas = useMemo(() => {
     let list = cuotasCalculadas;
+    if (filtro === 'VENCE_HOY') list = list.filter((c) => c.isHoy);
     if (filtro === 'VENCIDAS') list = list.filter((c) => c.isVencida);
-    if (filtro === 'PENDIENTES') list = list.filter((c) => c.estado === 'PENDIENTE' && !c.isVencida);
+    if (filtro === 'PENDIENTES') list = list.filter((c) => c.estado === 'PENDIENTE' && !c.isVencida && !c.isHoy);
     if (filtro === 'PAGADAS') list = list.filter((c) => c.estado === 'PAGADA');
 
     if (busqueda.trim()) {
@@ -213,6 +224,16 @@ export default function PwaCuotasClient({
 
         {/* TABS DE FILTRO */}
         <div className="flex gap-1 mt-2.5 overflow-x-auto no-scrollbar">
+          {totalVenceHoy > 0 && (
+            <button
+              onClick={() => setFiltro('VENCE_HOY')}
+              className={`px-3 py-1 rounded-lg text-xs font-black shrink-0 transition-all ${
+                filtro === 'VENCE_HOY' ? 'bg-amber-600 text-white shadow-xs animate-pulse' : 'bg-amber-100 text-amber-900 border border-amber-300'
+              }`}
+            >
+              ⏰ Vencen Hoy ({totalVenceHoy})
+            </button>
+          )}
           <button
             onClick={() => setFiltro('VENCIDAS')}
             className={`px-3 py-1 rounded-lg text-xs font-black shrink-0 transition-all ${
@@ -224,15 +245,15 @@ export default function PwaCuotasClient({
           <button
             onClick={() => setFiltro('PENDIENTES')}
             className={`px-3 py-1 rounded-lg text-xs font-black shrink-0 transition-all ${
-              filtro === 'PENDIENTES' ? 'bg-amber-500 text-white shadow-xs' : 'bg-slate-100 text-slate-600'
+              filtro === 'PENDIENTES' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600'
             }`}
           >
-            Al día ({totalPendientes - totalVencidas})
+            A vencer ({totalPendientes - totalVencidas - totalVenceHoy})
           </button>
           <button
             onClick={() => setFiltro('TODAS')}
             className={`px-3 py-1 rounded-lg text-xs font-black shrink-0 transition-all ${
-              filtro === 'TODAS' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600'
+              filtro === 'TODAS' ? 'bg-slate-900 text-white shadow-xs' : 'bg-slate-100 text-slate-600'
             }`}
           >
             Todas ({cuotas.length})
@@ -350,15 +371,14 @@ export default function PwaCuotasClient({
                 <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
                   {telLimpio && (
                     <>
-                      <a
-                        href={`https://wa.me/${telLimpio}?text=${mensajeWp}`}
-                        target="_blank"
-                        rel="noreferrer"
+                      <button
+                        type="button"
+                        onClick={() => setCuotaAvisar(c)}
                         className="p-2.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 flex items-center justify-center shrink-0 active:scale-95 transition-all"
-                        title="Enviar WhatsApp"
+                        title="Avisos y Plantillas de WhatsApp"
                       >
                         <MessageCircle className="w-4 h-4" />
-                      </a>
+                      </button>
                       <a
                         href={`tel:${telLimpio}`}
                         className="p-2.5 rounded-xl bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 flex items-center justify-center shrink-0 active:scale-95 transition-all"
@@ -476,6 +496,32 @@ export default function PwaCuotasClient({
             </div>
           </div>
         </div>
+      )}
+
+      {/* MODAL DE WHATSAPP CON PLANTILLAS PREARMADAS */}
+      {cuotaAvisar && (
+        <ModalWhatsAppRecordatorio
+          isOpen={!!cuotaAvisar}
+          onClose={() => setCuotaAvisar(null)}
+          cliente={{
+            nombre: cuotaAvisar.cliente_nombre,
+            telefono: cuotaAvisar.cliente_telefono,
+            dni: cuotaAvisar.cliente_dni,
+          }}
+          cuota={{
+            numero_cuota: cuotaAvisar.numero_cuota,
+            total_cuotas: cuotaAvisar.total_cuotas,
+            monto_usd: cuotaAvisar.monto_usd,
+            monto_ars: cuotaAvisar.monto_pagado_ars || Math.round(cuotaAvisar.monto_usd * dolarActual),
+            fecha_vencimiento: cuotaAvisar.fecha_vencimiento,
+            id_operacion: cuotaAvisar.id_operacion,
+            dias_mora: cuotaAvisar.diasMora,
+            isVencida: cuotaAvisar.isVencida,
+            isHoy: cuotaAvisar.isHoy,
+          }}
+          tenantName={tenantName}
+          tenantCuit={tenantCuit}
+        />
       )}
 
       {/* PWA INSTALL PROMPT (ADMIN) */}

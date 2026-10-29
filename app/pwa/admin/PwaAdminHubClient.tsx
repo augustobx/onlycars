@@ -180,43 +180,39 @@ export default function PwaAdminHubClient({
           <ArrowRight className="w-5 h-5 text-indigo-400" />
         </Link>
 
-        {/* 3. CAJA Y GASTOS (SIEMPRE DISPONIBLE EN MODO FINANCIERO) */}
-        {isFinancialOnly && (
-          <Link
-            href="/caja"
-            className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-950/40 to-slate-900 border border-purple-500/30 rounded-2xl hover:border-purple-500/60 transition-all active:scale-98 shadow-sm"
-          >
-            <div className="flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0 border border-purple-500/30">
-                <Wallet className="w-6 h-6" />
-              </div>
-              <div>
-                <h2 className="font-black text-base text-white">Caja y Movimientos</h2>
-                <p className="text-xs text-slate-400">Arqueos, ingresos, egresos y balances</p>
-              </div>
+        {/* 3. CAJA Y GASTOS (PWA MÓVIL) */}
+        <Link
+          href="/pwa/caja"
+          className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-950/40 to-slate-900 border border-purple-500/30 rounded-2xl hover:border-purple-500/60 transition-all active:scale-98 shadow-sm"
+        >
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0 border border-purple-500/30">
+              <Wallet className="w-6 h-6" />
             </div>
-            <ArrowRight className="w-5 h-5 text-purple-400" />
-          </Link>
-        )}
+            <div>
+              <h2 className="font-black text-base text-white">Caja y Finanzas</h2>
+              <p className="text-xs text-slate-400">Flujo de fondos, nuevo movimiento y balances</p>
+            </div>
+          </div>
+          <ArrowRight className="w-5 h-5 text-purple-400" />
+        </Link>
 
-        {/* 4. CLIENTES (EN MODO FINANCIERO) */}
-        {isFinancialOnly && (
-          <Link
-            href="/clientes"
-            className="flex items-center justify-between p-4 bg-slate-900/80 border border-slate-800 rounded-2xl hover:border-slate-700 transition-all active:scale-98"
-          >
-            <div className="flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-2xl bg-white/5 text-slate-300 flex items-center justify-center shrink-0">
-                <Users className="w-6 h-6" />
-              </div>
-              <div>
-                <h2 className="font-black text-base text-white">Cartera de Clientes</h2>
-                <p className="text-xs text-slate-400">Titulares, garantes y datos de contacto</p>
-              </div>
+        {/* 4. CLIENTES (PWA MÓVIL) */}
+        <Link
+          href="/pwa/clientes"
+          className="flex items-center justify-between p-4 bg-slate-900/80 border border-slate-800 rounded-2xl hover:border-slate-700 transition-all active:scale-98"
+        >
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-indigo-500/15 text-indigo-400 flex items-center justify-center shrink-0 border border-indigo-500/20">
+              <Users className="w-6 h-6" />
             </div>
-            <ArrowRight className="w-5 h-5 text-slate-500" />
-          </Link>
-        )}
+            <div>
+              <h2 className="font-black text-base text-white">Cartera de Clientes</h2>
+              <p className="text-xs text-slate-400">Titulares, deudores, llamadas y avisos WhatsApp</p>
+            </div>
+          </div>
+          <ArrowRight className="w-5 h-5 text-indigo-400" />
+        </Link>
 
         {/* STOCK E INVENTARIO (SOLO SI SELLER ESTÁ HABILITADO Y NO ES FINANCIERO) */}
         {sellerEnabled && (

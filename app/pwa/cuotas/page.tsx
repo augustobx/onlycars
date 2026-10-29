@@ -80,5 +80,12 @@ export default async function PwaCuotasPage() {
     ),
   ].sort((a, b) => new Date(a.fecha_vencimiento).getTime() - new Date(b.fecha_vencimiento).getTime());
 
-  return <PwaCuotasClient cuotasIniciales={cuotas} dolarActual={dolarActual} tenantName={tenant.name} />;
+  return (
+    <PwaCuotasClient
+      cuotasIniciales={cuotas}
+      dolarActual={dolarActual}
+      tenantName={tenant.name}
+      tenantCuit={tenant.settings?.cuit || undefined}
+    />
+  );
 }

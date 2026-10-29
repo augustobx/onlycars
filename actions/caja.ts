@@ -42,7 +42,7 @@ export async function registrarMovimiento(data: {
       }
     });
 
-    revalidatePath('/caja'); revalidatePath('/vehiculos'); revalidatePath('/motos');
+    revalidatePath('/caja'); revalidatePath('/pwa/caja'); revalidatePath('/vehiculos'); revalidatePath('/motos');
     if (data.id_vehiculo) revalidatePath(`/vehiculos/${data.id_vehiculo}`);
     return { success: true };
   } catch (error) { console.error('Error registrando movimiento en caja:', error); return { success: false, error: 'Ocurrió un error al registrar el movimiento.' }; }

@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import PwaBottomNav from '../PwaBottomNav';
 import PwaInstallPrompt from '@/components/pwa/PwaInstallPrompt';
+import ModalWhatsAppRecordatorio from '@/components/prestamos/ModalWhatsAppRecordatorio';
 import { registrarPrestamo } from '@/actions/prestamos';
 import { registrarPagoCuotaPrestamo } from '@/actions/cuotas';
 import { useRouter } from 'next/navigation';
@@ -96,6 +97,14 @@ export default function PwaPrestamosClient({
   const [cotizacionCobro, setCotizacionCobro] = useState(String(dolarActual));
   const [montoCobroArs, setMontoCobroArs] = useState('');
   const [procesandoCobro, setProcesandoCobro] = useState(false);
+
+  // Modal WhatsApp prearmado
+  const [prestamoAvisar, setPrestamoAvisar] = useState<{
+    cliente_nombre: string;
+    cliente_telefono: string;
+    cliente_dni?: string;
+    cuota: any;
+  } | null>(null);
 
   // Métricas
   const totalCapitalColocadoUsd = useMemo(
@@ -678,15 +687,40 @@ export default function PwaPrestamosClient({
                 {/* ACCIONES DE TARJETA */}
                 <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
                   {telLimpio && (
-                    <a
-                      href={`https://wa.me/${telLimpio}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="p-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 flex items-center justify-center shrink-0 active:scale-95"
-                      title="WhatsApp al cliente"
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const hoy = new Date();
+                        hoy.setHours(0, 0, 0, 0);
+                        const cuotasPend = p.cuotas.filter((c) => c.estado !== 'PAGADA');
+                        const cTarget = cuotasPend[0] || p.cuotas[0];
+                        const vtoDate = cTarget ? new Date(cTarget.fecha_vencimiento) : new Date();
+                        vtoDate.setHours(0, 0, 0, 0);
+                        const diffDays = Math.floor((hoy.getTime() - vtoDate.getTime()) / (1000 * 60 * 60 * 24));
+                        setPrestamoAvisar({
+                          cliente_nombre: p.cliente_nombre,
+                          cliente_telefono: p.cliente_telefono,
+                          cliente_dni: p.cliente_dni,
+                          cuota: cTarget
+                            ? {
+                                numero_cuota: cTarget.numero_cuota,
+                                total_cuotas: p.cuotas.length,
+                                monto_usd: cTarget.monto_usd,
+                                monto_ars: cTarget.monto_pagado_ars || Math.round(cTarget.monto_usd * (p.cotizacion_dolar || dolarActual)),
+                                fecha_vencimiento: cTarget.fecha_vencimiento,
+                                id_operacion: `PREST-${p.id_prestamo}`,
+                                dias_mora: Math.max(0, diffDays),
+                                isVencida: diffDays > 0,
+                                isHoy: diffDays === 0,
+                              }
+                            : null,
+                        });
+                      }}
+                      className="p-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 flex items-center justify-center shrink-0 active:scale-95 transition"
+                      title="WhatsApp / Recordatorio de Cobranza"
                     >
                       <MessageCircle className="w-4 h-4" />
-                    </a>
+                    </button>
                   )}
 
                   <a
@@ -854,6 +888,21 @@ export default function PwaPrestamosClient({
             </div>
           </div>
         </div>
+      )}
+
+      {/* MODAL WHATSAPP CON PLANTILLAS PREARMADAS */}
+      {prestamoAvisar && (
+        <ModalWhatsAppRecordatorio
+          isOpen={!!prestamoAvisar}
+          onClose={() => setPrestamoAvisar(null)}
+          cliente={{
+            nombre: prestamoAvisar.cliente_nombre,
+            telefono: prestamoAvisar.cliente_telefono,
+            dni: prestamoAvisar.cliente_dni,
+          }}
+          cuota={prestamoAvisar.cuota}
+          tenantName={tenantName}
+        />
       )}
 
       {/* PWA INSTALL PROMPT (ADMIN) */}
