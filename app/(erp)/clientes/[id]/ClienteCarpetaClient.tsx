@@ -3,13 +3,22 @@
 import { useMemo, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
-import { ArrowLeft, UserRound, Phone, Mail, MapPin, BadgeDollarSign, CarFront, HandCoins, CalendarClock, Printer, Target, ShieldCheck, KeyRound, Copy, Check, MessageSquare, Loader2, X } from 'lucide-react';
+import { ArrowLeft, UserRound, Phone, Mail, MapPin, BadgeDollarSign, CarFront, HandCoins, CalendarClock, Printer, Target, ShieldCheck, KeyRound, Copy, Check, MessageSquare, Loader2, X, MessageCircle } from 'lucide-react';
 import DualMoney from '@/components/common/DualMoney';
 import { resetearPasswordClienteAdminAction } from '@/actions/clientes';
+import ModalWhatsAppRecordatorio from '@/components/prestamos/ModalWhatsAppRecordatorio';
 
 type Tab = 'resumen' | 'oportunidades' | 'ventas' | 'senias' | 'prestamos';
 
-export default function ClienteCarpetaClient({ cliente, dolarActual }: { cliente: any; dolarActual: number }) {
+export default function ClienteCarpetaClient({
+  cliente,
+  dolarActual,
+  tenantName = 'OnlyCars',
+}: {
+  cliente: any;
+  dolarActual: number;
+  tenantName?: string;
+}) {
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('resumen');
   const [modalResetOpen, setModalResetOpen] = useState(false);
@@ -17,6 +26,7 @@ export default function ClienteCarpetaClient({ cliente, dolarActual }: { cliente
   const [loadingReset, setLoadingReset] = useState(false);
   const [resetResult, setResetResult] = useState<{ passwordGenerada: string } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [modalWhatsAppOpen, setModalWhatsAppOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -63,7 +73,18 @@ export default function ClienteCarpetaClient({ cliente, dolarActual }: { cliente
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
           <div className="xl:col-span-2 space-y-5">
             <section className="bg-white border rounded-2xl p-5 shadow-sm">
-              <h2 className="font-black text-slate-900 mb-5">Datos del cliente</h2>
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="font-black text-slate-900">Datos del cliente</h2>
+                {cliente.telefono && (
+                  <button
+                    type="button"
+                    onClick={() => setModalWhatsAppOpen(true)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-bold transition-colors cursor-pointer"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" /> Enviar aviso por WhatsApp
+                  </button>
+                )}
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Info icon={Phone} label="Teléfono" value={cliente.telefono || 'No registrado'} />
                 <Info icon={Mail} label="Email" value={cliente.email || 'No registrado'} />
@@ -241,6 +262,20 @@ export default function ClienteCarpetaClient({ cliente, dolarActual }: { cliente
           </div>
         </div>,
         document.body
+      )}
+
+      {modalWhatsAppOpen && (
+        <ModalWhatsAppRecordatorio
+          isOpen={modalWhatsAppOpen}
+          onClose={() => setModalWhatsAppOpen(false)}
+          cliente={{
+            nombre: cliente.nombre_completo,
+            telefono: cliente.telefono,
+            dni: cliente.dni,
+          }}
+          dolarActual={dolarActual}
+          tenantName={tenantName}
+        />
       )}
     </div>
   );

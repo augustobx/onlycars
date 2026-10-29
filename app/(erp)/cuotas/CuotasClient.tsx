@@ -3,15 +3,44 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { registrarPagoCuota, registrarPagoCuotaPrestamo } from '@/actions/cuotas';
-import { Banknote, Calendar, CheckCircle2, AlertTriangle, Search, Clock, HandCoins, Car, ChevronDown, ChevronUp } from 'lucide-react';
+import { Banknote, Calendar, CheckCircle2, AlertTriangle, Search, Clock, HandCoins, Car, ChevronDown, ChevronUp, MessageCircle, Printer } from 'lucide-react';
 import DualMoney from '@/components/common/DualMoney';
+import ModalWhatsAppRecordatorio from '@/components/prestamos/ModalWhatsAppRecordatorio';
+import ModalPreguntarImprimirRecibo from '@/components/prestamos/ModalPreguntarImprimirRecibo';
 
-export default function CuotasClient({ carteraInicial, dolarActual }: { carteraInicial: any[]; dolarActual: number }) {
+export default function CuotasClient({
+  carteraInicial,
+  dolarActual,
+  tenantName = 'OnlyCars',
+}: {
+  carteraInicial: any[];
+  dolarActual: number;
+  tenantName?: string;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Modal para preguntar si desea imprimir el recibo
+  const [reciboPrompt, setReciboPrompt] = useState<{
+    idCuota: number;
+    tipo: 'VENTA' | 'PRESTAMO';
+    reciboNro: string;
+    clienteNombre: string;
+    clienteTelefono?: string;
+    numeroCuota: number;
+    totalCuotas: number;
+    montoArs: number;
+    montoUsd: number;
+  } | null>(null);
+
+  // Modal de WhatsApp con plantillas prearmadas
+  const [cuotaWhatsApp, setCuotaWhatsApp] = useState<{
+    cliente: { nombre: string; telefono: string; dni?: string };
+    cuota: any;
+  } | null>(null);
 
   useEffect(() => {
     const q = searchParams.get('q');
@@ -47,7 +76,7 @@ export default function CuotasClient({ carteraInicial, dolarActual }: { carteraI
   const totalPendienteUsd = cartera.reduce((s, op) => s + op.resumen.deudaUsd, 0);
   const operacionesEnMora = cartera.filter(op => op.resumen.enMora).length;
 
-  const cobrar = async (cuota: any, tipo: string) => {
+  const cobrar = async (cuota: any, tipo: string, op: any) => {
     const montoArs = Number(cuota.monto_usd || 0) * dolarActual;
     if (!confirm(`¿Registrar cobro de $ ${montoArs.toLocaleString('es-AR', { maximumFractionDigits: 0 })} ARS (U$S ${Number(cuota.monto_usd || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 })})?`)) return;
     setIsSubmitting(true);
@@ -56,6 +85,19 @@ export default function CuotasClient({ carteraInicial, dolarActual }: { carteraI
       : await registrarPagoCuotaPrestamo(cuota.id_cuota_real, { monto_cobrado_ars: montoArs, cotizacion_dia: dolarActual });
     setIsSubmitting(false);
     if (!res.success) return alert(res.error || 'No se pudo registrar el cobro.');
+
+    // Preguntar si desea imprimir recibo oficial
+    setReciboPrompt({
+      idCuota: cuota.id_cuota_real,
+      tipo: tipo as 'VENTA' | 'PRESTAMO',
+      reciboNro: (res as any).recibo_nro || `REC-${cuota.id_cuota_real}`,
+      clienteNombre: op.cliente?.nombre_completo || 'Cliente',
+      clienteTelefono: op.cliente?.telefono,
+      numeroCuota: cuota.numero_cuota,
+      totalCuotas: op.cuotas?.length || 1,
+      montoArs,
+      montoUsd: Number(cuota.monto_usd || 0),
+    });
     router.refresh();
   };
 
@@ -142,8 +184,34 @@ export default function CuotasClient({ carteraInicial, dolarActual }: { carteraI
                         {op.cuotas.length - op.resumen.cantidadPendiente} / {op.cuotas.length}
                       </span>
                     </td>
-                    <td className="px-5 py-4 text-right text-slate-400 dark:text-slate-500">
-                      {expanded === op.id_operacion ? <ChevronUp className="inline w-5 h-5" /> : <ChevronDown className="inline w-5 h-5" />}
+                    <td className="px-5 py-4 text-right">
+                      <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                        {op.cliente?.telefono && (
+                          <button
+                            onClick={() => {
+                              const proximaCuota = op.cuotas.find((c: any) => c.estado === 'PENDIENTE') || op.cuotas[0];
+                              setCuotaWhatsApp({
+                                cliente: {
+                                  nombre: op.cliente.nombre_completo,
+                                  telefono: op.cliente.telefono,
+                                  dni: op.cliente.dni,
+                                },
+                                cuota: proximaCuota,
+                              });
+                            }}
+                            title="Enviar aviso por WhatsApp"
+                            className="p-1.5 rounded-lg text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 transition-colors"
+                          >
+                            <MessageCircle className="w-4 h-4" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setExpanded(expanded === op.id_operacion ? null : op.id_operacion)}
+                          className="p-1 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
+                        >
+                          {expanded === op.id_operacion ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                   {expanded === op.id_operacion && (
@@ -190,17 +258,44 @@ export default function CuotasClient({ carteraInicial, dolarActual }: { carteraI
                                   />
                                 </div>
                                 {c.estado === 'PENDIENTE' ? (
-                                  <button
-                                    disabled={isSubmitting}
-                                    onClick={() => cobrar(c, op.tipo_operacion)}
-                                    className="w-full bg-[var(--bg-primary-default,#FF6600)] hover:bg-[var(--bg-primary-bold,#e25700)] text-white py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-2 shadow-sm transition-all disabled:opacity-50"
-                                  >
-                                    <Banknote className="w-4 h-4" /> Registrar cobro
-                                  </button>
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      disabled={isSubmitting}
+                                      onClick={() => cobrar(c, op.tipo_operacion, op)}
+                                      className="flex-1 bg-[var(--bg-primary-default,#FF6600)] hover:bg-[var(--bg-primary-bold,#e25700)] text-white py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-2 shadow-sm transition-all disabled:opacity-50"
+                                    >
+                                      <Banknote className="w-4 h-4" /> Cobrar
+                                    </button>
+                                    {op.cliente?.telefono && (
+                                      <button
+                                        onClick={() => setCuotaWhatsApp({
+                                          cliente: {
+                                            nombre: op.cliente.nombre_completo,
+                                            telefono: op.cliente.telefono,
+                                            dni: op.cliente.dni,
+                                          },
+                                          cuota: c,
+                                        })}
+                                        title="Aviso WhatsApp para esta cuota"
+                                        className="p-2.5 rounded-xl border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 transition-colors"
+                                      >
+                                        <MessageCircle className="w-4 h-4" />
+                                      </button>
+                                    )}
+                                  </div>
                                 ) : (
-                                  <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400">
-                                    Cobrada {c.fecha_pago_str ? new Date(c.fecha_pago_str).toLocaleDateString('es-AR') : ''}
-                                  </p>
+                                  <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                                    <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                                      Cobrada {c.fecha_pago_str ? new Date(c.fecha_pago_str).toLocaleDateString('es-AR') : ''}
+                                    </p>
+                                    <button
+                                      onClick={() => window.open(`/documentos/recibo-cuota/${c.id_cuota_real}?tipo=${op.tipo_operacion}`, '_blank')}
+                                      className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                                    >
+                                      <Printer className="w-3.5 h-3.5 text-slate-500" />
+                                      Recibo
+                                    </button>
+                                  </div>
                                 )}
                               </div>
                             );
@@ -222,6 +317,38 @@ export default function CuotasClient({ carteraInicial, dolarActual }: { carteraI
           </table>
         </div>
       </div>
+
+      {reciboPrompt && (
+        <ModalPreguntarImprimirRecibo
+          isOpen={!!reciboPrompt}
+          onClose={() => setReciboPrompt(null)}
+          idCuota={reciboPrompt.idCuota}
+          tipo={reciboPrompt.tipo}
+          reciboNro={reciboPrompt.reciboNro}
+          clienteNombre={reciboPrompt.clienteNombre}
+          clienteTelefono={reciboPrompt.clienteTelefono}
+          numeroCuota={reciboPrompt.numeroCuota}
+          totalCuotas={reciboPrompt.totalCuotas}
+          montoArs={reciboPrompt.montoArs}
+          montoUsd={reciboPrompt.montoUsd}
+        />
+      )}
+
+      {cuotaWhatsApp && (
+        <ModalWhatsAppRecordatorio
+          isOpen={!!cuotaWhatsApp}
+          onClose={() => setCuotaWhatsApp(null)}
+          cliente={cuotaWhatsApp.cliente}
+          cuota={{
+            numero_cuota: cuotaWhatsApp.cuota.numero_cuota,
+            fecha_vencimiento: cuotaWhatsApp.cuota.fecha_vto_str || cuotaWhatsApp.cuota.fecha_vencimiento,
+            monto_usd: cuotaWhatsApp.cuota.monto_usd,
+            monto_ars: Number(cuotaWhatsApp.cuota.monto_usd || 0) * dolarActual,
+          }}
+          dolarActual={dolarActual}
+          tenantName={tenantName}
+        />
+      )}
     </div>
   );
 }

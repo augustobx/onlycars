@@ -4,12 +4,21 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Search, Plus, Users, UserRound, Phone, Mail, MapPin, Edit, Loader2, Save, X } from 'lucide-react';
+import { Search, Plus, Users, UserRound, Phone, Mail, MapPin, Edit, Loader2, Save, X, MessageCircle } from 'lucide-react';
 import { guardarCliente, actualizarCliente } from '@/actions/clientes';
+import ModalWhatsAppRecordatorio from '@/components/prestamos/ModalWhatsAppRecordatorio';
 
 const EMPTY = { id_cliente: 0, nombre_completo: '', dni: '', cuit_cuil: '', telefono: '', email: '', domicilio: '', localidad: '', provincia: '', notas: '' };
 
-export default function ClientesClient({ clientes }: { clientes: any[] }) {
+export default function ClientesClient({
+  clientes,
+  tenantName = 'OnlyCars',
+  dolarActual = 1400,
+}: {
+  clientes: any[];
+  tenantName?: string;
+  dolarActual?: number;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -19,6 +28,12 @@ export default function ClientesClient({ clientes }: { clientes: any[] }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [formData, setFormData] = useState<any>(EMPTY);
+
+  // Modal WhatsApp prearmado
+  const [clienteWhatsApp, setClienteWhatsApp] = useState<{
+    cliente: { nombre: string; telefono: string; dni?: string };
+    cuota?: any;
+  } | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -162,6 +177,22 @@ export default function ClientesClient({ clientes }: { clientes: any[] }) {
                     </td>
                     <td className="px-5 py-3.5 text-right">
                       <div className="flex justify-end gap-2">
+                        {c.telefono && (
+                          <button
+                            type="button"
+                            onClick={() => setClienteWhatsApp({
+                              cliente: {
+                                nombre: c.nombre_completo,
+                                telefono: c.telefono,
+                                dni: c.dni,
+                              },
+                            })}
+                            className="px-2.5 py-1.5 text-xs font-bold rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 flex items-center gap-1 transition-colors"
+                            title="Enviar aviso o recordatorio por WhatsApp"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+                          </button>
+                        )}
                         <button
                           onClick={() => openModal(c)}
                           className="px-3 py-1.5 text-xs font-bold rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center gap-1 transition-colors"
@@ -261,6 +292,17 @@ export default function ClientesClient({ clientes }: { clientes: any[] }) {
           </div>
         </div>,
         document.body
+      )}
+
+      {clienteWhatsApp && (
+        <ModalWhatsAppRecordatorio
+          isOpen={!!clienteWhatsApp}
+          onClose={() => setClienteWhatsApp(null)}
+          cliente={clienteWhatsApp.cliente}
+          cuota={clienteWhatsApp.cuota}
+          dolarActual={dolarActual}
+          tenantName={tenantName}
+        />
       )}
     </div>
   );

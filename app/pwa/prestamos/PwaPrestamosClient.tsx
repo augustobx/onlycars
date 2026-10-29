@@ -24,6 +24,7 @@ import {
 import PwaBottomNav from '../PwaBottomNav';
 import PwaInstallPrompt from '@/components/pwa/PwaInstallPrompt';
 import ModalWhatsAppRecordatorio from '@/components/prestamos/ModalWhatsAppRecordatorio';
+import ModalPreguntarImprimirRecibo from '@/components/prestamos/ModalPreguntarImprimirRecibo';
 import { registrarPrestamo } from '@/actions/prestamos';
 import { registrarPagoCuotaPrestamo } from '@/actions/cuotas';
 import { useRouter } from 'next/navigation';
@@ -93,10 +94,30 @@ export default function PwaPrestamosClient({
   const [guardando, setGuardando] = useState(false);
 
   // Cobro rápido dentro de cuotas expandidas
-  const [cuotaCobrando, setCuotaCobrando] = useState<{ id_cuota: number; monto_usd: number; cliente_nombre: string } | null>(null);
+  const [cuotaCobrando, setCuotaCobrando] = useState<{
+    id_cuota: number;
+    monto_usd: number;
+    cliente_nombre: string;
+    cliente_telefono?: string;
+    numero_cuota: number;
+    total_cuotas: number;
+  } | null>(null);
   const [cotizacionCobro, setCotizacionCobro] = useState(String(dolarActual));
   const [montoCobroArs, setMontoCobroArs] = useState('');
   const [procesandoCobro, setProcesandoCobro] = useState(false);
+
+  // Modal para preguntar si desea imprimir el recibo
+  const [reciboPrompt, setReciboPrompt] = useState<{
+    idCuota: number;
+    tipo: 'VENTA' | 'PRESTAMO';
+    reciboNro: string;
+    clienteNombre: string;
+    clienteTelefono?: string;
+    numeroCuota: number;
+    totalCuotas: number;
+    montoArs: number;
+    montoUsd: number;
+  } | null>(null);
 
   // Modal WhatsApp prearmado
   const [prestamoAvisar, setPrestamoAvisar] = useState<{
@@ -231,7 +252,21 @@ export default function PwaPrestamosClient({
       })
     );
 
+    const cobrada = cuotaCobrando;
     setCuotaCobrando(null);
+
+    // Preguntar si desea imprimir recibo oficial
+    setReciboPrompt({
+      idCuota: cobrada.id_cuota,
+      tipo: 'PRESTAMO',
+      reciboNro: res.recibo_nro || `REC-${cobrada.id_cuota}`,
+      clienteNombre: cobrada.cliente_nombre,
+      clienteTelefono: cobrada.cliente_telefono,
+      numeroCuota: cobrada.numero_cuota,
+      totalCuotas: cobrada.total_cuotas,
+      montoArs,
+      montoUsd: cobrada.monto_usd,
+    });
   };
 
   const limpiarTelefono = (tel: string) => tel.replace(/\D/g, '');
@@ -768,9 +803,19 @@ export default function PwaPrestamosClient({
                               </span>
                             </div>
                             {c.estado === 'PAGADA' ? (
-                              <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
-                                Pagada
-                              </span>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
+                                  Pagada
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => window.open(`/documentos/recibo-cuota/${c.id_cuota}?tipo=PRESTAMO`, '_blank')}
+                                  className="text-[10px] font-bold text-slate-700 bg-white border border-slate-200 px-2 py-0.5 rounded hover:bg-slate-50 flex items-center gap-1 shadow-2xs"
+                                >
+                                  <FileText className="w-3 h-3 text-slate-400" />
+                                  Recibo
+                                </button>
+                              </div>
                             ) : (
                               <button
                                 onClick={() => {
@@ -778,6 +823,9 @@ export default function PwaPrestamosClient({
                                     id_cuota: c.id_cuota,
                                     monto_usd: c.monto_usd,
                                     cliente_nombre: p.cliente_nombre,
+                                    cliente_telefono: p.cliente_telefono,
+                                    numero_cuota: c.numero_cuota,
+                                    total_cuotas: p.cuotas.length,
                                   });
                                   setMontoCobroArs(String(Math.round(c.monto_usd * dolarActual)));
                                 }}
@@ -902,6 +950,23 @@ export default function PwaPrestamosClient({
           }}
           cuota={prestamoAvisar.cuota}
           tenantName={tenantName}
+        />
+      )}
+
+      {/* MODAL PREGUNTAR IMPRIMIR RECIBO TRAS COBRO */}
+      {reciboPrompt && (
+        <ModalPreguntarImprimirRecibo
+          isOpen={!!reciboPrompt}
+          onClose={() => setReciboPrompt(null)}
+          idCuota={reciboPrompt.idCuota}
+          tipo={reciboPrompt.tipo}
+          reciboNro={reciboPrompt.reciboNro}
+          clienteNombre={reciboPrompt.clienteNombre}
+          clienteTelefono={reciboPrompt.clienteTelefono}
+          numeroCuota={reciboPrompt.numeroCuota}
+          totalCuotas={reciboPrompt.totalCuotas}
+          montoArs={reciboPrompt.montoArs}
+          montoUsd={reciboPrompt.montoUsd}
         />
       )}
 

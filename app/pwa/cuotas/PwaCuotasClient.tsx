@@ -17,6 +17,7 @@ import {
 import PwaBottomNav from '../PwaBottomNav';
 import PwaInstallPrompt from '@/components/pwa/PwaInstallPrompt';
 import ModalWhatsAppRecordatorio from '@/components/prestamos/ModalWhatsAppRecordatorio';
+import ModalPreguntarImprimirRecibo from '@/components/prestamos/ModalPreguntarImprimirRecibo';
 import { registrarPagoCuota, registrarPagoCuotaPrestamo } from '@/actions/cuotas';
 import { useRouter } from 'next/navigation';
 
@@ -57,6 +58,19 @@ export default function PwaCuotasClient({
 
   // Modal de aviso WhatsApp prearmado
   const [cuotaAvisar, setCuotaAvisar] = useState<any | null>(null);
+
+  // Modal para preguntar si desea imprimir el recibo
+  const [reciboPrompt, setReciboPrompt] = useState<{
+    idCuota: number;
+    tipo: 'VENTA' | 'PRESTAMO';
+    reciboNro: string;
+    clienteNombre: string;
+    clienteTelefono?: string;
+    numeroCuota: number;
+    totalCuotas: number;
+    montoArs: number;
+    montoUsd: number;
+  } | null>(null);
 
   // Modal de cobro rápido
   const [cuotaACobrar, setCuotaACobrar] = useState<PwaCuotaItem | null>(null);
@@ -160,7 +174,22 @@ export default function PwaCuotasClient({
       )
     );
 
+    const cobrada = cuotaACobrar;
     setCuotaACobrar(null);
+
+    // Preguntar si desea imprimir recibo oficial
+    setReciboPrompt({
+      idCuota: cobrada.id_cuota_real,
+      tipo: cobrada.tipo_origen,
+      reciboNro: res.recibo_nro || `REC-${cobrada.id_cuota_real}`,
+      clienteNombre: cobrada.cliente_nombre,
+      clienteTelefono: cobrada.cliente_telefono,
+      numeroCuota: cobrada.numero_cuota,
+      totalCuotas: cobrada.total_cuotas,
+      montoArs,
+      montoUsd: cobrada.monto_usd,
+    });
+
     router.refresh();
   };
 
@@ -397,9 +426,18 @@ export default function PwaCuotasClient({
                       <DollarSign className="w-4 h-4" /> Cobrar Cuota
                     </button>
                   ) : (
-                    <div className="flex-1 flex items-center justify-end text-[11px] font-bold text-slate-500 gap-1">
-                      <FileText className="w-3.5 h-3.5 text-slate-400" />
-                      <span>{c.recibo_nro || 'Cobrada'}</span>
+                    <div className="flex-1 flex items-center justify-end text-[11px] font-bold text-slate-500 gap-2">
+                      <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                        {c.recibo_nro || 'Cobrada'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => window.open(`/documentos/recibo-cuota/${c.id_cuota_real}?tipo=${c.tipo_origen}`, '_blank')}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 shadow-xs active:scale-95 transition-all"
+                      >
+                        <FileText className="w-3.5 h-3.5 text-slate-500" />
+                        Ver Recibo
+                      </button>
                     </div>
                   )}
                 </div>
@@ -521,6 +559,23 @@ export default function PwaCuotasClient({
           }}
           tenantName={tenantName}
           tenantCuit={tenantCuit}
+        />
+      )}
+
+      {/* MODAL PARA PREGUNTAR IMPRIMIR RECIBO TRAS COBRO */}
+      {reciboPrompt && (
+        <ModalPreguntarImprimirRecibo
+          isOpen={!!reciboPrompt}
+          onClose={() => setReciboPrompt(null)}
+          idCuota={reciboPrompt.idCuota}
+          tipo={reciboPrompt.tipo}
+          reciboNro={reciboPrompt.reciboNro}
+          clienteNombre={reciboPrompt.clienteNombre}
+          clienteTelefono={reciboPrompt.clienteTelefono}
+          numeroCuota={reciboPrompt.numeroCuota}
+          totalCuotas={reciboPrompt.totalCuotas}
+          montoArs={reciboPrompt.montoArs}
+          montoUsd={reciboPrompt.montoUsd}
         />
       )}
 

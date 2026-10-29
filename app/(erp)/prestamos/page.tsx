@@ -48,7 +48,7 @@ export default async function PrestamosPage() {
 
     return (
         <Suspense fallback={<div className="flex justify-center items-center h-screen"><Loader2 className="w-10 h-10 animate-spin text-indigo-600" /></div>}>
-            <PrestamosClient prestamos={prestamos} solicitudes={solicitudes} dolarActual={dolarActual} />
+            <PrestamosClient prestamos={prestamos} solicitudes={solicitudes} dolarActual={dolarActual} tenantName={tenant.name} />
         </Suspense>
     );
 }

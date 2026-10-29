@@ -41,5 +41,5 @@ export default async function DetalleClientePage({ params }: { params: Promise<{
     prospectos: clienteDb.prospectos.map((p) => ({ ...p, presupuesto_estimado_usd: Number(p.presupuesto_estimado_usd || 0), vehiculo_interes: p.vehiculo_interes ? { ...p.vehiculo_interes, precio_venta_usd: Number(p.vehiculo_interes.precio_venta_usd || 0), precio_venta_ars: Number(p.vehiculo_interes.precio_venta_ars || 0) } : null, cotizaciones: p.cotizaciones.map((c) => ({ ...c, precio_final_usd: Number(c.precio_final_usd || 0), cotizacion_dolar: Number(c.cotizacion_dolar || 0) })) })),
   };
 
-  return <ClienteCarpetaClient cliente={cliente as any} dolarActual={tenant.settings?.dolarActual || 1400} />;
+  return <ClienteCarpetaClient cliente={cliente as any} dolarActual={tenant.settings?.dolarActual || 1400} tenantName={tenant.name} />;
 }

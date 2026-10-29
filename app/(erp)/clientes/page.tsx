@@ -29,5 +29,11 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
     take: 300,
   });
 
-  return <Suspense fallback={<div className="flex justify-center items-center h-screen"><Loader2 className="w-10 h-10 animate-spin text-blue-600" /></div>}><ClientesClient clientes={clientesDb} /></Suspense>;
+  const dolarActual = Number(tenant.settings?.dolarActual || 1400);
+
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center h-screen"><Loader2 className="w-10 h-10 animate-spin text-blue-600" /></div>}>
+      <ClientesClient clientes={clientesDb} tenantName={tenant.name} dolarActual={dolarActual} />
+    </Suspense>
+  );
 }

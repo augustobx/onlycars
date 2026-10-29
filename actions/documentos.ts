@@ -128,3 +128,75 @@ export async function obtenerFichaParabrisas(id_vehiculo: number) {
     },
   };
 }
+
+
+export async function obtenerDatosReciboCuota(id_cuota: number, tipo: 'PRESTAMO' | 'VENTA' = 'PRESTAMO') {
+  const { tenant, settings, branding } = await contextoDocumental();
+
+  let cuotaData: any = null;
+  let operacionDesc = '';
+  let cliente: any = null;
+  let totalCuotas = 1;
+  let cuotasRestantes = 0;
+
+  if (tipo === 'PRESTAMO') {
+    const cuota = await db.prestamoCuota.findUnique({
+      where: { id_cuota },
+      include: {
+        prestamo: {
+          include: {
+            cliente: true,
+            cuotas: { orderBy: { numero_cuota: 'asc' } },
+          },
+        },
+      },
+    });
+    if (!cuota || cuota.prestamo.tenantId !== tenant.id) throw new Error('Cuota de préstamo no encontrada.');
+    cuotaData = cuota;
+    cliente = cuota.prestamo.cliente;
+    operacionDesc = `Préstamo Personal #${cuota.prestamo.id_prestamo}`;
+    totalCuotas = cuota.prestamo.cuotas.length;
+    cuotasRestantes = cuota.prestamo.cuotas.filter((c) => c.estado === 'PENDIENTE').length;
+  } else {
+    const cuota = await db.ventaCuota.findUnique({
+      where: { id_cuota },
+      include: {
+        venta: {
+          include: {
+            cliente: true,
+            vehiculo: true,
+            cuotas: { orderBy: { numero_cuota: 'asc' } },
+          },
+        },
+      },
+    });
+    if (!cuota || cuota.venta.tenantId !== tenant.id) throw new Error('Cuota de venta no encontrada.');
+    cuotaData = cuota;
+    cliente = cuota.venta.cliente;
+    operacionDesc = `Financiación Vehicular: ${cuota.venta.vehiculo?.marca || ''} ${cuota.venta.vehiculo?.modelo || ''} [${cuota.venta.vehiculo?.patente || 'S/P'}]`;
+    totalCuotas = cuota.venta.cuotas.length;
+    cuotasRestantes = cuota.venta.cuotas.filter((c) => c.estado === 'PENDIENTE').length;
+  }
+
+  const logoRecibo = (branding as any)?.logoRecibo || settings?.logoUrl || null;
+
+  return {
+    cuota: cuotaData,
+    tipo,
+    operacionDesc,
+    cliente,
+    totalCuotas,
+    cuotasRestantes,
+    concesionaria: {
+      nombre: settings?.razonSocial || settings?.appName || tenant.name,
+      nombreComercial: settings?.appName || tenant.name,
+      cuit: settings?.cuit || tenant.cuit || 'S/D',
+      direccion: settings?.direccion || tenant.address || 'Sede Comercial',
+      ciudad: tenant.city || '',
+      telefono: settings?.telefonoContacto || tenant.phone || '',
+      email: settings?.emailContacto || tenant.email || '',
+      logoUrl: logoRecibo,
+      pieImpresion: settings?.pieImpresion || '',
+    },
+  };
+}

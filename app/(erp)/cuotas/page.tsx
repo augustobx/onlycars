@@ -58,7 +58,7 @@ export default async function CuotasPage() {
 
     return (
         <Suspense fallback={<div className="flex justify-center items-center h-screen"><Loader2 className="w-10 h-10 animate-spin text-indigo-600" /></div>}>
-            <CuotasClient carteraInicial={carteraUnificada} dolarActual={dolarActual} />
+            <CuotasClient carteraInicial={carteraUnificada} dolarActual={dolarActual} tenantName={tenant.name} />
         </Suspense>
     );
 }

@@ -22,25 +22,35 @@ import {
   Phone,
   Printer,
   BarChart3,
+  MessageCircle,
 } from 'lucide-react';
 import DualMoney from '@/components/common/DualMoney';
 import { cambiarEstadoSolicitudWebAction, aprobarYGenerarPrestamoAction } from '@/actions/prestamos-admin';
 import PrestamosMetricasView from '@/components/prestamos/PrestamosMetricasView';
+import ModalWhatsAppRecordatorio from '@/components/prestamos/ModalWhatsAppRecordatorio';
 
 export default function PrestamosClient({
   prestamos,
   solicitudes = [],
   dolarActual,
+  tenantName = 'OnlyCars',
 }: {
   prestamos: any[];
   solicitudes?: any[];
   dolarActual: number;
+  tenantName?: string;
 }) {
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<'CARTERA' | 'SOLICITUDES' | 'METRICAS'>('CARTERA');
   const [searchTerm, setSearchTerm] = useState('');
   const [filtroEstado, setFiltroEstado] = useState<'ACTIVOS' | 'FINALIZADOS'>('ACTIVOS');
   const [filtroSolicitudes, setFiltroSolicitudes] = useState<string>('TODAS');
+
+  // Modal WhatsApp prearmado
+  const [prestamoWhatsApp, setPrestamoWhatsApp] = useState<{
+    cliente: { nombre: string; telefono: string; dni?: string };
+    cuota: any;
+  } | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -378,10 +388,48 @@ export default function PrestamosClient({
                       Cuotas pagadas: {p.resumen.pagadas}/{p.resumen.total}
                     </span>
                     <div className="flex items-center gap-2">
+                      {p.cliente?.telefono && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const hoy = new Date();
+                            hoy.setHours(0, 0, 0, 0);
+                            const cuotasPend = p.cuotas.filter((c: any) => c.estado !== 'PAGADA');
+                            const cTarget = cuotasPend[0] || p.cuotas[0];
+                            const vtoDate = cTarget?.fecha_vto_str ? new Date(cTarget.fecha_vto_str) : new Date();
+                            vtoDate.setHours(0, 0, 0, 0);
+                            const diffDays = Math.floor((hoy.getTime() - vtoDate.getTime()) / (1000 * 60 * 60 * 24));
+                            setPrestamoWhatsApp({
+                              cliente: {
+                                nombre: p.cliente.nombre_completo,
+                                telefono: p.cliente.telefono,
+                                dni: p.cliente.dni,
+                              },
+                              cuota: cTarget
+                                ? {
+                                    numero_cuota: cTarget.numero_cuota,
+                                    total_cuotas: p.cuotas.length,
+                                    monto_usd: cTarget.monto_usd,
+                                    monto_ars: cTarget.monto_pagado_ars || Math.round(Number(cTarget.monto_usd || 0) * (p.cotizacion_dolar_prestamo || dolarActual)),
+                                    fecha_vencimiento: cTarget.fecha_vto_str,
+                                    id_operacion: `PREST-${p.id_prestamo}`,
+                                    dias_mora: Math.max(0, diffDays),
+                                    isVencida: diffDays > 0,
+                                    isHoy: diffDays === 0,
+                                  }
+                                : null,
+                            });
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 text-xs font-bold flex items-center gap-1.5 transition-colors"
+                          title="Enviar aviso o recordatorio por WhatsApp"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+                        </button>
+                      )}
                       <Link
                         href={`/documentos/prestamo/${p.id_prestamo}`}
                         target="_blank"
-                        className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 text-xs font-bold flex items-center gap-1.5 transition-colors"
+                        className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors"
                         title="Imprimir contrato / boleto de préstamo"
                       >
                         <Printer className="w-3.5 h-3.5" /> Boleto
@@ -688,6 +736,17 @@ export default function PrestamosClient({
           </div>
         </div>,
         document.body
+      )}
+
+      {prestamoWhatsApp && (
+        <ModalWhatsAppRecordatorio
+          isOpen={!!prestamoWhatsApp}
+          onClose={() => setPrestamoWhatsApp(null)}
+          cliente={prestamoWhatsApp.cliente}
+          cuota={prestamoWhatsApp.cuota}
+          dolarActual={dolarActual}
+          tenantName={tenantName}
+        />
       )}
     </div>
   );
