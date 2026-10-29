@@ -269,7 +269,7 @@ export default function PwaAdminHubClient({
         </div>
       </div>
 
-      <PwaInstallPrompt />
+      <PwaInstallPrompt appType="admin" />
       <PwaBottomNav active="prestamos" />
     </div>
   );
