@@ -85,7 +85,7 @@ export default async function PwaCuotasPage() {
       cuotasIniciales={cuotas}
       dolarActual={dolarActual}
       tenantName={tenant.name}
-      tenantCuit={tenant.settings?.cuit || undefined}
+      tenantCuit={(tenant.settings as any)?.cuit || undefined}
     />
   );
 }

@@ -488,7 +488,7 @@ export default function PwaClientesClient({
         />
       )}
 
-      <PwaInstallPrompt />
+      <PwaInstallPrompt appType="admin" appName={tenantName} />
       <PwaBottomNav active="clientes" />
     </div>
   );

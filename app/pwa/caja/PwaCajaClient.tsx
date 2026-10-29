@@ -509,7 +509,7 @@ export default function PwaCajaClient({
         </div>
       )}
 
-      <PwaInstallPrompt />
+      <PwaInstallPrompt appType="admin" appName={tenantName} />
       <PwaBottomNav active="caja" />
     </div>
   );

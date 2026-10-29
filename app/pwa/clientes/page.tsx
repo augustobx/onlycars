@@ -174,7 +174,7 @@ export default async function PwaClientesPage() {
       clientesIniciales={clientes}
       dolarActual={dolarActual}
       tenantName={tenant.name}
-      tenantCuit={tenant.settings?.cuit || undefined}
+      tenantCuit={(tenant.settings as any)?.cuit || undefined}
     />
   );
 }
