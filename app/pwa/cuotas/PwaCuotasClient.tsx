@@ -186,7 +186,8 @@ export default function PwaCuotasClient({
         <div className="grid grid-cols-3 gap-2 mt-2 pt-2 border-t border-slate-100">
           <div className="bg-slate-50 p-2 rounded-xl text-center border border-slate-100">
             <p className="text-[9px] uppercase font-black text-slate-400">A Cobrar</p>
-            <p className="text-xs font-black text-slate-900 font-mono mt-0.5">U$S {Math.round(totalACobrarUsd).toLocaleString('es-AR')}</p>
+            <p className="text-xs font-black text-slate-900 font-mono mt-0.5">$ {Math.round(totalACobrarUsd * dolarActual).toLocaleString('es-AR')}</p>
+            <p className="text-[9px] font-bold text-slate-400 font-mono">U$S {Math.round(totalACobrarUsd).toLocaleString('es-AR')}</p>
           </div>
           <div className="bg-red-50 p-2 rounded-xl text-center border border-red-100">
             <p className="text-[9px] uppercase font-black text-red-600">Vencidas</p>
@@ -267,7 +268,7 @@ export default function PwaCuotasClient({
             const telLimpio = limpiarTelefono(c.cliente_telefono);
 
             const mensajeWp = encodeURIComponent(
-              `Hola ${c.cliente_nombre}, te escribimos de ${tenantName} recordándote el vencimiento de la cuota ${c.numero_cuota}/${c.total_cuotas} por U$S ${c.monto_usd} (aprox. $ ${montoArsEstimado.toLocaleString('es-AR')}). ¿Te gustaría coordinar el pago hoy?`
+              `Hola ${c.cliente_nombre}, te escribimos de ${tenantName} recordándote el vencimiento de la cuota ${c.numero_cuota}/${c.total_cuotas} por $ ${montoArsEstimado.toLocaleString('es-AR')} (U$S ${c.monto_usd}). ¿Te gustaría coordinar el pago hoy?`
             );
 
             return (
@@ -322,18 +323,25 @@ export default function PwaCuotasClient({
                   </div>
                 </div>
 
-                {/* IMPORTES */}
+                {/* IMPORTES (ARS EN FOCO, USD SECUNDARIO) */}
                 <div className="flex items-baseline justify-between pt-1">
                   <div>
-                    <span className="text-[9px] uppercase font-black text-slate-400 block">Importe pactado</span>
-                    <strong className="text-base font-black text-slate-900 font-mono">U$S {c.monto_usd.toLocaleString('es-AR')}</strong>
+                    <span className="text-[9px] uppercase font-black text-slate-400 block">
+                      {c.estado === 'PAGADA' ? 'Importe Pagado' : 'Importe a Cobrar'}
+                    </span>
+                    <strong className="text-base font-black text-slate-900 font-mono">
+                      $ {(c.monto_pagado_ars || montoArsEstimado).toLocaleString('es-AR')}
+                    </strong>
+                    <span className="text-[10px] font-mono text-slate-400 block">
+                      ≈ U$S {c.monto_usd.toLocaleString('es-AR')}
+                    </span>
                   </div>
                   <div className="text-right">
                     <span className="text-[9px] uppercase font-black text-slate-400 block">
-                      {c.estado === 'PAGADA' ? 'Pagado en ARS' : 'Equivalente hoy'}
+                      Ref. Contable
                     </span>
-                    <span className="text-xs font-bold font-mono text-emerald-700">
-                      $ {(c.monto_pagado_ars || montoArsEstimado).toLocaleString('es-AR')} ARS
+                    <span className="text-xs font-bold font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md inline-block">
+                      U$S {c.monto_usd.toLocaleString('es-AR')}
                     </span>
                   </div>
                 </div>
@@ -401,9 +409,14 @@ export default function PwaCuotasClient({
             </div>
 
             <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-1 text-xs">
-              <div className="flex justify-between">
+              <div className="flex justify-between items-baseline">
                 <span className="text-slate-500">Monto pactado:</span>
-                <strong className="text-slate-900 font-mono font-black">U$S {cuotaACobrar.monto_usd}</strong>
+                <div className="text-right">
+                  <strong className="text-emerald-700 font-mono font-black text-sm block">
+                    $ {Math.round(cuotaACobrar.monto_usd * (Number(cotizacionDia) || dolarActual)).toLocaleString('es-AR')}
+                  </strong>
+                  <span className="text-[10px] text-slate-400 font-mono">≈ U$S {cuotaACobrar.monto_usd}</span>
+                </div>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Operación:</span>

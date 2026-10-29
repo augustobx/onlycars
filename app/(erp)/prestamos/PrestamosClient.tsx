@@ -491,13 +491,11 @@ export default function PrestamosClient({
                     <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-100 dark:border-slate-800">
                       <p className="text-[10px] font-black uppercase text-slate-400">Monto pedido</p>
                       <p className="text-base font-black text-slate-900 dark:text-slate-100 mt-0.5">
-                        USD ${Number(s.monto_solicitado_usd).toLocaleString('es-AR')}
+                        $ {Number(s.monto_solicitado_ars || (Number(s.monto_solicitado_usd) * dolarActual)).toLocaleString('es-AR')}
                       </p>
-                      {s.monto_solicitado_ars && (
-                        <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">
-                          ${Number(s.monto_solicitado_ars).toLocaleString('es-AR')} ARS
-                        </p>
-                      )}
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold font-mono">
+                        ≈ U$S {Number(s.monto_solicitado_usd).toLocaleString('es-AR')}
+                      </p>
                     </div>
                     <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-100 dark:border-slate-800">
                       <p className="text-[10px] font-black uppercase text-slate-400">Cuotas</p>

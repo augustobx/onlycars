@@ -509,19 +509,22 @@ export default function PwaPrestamosClient({
 
         {activeView === 'cartera' && (
           <>
-            {/* MÉTRICAS RÁPIDAS */}
+            {/* MÉTRICAS RÁPIDAS (ARS EN FOCO, USD SECUNDARIO) */}
             <div className="grid grid-cols-3 gap-2 mt-2 pt-2 border-t border-slate-100">
               <div className="bg-slate-50 p-2 rounded-xl text-center border border-slate-100">
                 <p className="text-[9px] uppercase font-black text-slate-400">Prestado</p>
-                <p className="text-xs font-black text-slate-900 font-mono mt-0.5">U$S {Math.round(totalCapitalColocadoUsd).toLocaleString('es-AR')}</p>
+                <p className="text-xs font-black text-slate-900 font-mono mt-0.5">$ {Math.round(totalCapitalColocadoUsd * dolarActual).toLocaleString('es-AR')}</p>
+                <p className="text-[9px] font-bold text-slate-400 font-mono">U$S {Math.round(totalCapitalColocadoUsd).toLocaleString('es-AR')}</p>
               </div>
               <div className="bg-emerald-50 p-2 rounded-xl text-center border border-emerald-100">
                 <p className="text-[9px] uppercase font-black text-emerald-600">A Cobrar</p>
-                <p className="text-xs font-black text-emerald-700 font-mono mt-0.5">U$S {Math.round(totalADevolverUsd).toLocaleString('es-AR')}</p>
+                <p className="text-xs font-black text-emerald-700 font-mono mt-0.5">$ {Math.round(totalADevolverUsd * dolarActual).toLocaleString('es-AR')}</p>
+                <p className="text-[9px] font-bold text-emerald-600 font-mono">U$S {Math.round(totalADevolverUsd).toLocaleString('es-AR')}</p>
               </div>
               <div className="bg-indigo-50 p-2 rounded-xl text-center border border-indigo-100">
                 <p className="text-[9px] uppercase font-black text-indigo-600">Activos</p>
                 <p className="text-xs font-black text-indigo-700 font-mono mt-0.5">{totalActivos}</p>
+                <p className="text-[9px] font-bold text-indigo-400">créditos</p>
               </div>
             </div>
 
@@ -634,20 +637,24 @@ export default function PwaPrestamosClient({
                   </span>
                 </div>
 
-                {/* CAPITAL Y TOTAL */}
+                {/* CAPITAL Y TOTAL (ARS EN FOCO, USD SECUNDARIO) */}
                 <div className="grid grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-xs">
                   <div>
                     <span className="text-[9px] uppercase font-black text-slate-400 block">Capital Entregado</span>
-                    <strong className="text-slate-900 font-mono text-sm">U$S {p.capital_entregado_usd.toLocaleString('es-AR')}</strong>
+                    <strong className="text-slate-900 font-mono text-sm block">
+                      $ {Math.round(p.capital_entregado_usd * p.cotizacion_dolar).toLocaleString('es-AR')}
+                    </strong>
                     <span className="text-[10px] text-slate-500 block font-mono">
-                      $ {Math.round(p.capital_entregado_usd * p.cotizacion_dolar).toLocaleString('es-AR')} ARS
+                      ≈ U$S {p.capital_entregado_usd.toLocaleString('es-AR')}
                     </span>
                   </div>
                   <div className="text-right">
                     <span className="text-[9px] uppercase font-black text-slate-400 block">Total a Reintegrar</span>
-                    <strong className="text-emerald-700 font-mono text-sm">U$S {p.total_devolver_usd.toLocaleString('es-AR')}</strong>
+                    <strong className="text-emerald-700 font-mono text-sm block">
+                      $ {Math.round(p.total_devolver_usd * p.cotizacion_dolar).toLocaleString('es-AR')}
+                    </strong>
                     <span className="text-[10px] text-emerald-600 block font-mono">
-                      $ {Math.round(p.total_devolver_usd * p.cotizacion_dolar).toLocaleString('es-AR')} ARS
+                      ≈ U$S {p.total_devolver_usd.toLocaleString('es-AR')}
                     </span>
                   </div>
                 </div>
@@ -718,7 +725,14 @@ export default function PwaPrestamosClient({
                             <span className="text-[10px] text-slate-500 block">Vto: {vto}</span>
                           </div>
                           <div className="text-right flex items-center gap-2">
-                            <span className="font-mono font-black text-slate-900">U$S {c.monto_usd}</span>
+                            <div className="text-right">
+                              <span className="font-mono font-black text-slate-900 block text-xs">
+                                $ {Math.round(c.monto_usd * (p.cotizacion_dolar || dolarActual)).toLocaleString('es-AR')}
+                              </span>
+                              <span className="text-[9px] font-mono text-slate-400 block">
+                                U$S {c.monto_usd.toLocaleString('es-AR')}
+                              </span>
+                            </div>
                             {c.estado === 'PAGADA' ? (
                               <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
                                 Pagada
@@ -801,7 +815,7 @@ export default function PwaPrestamosClient({
               </button>
             </div>
             <p className="text-xs text-slate-600">
-              Cliente: <strong>{cuotaCobrando.cliente_nombre}</strong> · Importe pactado: <strong>U$S {cuotaCobrando.monto_usd}</strong>
+              Cliente: <strong>{cuotaCobrando.cliente_nombre}</strong> · Importe pactado: <strong className="text-emerald-700 font-mono">$ {Math.round(cuotaCobrando.monto_usd * (Number(cotizacionCobro) || dolarActual)).toLocaleString('es-AR')}</strong> <span className="text-slate-400 font-mono text-[11px]">(U$S {cuotaCobrando.monto_usd})</span>
             </p>
             <label className="block">
               <span className="text-[10px] font-black uppercase text-slate-500 block mb-1">Cotización Dólar ($)</span>

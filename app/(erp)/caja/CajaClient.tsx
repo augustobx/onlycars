@@ -268,7 +268,7 @@ export default function CajaClient({
           </p>
         </div>
 
-        {/* 4. DESEMBOLSOS DE PRÉSTAMOS */}
+        {/* 4. DESEMBOLSOS DE PRÉSTAMOS (ARS EN FOCO, USD SECUNDARIO) */}
         <div className="bg-amber-50/70 dark:bg-amber-950/20 p-5 rounded-2xl border border-amber-200 dark:border-amber-800/40 shadow-sm">
           <div className="flex items-center justify-between">
             <p className="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-400">
@@ -277,10 +277,10 @@ export default function CajaClient({
             <HandCoins className="w-4 h-4 text-amber-600 dark:text-amber-400" />
           </div>
           <p className="text-2xl font-black text-amber-900 dark:text-amber-200 font-mono mt-2">
-            U$S {desembolsosUsd.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+            $ {Math.round(desembolsosArs).toLocaleString('es-AR')}
           </p>
           <p className="text-xs font-bold text-amber-700 dark:text-amber-400 mt-1 font-mono">
-            $ {Math.round(desembolsosArs).toLocaleString('es-AR')}
+            U$S {desembolsosUsd.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
           </p>
           <p className="text-[10px] text-amber-600/80 dark:text-amber-400/80 mt-2 font-medium">
             {prestamosOtorgados.length} créditos desembolsados

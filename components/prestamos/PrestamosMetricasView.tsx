@@ -154,6 +154,7 @@ export default function PrestamosMetricasView({
       saldoPendienteArs: saldoPendienteUsd * dolarActual,
       avanceCobranzaPct,
       gananciaRealCobradaUsd,
+      gananciaRealCobradaArs: gananciaRealCobradaUsd * dolarActual,
       cuotasTotales,
       cuotasPagadas,
       cuotasVencidas,
@@ -161,6 +162,7 @@ export default function PrestamosMetricasView({
       montoMoraArs: montoMoraUsd * dolarActual,
       tasaMoraPct,
       ticketPromedioUsd,
+      ticketPromedioArs: ticketPromedioUsd * dolarActual,
       plazoPromedioCuotas,
       discrepanciasDetectadas,
     };
@@ -372,7 +374,7 @@ export default function PrestamosMetricasView({
         </div>
       </div>
 
-      {/* 6 TARJETAS KPI PRINCIPALES */}
+      {/* 6 TARJETAS KPI PRINCIPALES (ARS EN FOCO PRINCIPAL, USD SECUNDARIO) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
         {/* 1. CAPITAL DESEMBOLSADO */}
         <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
@@ -383,15 +385,15 @@ export default function PrestamosMetricasView({
             <HandCoins className="w-4 h-4 text-blue-500" />
           </div>
           <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100 font-mono mt-2">
-            U$S {Math.round(metricas.capitalColocadoUsd).toLocaleString('es-AR')}
+            $ {Math.round(metricas.capitalColocadoArs).toLocaleString('es-AR')}
           </p>
           <p className="text-xs font-bold text-slate-500 font-mono mt-0.5">
-            ≈ $ {Math.round(metricas.capitalColocadoArs).toLocaleString('es-AR')} ARS
+            ≈ U$S {Math.round(metricas.capitalColocadoUsd).toLocaleString('es-AR')}
           </p>
           <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 flex justify-between">
             <span>Ticket Promedio:</span>
             <strong className="text-slate-900 dark:text-white font-mono">
-              U$S {Math.round(metricas.ticketPromedioUsd).toLocaleString('es-AR')}
+              $ {Math.round(metricas.ticketPromedioArs).toLocaleString('es-AR')}
             </strong>
           </div>
         </div>
@@ -405,10 +407,10 @@ export default function PrestamosMetricasView({
             <Receipt className="w-4 h-4 text-emerald-500" />
           </div>
           <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100 font-mono mt-2">
-            U$S {Math.round(metricas.totalDevolverUsd).toLocaleString('es-AR')}
+            $ {Math.round(metricas.totalDevolverArs).toLocaleString('es-AR')}
           </p>
           <p className="text-xs font-bold text-slate-500 font-mono mt-0.5">
-            ≈ $ {Math.round(metricas.totalDevolverArs).toLocaleString('es-AR')} ARS
+            ≈ U$S {Math.round(metricas.totalDevolverUsd).toLocaleString('es-AR')}
           </p>
           <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 flex justify-between">
             <span>Plazo Medio:</span>
@@ -428,19 +430,19 @@ export default function PrestamosMetricasView({
           </div>
           <div className="flex items-baseline gap-2 mt-2">
             <p className="text-2xl sm:text-3xl font-black text-emerald-950 dark:text-emerald-200 font-mono">
-              U$S {Math.round(metricas.gananciaPactadaUsd).toLocaleString('es-AR')}
+              $ {Math.round(metricas.gananciaPactadaArs).toLocaleString('es-AR')}
             </p>
             <span className="text-xs font-black text-emerald-600 bg-emerald-100 dark:bg-emerald-900/50 px-2 py-0.5 rounded-md">
               +{metricas.margenPactadoPct.toFixed(1)}%
             </span>
           </div>
           <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400 font-mono mt-0.5">
-            ≈ $ {Math.round(metricas.gananciaPactadaArs).toLocaleString('es-AR')} ARS
+            ≈ U$S {Math.round(metricas.gananciaPactadaUsd).toLocaleString('es-AR')}
           </p>
           <div className="mt-3 pt-2.5 border-t border-emerald-200 dark:border-emerald-800/40 text-[11px] text-emerald-800 dark:text-emerald-300 flex justify-between">
             <span>Ganancia Real Cobrada:</span>
             <strong className="font-mono">
-              U$S {Math.round(metricas.gananciaRealCobradaUsd).toLocaleString('es-AR')}
+              $ {Math.round(metricas.gananciaRealCobradaArs).toLocaleString('es-AR')}
             </strong>
           </div>
         </div>
@@ -455,12 +457,15 @@ export default function PrestamosMetricasView({
           </div>
           <div className="flex items-baseline gap-2 mt-2">
             <p className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
-              U$S {Math.round(metricas.capitalCobradoUsd).toLocaleString('es-AR')}
+              $ {Math.round(metricas.capitalCobradoArs).toLocaleString('es-AR')}
             </p>
             <span className="text-xs font-bold text-slate-500">
               ({metricas.avanceCobranzaPct.toFixed(1)}%)
             </span>
           </div>
+          <p className="text-xs font-bold text-slate-500 font-mono mt-0.5">
+            ≈ U$S {Math.round(metricas.capitalCobradoUsd).toLocaleString('es-AR')}
+          </p>
           {/* Barra de progreso de amortización */}
           <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full mt-3 overflow-hidden">
             <div
@@ -482,10 +487,10 @@ export default function PrestamosMetricasView({
             <Clock className="w-4 h-4 text-indigo-500" />
           </div>
           <p className="text-2xl sm:text-3xl font-black text-indigo-600 dark:text-indigo-400 font-mono mt-2">
-            U$S {Math.round(metricas.saldoPendienteUsd).toLocaleString('es-AR')}
+            $ {Math.round(metricas.saldoPendienteArs).toLocaleString('es-AR')}
           </p>
           <p className="text-xs font-bold text-slate-500 font-mono mt-0.5">
-            ≈ $ {Math.round(metricas.saldoPendienteArs).toLocaleString('es-AR')} ARS
+            ≈ U$S {Math.round(metricas.saldoPendienteUsd).toLocaleString('es-AR')}
           </p>
           <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 flex justify-between">
             <span>Cuotas por Vencer:</span>
@@ -521,7 +526,7 @@ export default function PrestamosMetricasView({
                 metricas.cuotasVencidas > 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-900 dark:text-slate-100'
               }`}
             >
-              U$S {Math.round(metricas.montoMoraUsd).toLocaleString('es-AR')}
+              $ {Math.round(metricas.montoMoraArs).toLocaleString('es-AR')}
             </p>
             <span
               className={`text-xs font-black px-2 py-0.5 rounded-md ${
@@ -532,7 +537,7 @@ export default function PrestamosMetricasView({
             </span>
           </div>
           <p className="text-xs font-bold text-red-600/80 dark:text-red-400/80 font-mono mt-0.5">
-            ≈ $ {Math.round(metricas.montoMoraArs).toLocaleString('es-AR')} ARS
+            ≈ U$S {Math.round(metricas.montoMoraUsd).toLocaleString('es-AR')}
           </p>
           <div className="mt-3 pt-2.5 border-t border-slate-200 dark:border-slate-800 text-[11px] flex justify-between">
             <span className="text-slate-500">Cuotas Impagas Vencidas:</span>
@@ -568,10 +573,10 @@ export default function PrestamosMetricasView({
             >
               <p className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400">{m.label}</p>
               <p className="text-lg font-black text-slate-900 dark:text-white font-mono mt-1">
-                U$S {Math.round(m.usd).toLocaleString('es-AR')}
+                ${Math.round(m.usd * dolarActual).toLocaleString('es-AR')}
               </p>
               <p className="text-[10px] font-bold text-slate-400 font-mono">
-                ${Math.round(m.usd * dolarActual).toLocaleString('es-AR')}
+                U$S {Math.round(m.usd).toLocaleString('es-AR')}
               </p>
               <span className="inline-block mt-2 text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
                 {m.cuotasCount} cuotas

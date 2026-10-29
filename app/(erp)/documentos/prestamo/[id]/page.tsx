@@ -33,6 +33,7 @@ export default async function BoletoPrestamoPage({
   const totalDevolverUsd = Number(prestamo.total_devolver_usd || 0);
   const totalDevolverArs = totalDevolverUsd * rate;
   const interesUsd = Math.max(0, totalDevolverUsd - capitalUsd);
+  const interesArs = interesUsd * rate;
   const interesPct = capitalUsd > 0 ? ((interesUsd / capitalUsd) * 100).toFixed(1) : '0';
 
   const cuotas = prestamo.cuotas || [];
@@ -151,22 +152,22 @@ export default async function BoletoPrestamoPage({
             </div>
           </div>
 
-          {/* CONDICIONES FINANCIERAS (FRANJA RESUMEN) */}
+          {/* CONDICIONES FINANCIERAS (FRANJA RESUMEN - ARS EN FOCO, USD SECUNDARIO) */}
           <div className="grid grid-cols-4 gap-2 bg-slate-950 text-white p-2.5 rounded-lg text-center">
             <div>
               <span className="text-[8px] print:text-[6.5pt] uppercase font-bold text-slate-400 block">Capital Desembolsado</span>
-              <strong className="text-xs print:text-[8.5pt] font-black text-emerald-400 block">U$S {money(capitalUsd)}</strong>
-              <span className="text-[8px] print:text-[6.5pt] text-slate-300 font-mono">$ {money(capitalArs)} ARS</span>
+              <strong className="text-xs print:text-[8.5pt] font-black text-emerald-400 block">$ {money(capitalArs)} ARS</strong>
+              <span className="text-[8px] print:text-[6.5pt] text-slate-300 font-mono">U$S {money(capitalUsd)}</span>
             </div>
             <div>
               <span className="text-[8px] print:text-[6.5pt] uppercase font-bold text-slate-400 block">Total a Reintegrar</span>
-              <strong className="text-xs print:text-[8.5pt] font-black text-white block">U$S {money(totalDevolverUsd)}</strong>
-              <span className="text-[8px] print:text-[6.5pt] text-emerald-300 font-mono">$ {money(totalDevolverArs)} ARS</span>
+              <strong className="text-xs print:text-[8.5pt] font-black text-white block">$ {money(totalDevolverArs)} ARS</strong>
+              <span className="text-[8px] print:text-[6.5pt] text-emerald-300 font-mono">U$S {money(totalDevolverUsd)}</span>
             </div>
             <div>
               <span className="text-[8px] print:text-[6.5pt] uppercase font-bold text-slate-400 block">Interés / Recargo</span>
               <strong className="text-xs print:text-[8.5pt] font-black text-amber-300 block">+{interesPct}%</strong>
-              <span className="text-[8px] print:text-[6.5pt] text-slate-300">U$S {money(interesUsd)}</span>
+              <span className="text-[8px] print:text-[6.5pt] text-slate-300 font-mono">$ {money(interesArs)} ARS</span>
             </div>
             <div>
               <span className="text-[8px] print:text-[6.5pt] uppercase font-bold text-slate-400 block">Plan y Tipo Cambio</span>
@@ -176,7 +177,7 @@ export default async function BoletoPrestamoPage({
           </div>
         </div>
 
-        {/* BLOQUE MEDIO: CRONOGRAMA DE CUOTAS DINÁMICO SEGÚN CANTIDAD */}
+        {/* BLOQUE MEDIO: CRONOGRAMA DE CUOTAS DINÁMICO SEGÚN CANTIDAD (ARS EN FOCO) */}
         <div className="my-2 print:my-1.5 flex-1 flex flex-col justify-center">
           <div className="flex items-center justify-between border-b border-slate-300 pb-1 mb-1.5">
             <h2 className="text-[9px] print:text-[7pt] font-black uppercase tracking-wider text-slate-900">
@@ -193,10 +194,10 @@ export default async function BoletoPrestamoPage({
               <div className="grid grid-cols-12 bg-slate-100 border-b border-slate-300 px-2.5 py-1 font-sans font-black text-slate-700 text-[8px] print:text-[6.5pt] uppercase">
                 <span className="col-span-1">Cuota</span>
                 <span className="col-span-2">Vencimiento</span>
-                <span className="col-span-2 text-right">Importe USD</span>
-                <span className="col-span-2 text-right">Referencia ARS</span>
+                <span className="col-span-3 text-right">Importe ARS</span>
+                <span className="col-span-2 text-right">Ref. USD</span>
                 <span className="col-span-2 text-center">Estado</span>
-                <span className="col-span-3 text-right">Control / Firma Recibo</span>
+                <span className="col-span-2 text-right">Control / Firma</span>
               </div>
               <div className="divide-y divide-slate-200">
                 {cuotas.map((c: any) => {
@@ -214,9 +215,11 @@ export default async function BoletoPrestamoPage({
                       <span className="col-span-2 text-slate-600">
                         {new Date(c.fecha_vencimiento).toLocaleDateString('es-AR')}
                       </span>
-                      <span className="col-span-2 text-right font-black">U$S {money(usd)}</span>
-                      <span className="col-span-2 text-right text-slate-500 font-sans">
+                      <span className="col-span-3 text-right font-black text-slate-900 font-sans">
                         ${Math.round(ars).toLocaleString('es-AR')}
+                      </span>
+                      <span className="col-span-2 text-right text-slate-500 font-mono">
+                        U$S {money(usd)}
                       </span>
                       <span className="col-span-2 text-center">
                         <span
@@ -227,8 +230,8 @@ export default async function BoletoPrestamoPage({
                           {isPagada ? 'PAGADA' : 'PENDIENTE'}
                         </span>
                       </span>
-                      <span className="col-span-3 text-right font-sans text-[7.5px] print:text-[6pt] text-slate-400">
-                        {c.recibo_nro ? `Recibo: ${c.recibo_nro}` : '...................................................'}
+                      <span className="col-span-2 text-right font-sans text-[7.5px] print:text-[6pt] text-slate-400">
+                        {c.recibo_nro ? `Recibo: ${c.recibo_nro}` : '.......................'}
                       </span>
                     </div>
                   );
@@ -245,20 +248,22 @@ export default async function BoletoPrestamoPage({
                 const colCuotas = colIdx === 0 ? cuotas.slice(0, half) : cuotas.slice(half);
                 return (
                   <div key={colIdx} className="border border-slate-300 rounded-lg overflow-hidden">
-                    <div className="grid grid-cols-6 bg-slate-100 border-b border-slate-300 px-2 py-0.5 font-sans font-black text-slate-700 text-[7.5px] print:text-[6pt] uppercase">
+                    <div className="grid grid-cols-7 bg-slate-100 border-b border-slate-300 px-2 py-0.5 font-sans font-black text-slate-700 text-[7.5px] print:text-[6pt] uppercase">
                       <span className="col-span-1">N°</span>
                       <span className="col-span-2">Vto.</span>
-                      <span className="col-span-2 text-right">USD</span>
+                      <span className="col-span-2 text-right">Importe ARS</span>
+                      <span className="col-span-1 text-right">USD</span>
                       <span className="col-span-1 text-center">Est.</span>
                     </div>
                     <div className="divide-y divide-slate-200">
                       {colCuotas.map((c: any) => {
                         const usd = Number(c.monto_usd || 0);
+                        const ars = Number(c.monto_ars || 0) || usd * rate;
                         const isPagada = c.estado === 'PAGADA';
                         return (
                           <div
                             key={c.id_cuota}
-                            className={`grid grid-cols-6 items-center px-2 py-1 ${
+                            className={`grid grid-cols-7 items-center px-2 py-1 ${
                               isPagada ? 'bg-emerald-50/50' : 'bg-white'
                             }`}
                           >
@@ -266,7 +271,12 @@ export default async function BoletoPrestamoPage({
                             <span className="col-span-2 text-slate-600">
                               {new Date(c.fecha_vencimiento).toLocaleDateString('es-AR')}
                             </span>
-                            <span className="col-span-2 text-right font-black">U$S {money(usd)}</span>
+                            <span className="col-span-2 text-right font-black font-sans">
+                              ${Math.round(ars).toLocaleString('es-AR')}
+                            </span>
+                            <span className="col-span-1 text-right text-slate-500 font-mono text-[7px] print:text-[5.5pt]">
+                              {money(usd)}
+                            </span>
                             <span className="col-span-1 text-center">
                               <span
                                 className={`text-[6.5px] print:text-[5pt] px-1 py-0.2 rounded font-sans font-black ${
@@ -291,6 +301,7 @@ export default async function BoletoPrestamoPage({
             <div className="grid grid-cols-3 gap-1.5 text-[7.5px] print:text-[6pt] font-mono">
               {cuotas.map((c: any) => {
                 const usd = Number(c.monto_usd || 0);
+                const ars = Number(c.monto_ars || 0) || usd * rate;
                 const isPagada = c.estado === 'PAGADA';
                 return (
                   <div
@@ -301,7 +312,8 @@ export default async function BoletoPrestamoPage({
                   >
                     <span className="font-bold font-sans">#{c.numero_cuota}</span>
                     <span className="text-slate-600">{new Date(c.fecha_vencimiento).toLocaleDateString('es-AR')}</span>
-                    <span className="font-black">U$S {money(usd)}</span>
+                    <span className="font-black">${Math.round(ars).toLocaleString('es-AR')}</span>
+                    <span className="text-slate-500 font-mono text-[6.5px]">{money(usd)}</span>
                     <span
                       className={`text-[6.5px] print:text-[5pt] px-1 py-0.2 rounded font-sans font-black ${
                         isPagada ? 'bg-emerald-200 text-emerald-900' : 'bg-slate-200 text-slate-700'
