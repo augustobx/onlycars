@@ -2,6 +2,8 @@ import { prisma as db } from '@/lib/prisma';
 import { getTenantContext } from '@/lib/tenant-context';
 import { requireTenantRole } from '@/lib/user-auth';
 import { normalizeSellerPwaConfig } from '@/lib/seller-pwa-config';
+import { tenantIsFinancialOnly } from '@/lib/tenant-modules';
+import { redirect } from 'next/navigation';
 import { RolMembresia } from '@prisma/client';
 import CotizadorMobileClient from './CotizadorMobileClient';
 import { Suspense } from 'react';
@@ -12,6 +14,9 @@ export const dynamic = 'force-dynamic';
 export default async function PWACotizadorPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const params = await searchParams;
   const tenant = await getTenantContext();
+  if (tenantIsFinancialOnly(tenant.features)) {
+    redirect('/pwa/admin');
+  }
   const { user, role } = await requireTenantRole(tenant.id, [RolMembresia.OWNER, RolMembresia.MANAGER, RolMembresia.VENDEDOR]);
   const dolarActual = Number(tenant.settings?.dolarActual || 1400);
   const tnaFinanciacion = Number(tenant.settings?.tnaFinanciacion || 48);

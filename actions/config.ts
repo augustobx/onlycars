@@ -204,6 +204,57 @@ export async function syncDolarApi(tipo: string = 'blue') {
   }
 }
 
+export async function autoSyncDolar(force: boolean = false) {
+  try {
+    const tenant = await getTenantContext();
+    const settings = await db.tenantSettings.findUnique({
+      where: { tenantId: tenant.id },
+      select: { dolarActual: true, tipoDolar: true, updatedAt: true },
+    });
+
+    const tipo = settings?.tipoDolar || 'blue';
+    const now = Date.now();
+    const lastUpdate = settings?.updatedAt ? new Date(settings.updatedAt).getTime() : 0;
+    const diffMinutes = (now - lastUpdate) / (1000 * 60);
+
+    if (!force && diffMinutes < 10 && settings?.dolarActual && settings.dolarActual > 0) {
+      return { success: true, valor: settings.dolarActual, updated: false };
+    }
+
+    const res = await fetch(`https://dolarapi.com/v1/dolares/${tipo}`, {
+      cache: 'no-store',
+      headers: { 'User-Agent': 'OnlyCars/2.0' },
+      next: { revalidate: 0 },
+    });
+    if (!res.ok) throw new Error('DolarAPI no respondió');
+    const data = await res.json();
+    const valorVenta = Number(data.venta);
+    if (!Number.isFinite(valorVenta) || valorVenta <= 0) {
+      return { success: true, valor: settings?.dolarActual || 1400, updated: false };
+    }
+
+    await db.$transaction(async (tx) => {
+      await tx.tenantSettings.upsert({
+        where: { tenantId: tenant.id },
+        update: { dolarActual: valorVenta, tipoDolar: tipo },
+        create: {
+          tenantId: tenant.id,
+          appName: tenant.name,
+          dolarActual: valorVenta,
+          tipoDolar: tipo,
+        },
+      });
+      await syncVehicleArsPrices(tx, tenant.id, valorVenta);
+    });
+
+    revalidateFinancialViews();
+    return { success: true, valor: valorVenta, updated: true };
+  } catch (error) {
+    console.warn('[AutoSyncDolar] Sincronización silenciosa omitida:', error);
+    return { success: false, error: 'No se pudo actualizar' };
+  }
+}
+
 export interface BrandingDocumentosConfig {
   logoVenta?: string | null;
   logoPrestamo?: string | null;

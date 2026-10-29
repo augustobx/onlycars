@@ -1,6 +1,8 @@
 import { prisma as db } from '@/lib/prisma';
 import { getTenantContext } from '@/lib/tenant-context';
 import { requireTenantRole } from '@/lib/user-auth';
+import { tenantIsFinancialOnly } from '@/lib/tenant-modules';
+import { redirect } from 'next/navigation';
 import { RolMembresia } from '@prisma/client';
 import OperacionesMobileClient from './OperacionesMobileClient';
 
@@ -8,6 +10,9 @@ export const dynamic = 'force-dynamic';
 
 export default async function PwaOperacionesPage() {
   const tenant = await getTenantContext();
+  if (tenantIsFinancialOnly(tenant.features)) {
+    redirect('/pwa/admin');
+  }
   const { user } = await requireTenantRole(tenant.id, [RolMembresia.OWNER, RolMembresia.MANAGER, RolMembresia.VENDEDOR]);
   const dolarActual = Number(tenant.settings?.dolarActual || 1400);
 

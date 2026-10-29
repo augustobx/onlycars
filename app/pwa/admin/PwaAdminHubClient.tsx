@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   CalendarClock,
@@ -19,6 +20,7 @@ import {
 import PwaBottomNav from '../PwaBottomNav';
 import PwaInstallPrompt from '@/components/pwa/PwaInstallPrompt';
 import { logoutAction } from '@/actions/auth';
+import { autoSyncDolar } from '@/actions/config';
 import { useSellerPwaEnabled } from '../PwaCapabilities';
 
 export default function PwaAdminHubClient({
@@ -40,7 +42,16 @@ export default function PwaAdminHubClient({
   clientesCount?: number;
   isFinancialOnly?: boolean;
 }) {
+  const [dolar, setDolar] = useState(dolarActual);
   const sellerEnabled = useSellerPwaEnabled() && !isFinancialOnly;
+
+  useEffect(() => {
+    autoSyncDolar().then((res) => {
+      if (res.success && res.valor && res.valor !== dolarActual) {
+        setDolar(res.valor);
+      }
+    }).catch(() => {});
+  }, [dolarActual]);
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-950 text-white pb-24 select-none">
@@ -69,7 +80,7 @@ export default function PwaAdminHubClient({
           <div className="text-right">
             <span className="text-[9px] uppercase font-bold text-slate-400 block">Dólar Hoy</span>
             <span className="text-xs font-mono font-black text-emerald-400 bg-emerald-950/60 border border-emerald-800 px-2 py-0.5 rounded-lg">
-              $ {dolarActual.toLocaleString('es-AR')}
+              $ {dolar.toLocaleString('es-AR')}
             </span>
           </div>
         </div>
@@ -127,11 +138,30 @@ export default function PwaAdminHubClient({
             </div>
             <div>
               <h2 className="font-black text-base text-white">Préstamos y Créditos</h2>
-              <p className="text-xs text-slate-400">Generar préstamo móvil, simular y boletos</p>
+              <p className="text-xs text-slate-400">Cartera activa, nuevo préstamo y boletos</p>
             </div>
           </div>
           <ArrowRight className="w-5 h-5 text-emerald-400" />
         </Link>
+
+        {/* 1.B COTIZADOR / SIMULADOR MÓVIL (EN MODO FINANCIERO) */}
+        {isFinancialOnly && (
+          <Link
+            href="/pwa/prestamos?tab=simulador"
+            className="flex items-center justify-between p-4 bg-gradient-to-r from-amber-950/40 to-slate-900 border border-amber-500/30 rounded-2xl hover:border-amber-500/60 transition-all active:scale-98 shadow-sm"
+          >
+            <div className="flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/30">
+                <Calculator className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="font-black text-base text-white">Cotizador de Créditos</h2>
+                <p className="text-xs text-slate-400">Simulador en ARS/USD, % y cuotas libres</p>
+              </div>
+            </div>
+            <ArrowRight className="w-5 h-5 text-amber-400" />
+          </Link>
+        )}
 
         {/* 2. REVISAR CUOTAS */}
         <Link
@@ -270,7 +300,7 @@ export default function PwaAdminHubClient({
       </div>
 
       <PwaInstallPrompt appType="admin" />
-      <PwaBottomNav active="prestamos" />
+      <PwaBottomNav active="dash" />
     </div>
   );
 }

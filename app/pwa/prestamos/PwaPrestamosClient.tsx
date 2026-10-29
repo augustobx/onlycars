@@ -16,6 +16,10 @@ import {
   X,
   Check,
   Percent,
+  Calculator,
+  ArrowRight,
+  DollarSign,
+  Calendar,
 } from 'lucide-react';
 import PwaBottomNav from '../PwaBottomNav';
 import PwaInstallPrompt from '@/components/pwa/PwaInstallPrompt';
@@ -52,6 +56,7 @@ export default function PwaPrestamosClient({
   clientes,
   dolarActual,
   tenantName,
+  initialTab = 'cartera',
 }: {
   prestamosIniciales: PwaPrestamoItem[];
   clientes: Array<{
@@ -63,17 +68,20 @@ export default function PwaPrestamosClient({
   }>;
   dolarActual: number;
   tenantName: string;
+  initialTab?: 'cartera' | 'simulador';
 }) {
   const router = useRouter();
+  const [activeView, setActiveView] = useState<'cartera' | 'simulador'>(initialTab);
   const [prestamos, setPrestamos] = useState(prestamosIniciales);
   const [filtro, setFiltro] = useState<'ACTIVOS' | 'TODOS' | 'FINALIZADOS'>('ACTIVOS');
   const [busqueda, setBusqueda] = useState('');
   const [expandidoId, setExpandidoId] = useState<number | null>(null);
 
-  // Modal para Generar Préstamo
+  // Estado del Cotizador y Generador de Préstamos
   const [modalNuevo, setModalNuevo] = useState(false);
   const [clienteSeleccionado, setClienteSeleccionado] = useState('');
-  const [capitalUsdInput, setCapitalUsdInput] = useState('');
+  const [monedaInput, setMonedaInput] = useState<'ARS' | 'USD'>('ARS');
+  const [montoInput, setMontoInput] = useState('');
   const [recargoPct, setRecargoPct] = useState('30');
   const [cantidadCuotas, setCantidadCuotas] = useState(12);
   const [primerVencimiento, setPrimerVencimiento] = useState(() => {
@@ -118,19 +126,31 @@ export default function PwaPrestamosClient({
     return list;
   }, [prestamos, filtro, busqueda]);
 
-  // Cálculo del simulador en el modal
+  // Cálculo del simulador inteligente (Monto en ARS o USD, % libre y cuotas)
   const sim = useMemo(() => {
-    const capUsd = Number(capitalUsdInput) || 0;
-    const capArs = capUsd * dolarActual;
-    const recargo = (Number(recargoPct) || 0) / 100;
-    const totUsd = capUsd * (1 + recargo);
-    const totArs = totUsd * dolarActual;
-    const cuotaUsd = cantidadCuotas > 0 ? totUsd / cantidadCuotas : 0;
-    const cuotaArs = cuotaUsd * dolarActual;
-    const interesUsd = Math.max(0, totUsd - capUsd);
+    const monto = Number(montoInput) || 0;
+    let capUsd = 0;
+    let capArs = 0;
 
-    return { capUsd, capArs, totUsd, totArs, cuotaUsd, cuotaArs, interesUsd };
-  }, [capitalUsdInput, recargoPct, cantidadCuotas, dolarActual]);
+    if (monedaInput === 'ARS') {
+      capArs = monto;
+      capUsd = dolarActual > 0 ? capArs / dolarActual : 0;
+    } else {
+      capUsd = monto;
+      capArs = capUsd * dolarActual;
+    }
+
+    const recargo = Math.max(0, Number(recargoPct) || 0) / 100;
+    const totUsd = capUsd * (1 + recargo);
+    const totArs = capArs * (1 + recargo);
+    const cuotas = Math.max(1, Number(cantidadCuotas) || 1);
+    const cuotaUsd = totUsd / cuotas;
+    const cuotaArs = totArs / cuotas;
+    const interesUsd = Math.max(0, totUsd - capUsd);
+    const interesArs = Math.max(0, totArs - capArs);
+
+    return { capUsd, capArs, totUsd, totArs, cuotaUsd, cuotaArs, interesUsd, interesArs };
+  }, [montoInput, monedaInput, recargoPct, cantidadCuotas, dolarActual]);
 
   const confirmarNuevoPrestamo = async () => {
     if (!clienteSeleccionado) return alert('Seleccioná un cliente.');
@@ -139,7 +159,7 @@ export default function PwaPrestamosClient({
 
     setGuardando(true);
     const [y, m, d] = primerVencimiento.split('-').map(Number);
-    const cuotas = Array.from({ length: cantidadCuotas }).map((_, index) => {
+    const cuotas = Array.from({ length: Math.max(1, cantidadCuotas) }).map((_, index) => {
       const date = new Date(Date.UTC(y, m - 1 + index, d, 12));
       return {
         numero_cuota: index + 1,
@@ -163,7 +183,7 @@ export default function PwaPrestamosClient({
     }
 
     setModalNuevo(false);
-    setCapitalUsdInput('');
+    setMontoInput('');
     setClienteSeleccionado('');
     router.refresh();
   };
@@ -207,6 +227,232 @@ export default function PwaPrestamosClient({
 
   const limpiarTelefono = (tel: string) => tel.replace(/\D/g, '');
 
+  const renderCalculadorControls = (showClientSelect: boolean = true) => (
+    <div className="space-y-3.5">
+      {showClientSelect && (
+        <label className="block">
+          <span className="text-xs font-black uppercase tracking-wider text-slate-700 block mb-1">
+            Cliente Destinatario *
+          </span>
+          <select
+            value={clienteSeleccionado}
+            onChange={(e) => setClienteSeleccionado(e.target.value)}
+            className="w-full p-2.5 text-xs font-bold border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+          >
+            <option value="">-- Seleccionar cliente existente --</option>
+            {clientes.map((c) => (
+              <option key={c.id_cliente} value={c.id_cliente}>
+                {c.nombre_completo} {c.dni ? `(DNI: ${c.dni})` : ''}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+
+      {/* MONEDA Y MONTO DEL PRÉSTAMO */}
+      <div className="space-y-1.5">
+        <div className="flex justify-between items-center">
+          <span className="text-xs font-black uppercase tracking-wider text-slate-700">
+            Capital a Prestar *
+          </span>
+          <div className="flex rounded-lg p-0.5 bg-slate-200 text-[10px] font-black">
+            <button
+              type="button"
+              onClick={() => setMonedaInput('ARS')}
+              className={`px-2.5 py-1 rounded-md transition ${
+                monedaInput === 'ARS' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              $ Pesos
+            </button>
+            <button
+              type="button"
+              onClick={() => setMonedaInput('USD')}
+              className={`px-2.5 py-1 rounded-md transition ${
+                monedaInput === 'USD' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              U$S Dólares
+            </button>
+          </div>
+        </div>
+
+        <div className="relative">
+          <span className="absolute left-3 top-3 text-sm font-black text-slate-400">
+            {monedaInput === 'ARS' ? '$' : 'U$S'}
+          </span>
+          <input
+            type="number"
+            placeholder={monedaInput === 'ARS' ? 'Ej: 500000' : 'Ej: 1000'}
+            value={montoInput}
+            onChange={(e) => setMontoInput(e.target.value)}
+            className="w-full pl-8 pr-3 py-2.5 text-base font-mono font-black border border-emerald-400 bg-emerald-50/20 text-emerald-950 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500"
+          />
+        </div>
+
+        <div className="flex justify-between items-center text-[11px] font-bold text-slate-500 px-0.5">
+          <span>Referencia Cambiaria:</span>
+          <span className="font-mono text-emerald-800 font-black">
+            {monedaInput === 'ARS'
+              ? `≈ U$S ${sim.capUsd.toFixed(2)} USD (TC $${dolarActual.toLocaleString('es-AR')})`
+              : `≈ $ ${Math.round(sim.capArs).toLocaleString('es-AR')} ARS (TC $${dolarActual.toLocaleString('es-AR')})`}
+          </span>
+        </div>
+      </div>
+
+      {/* % INTERÉS / RECARGO */}
+      <div className="space-y-1.5">
+        <div className="flex justify-between items-center">
+          <span className="text-xs font-black uppercase tracking-wider text-slate-700">
+            % Interés / Recargo Pactado
+          </span>
+          <div className="flex items-center gap-1">
+            <input
+              type="number"
+              step="any"
+              min="0"
+              max="500"
+              value={recargoPct}
+              onChange={(e) => setRecargoPct(e.target.value)}
+              className="w-16 px-2 py-1 text-right text-xs font-mono font-black border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+            />
+            <span className="text-xs font-black text-slate-500">%</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-4 sm:grid-cols-8 gap-1">
+          {['15', '20', '30', '40', '50', '60', '80', '100'].map((pct) => (
+            <button
+              key={pct}
+              type="button"
+              onClick={() => setRecargoPct(pct)}
+              className={`py-1 rounded-lg text-xs font-bold transition ${
+                recargoPct === pct
+                  ? 'bg-emerald-600 text-white shadow-xs font-black'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              +{pct}%
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* PLAZO EN CUOTAS */}
+      <div className="space-y-1.5">
+        <div className="flex justify-between items-center">
+          <span className="text-xs font-black uppercase tracking-wider text-slate-700">
+            Plazo en Cuotas Mensuales
+          </span>
+          <div className="flex items-center gap-1">
+            <input
+              type="number"
+              min="1"
+              max="120"
+              value={cantidadCuotas}
+              onChange={(e) => setCantidadCuotas(Math.max(1, parseInt(e.target.value) || 1))}
+              className="w-16 px-2 py-1 text-right text-xs font-mono font-black border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+            />
+            <span className="text-xs font-black text-slate-500">cuotas</span>
+          </div>
+        </div>
+
+        <select
+          value={cantidadCuotas}
+          onChange={(e) => setCantidadCuotas(Number(e.target.value))}
+          className="w-full p-2 text-xs font-bold border border-slate-300 rounded-xl bg-white outline-none focus:ring-2 focus:ring-emerald-500"
+        >
+          <option value="1">1 cuota (Pago único · 30 días)</option>
+          <option value="2">2 cuotas mensuales (60 días)</option>
+          <option value="3">3 cuotas mensuales (Trimestral)</option>
+          <option value="4">4 cuotas mensuales</option>
+          <option value="5">5 cuotas mensuales</option>
+          <option value="6">6 cuotas mensuales (Semestral)</option>
+          <option value="9">9 cuotas mensuales</option>
+          <option value="10">10 cuotas mensuales</option>
+          <option value="12">12 cuotas mensuales (1 año)</option>
+          <option value="15">15 cuotas mensuales</option>
+          <option value="18">18 cuotas mensuales (1 año y medio)</option>
+          <option value="24">24 cuotas mensuales (2 años)</option>
+          <option value="30">30 cuotas mensuales (2 años y medio)</option>
+          <option value="36">36 cuotas mensuales (3 años)</option>
+          <option value="48">48 cuotas mensuales (4 años)</option>
+          <option value="60">60 cuotas mensuales (5 años)</option>
+        </select>
+
+        <div className="grid grid-cols-6 gap-1 mt-1">
+          {[3, 6, 12, 18, 24, 36].map((n) => (
+            <button
+              key={n}
+              type="button"
+              onClick={() => setCantidadCuotas(n)}
+              className={`py-1 rounded-lg text-[11px] font-black transition ${
+                cantidadCuotas === n
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              {n}m
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* PRIMER VENCIMIENTO */}
+      {showClientSelect && (
+        <label className="block">
+          <span className="text-xs font-black uppercase tracking-wider text-slate-700 block mb-1">
+            Primer Vencimiento
+          </span>
+          <input
+            type="date"
+            value={primerVencimiento}
+            onChange={(e) => setPrimerVencimiento(e.target.value)}
+            className="w-full p-2.5 text-xs font-bold border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+          />
+        </label>
+      )}
+
+      {/* RESUMEN FINANCIERO EN VIVO */}
+      <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-300/80 rounded-2xl p-4 space-y-2.5 text-xs shadow-xs">
+        <div className="flex justify-between items-baseline border-b border-emerald-200/80 pb-2">
+          <div>
+            <span className="text-emerald-900 font-bold block">Cuota Mensual Estimada:</span>
+            <span className="text-[10px] text-emerald-700">{cantidadCuotas} cuotas consecutivas</span>
+          </div>
+          <div className="text-right">
+            <span className="font-mono font-black text-emerald-950 text-base block">
+              $ {Math.round(sim.cuotaArs).toLocaleString('es-AR')}
+            </span>
+            <span className="font-mono text-[11px] text-emerald-700 font-bold">
+              U$S {sim.cuotaUsd.toFixed(2)}
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 text-[11px]">
+          <div className="bg-white/80 p-2 rounded-xl border border-emerald-100">
+            <span className="text-slate-500 uppercase font-black text-[9px] block">Capital</span>
+            <span className="font-black text-slate-800 font-mono block">$ {Math.round(sim.capArs).toLocaleString('es-AR')}</span>
+            <span className="text-slate-500 text-[10px] font-mono">U$S {sim.capUsd.toFixed(2)}</span>
+          </div>
+          <div className="bg-white/80 p-2 rounded-xl border border-emerald-100">
+            <span className="text-emerald-700 uppercase font-black text-[9px] block">Interés (+{recargoPct}%)</span>
+            <span className="font-black text-emerald-800 font-mono block">$ {Math.round(sim.interesArs).toLocaleString('es-AR')}</span>
+            <span className="text-emerald-600 text-[10px] font-mono">U$S {sim.interesUsd.toFixed(2)}</span>
+          </div>
+        </div>
+
+        <div className="flex justify-between items-center pt-1 text-[11px] text-slate-700 border-t border-emerald-200/60 font-medium">
+          <span>Total final pactado:</span>
+          <span className="font-black text-slate-900 font-mono">
+            $ {Math.round(sim.totArs).toLocaleString('es-AR')} · U$S {sim.totUsd.toFixed(2)}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="flex flex-col min-h-screen bg-slate-100 pb-24 select-none">
       {/* HEADER MÓVIL CON PROTECCIÓN DE NOTCH / DYNAMIC ISLAND EN IPHONE */}
@@ -235,65 +481,122 @@ export default function PwaPrestamosClient({
           </button>
         </div>
 
-        {/* MÉTRICAS RÁPIDAS */}
-        <div className="grid grid-cols-3 gap-2 mt-2 pt-2 border-t border-slate-100">
-          <div className="bg-slate-50 p-2 rounded-xl text-center border border-slate-100">
-            <p className="text-[9px] uppercase font-black text-slate-400">Prestado</p>
-            <p className="text-xs font-black text-slate-900 font-mono mt-0.5">U$S {Math.round(totalCapitalColocadoUsd).toLocaleString('es-AR')}</p>
-          </div>
-          <div className="bg-emerald-50 p-2 rounded-xl text-center border border-emerald-100">
-            <p className="text-[9px] uppercase font-black text-emerald-600">A Cobrar</p>
-            <p className="text-xs font-black text-emerald-700 font-mono mt-0.5">U$S {Math.round(totalADevolverUsd).toLocaleString('es-AR')}</p>
-          </div>
-          <div className="bg-indigo-50 p-2 rounded-xl text-center border border-indigo-100">
-            <p className="text-[9px] uppercase font-black text-indigo-600">Activos</p>
-            <p className="text-xs font-black text-indigo-700 font-mono mt-0.5">{totalActivos}</p>
-          </div>
+        {/* SELECTOR DE VISTA: CARTERA VS COTIZADOR */}
+        <div className="flex bg-slate-100 p-1 rounded-xl gap-1 text-xs font-black mt-2">
+          <button
+            type="button"
+            onClick={() => setActiveView('cartera')}
+            className={`flex-1 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+              activeView === 'cartera'
+                ? 'bg-white text-emerald-800 shadow-xs'
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <HandCoins className="w-3.5 h-3.5" /> Cartera ({prestamos.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveView('simulador')}
+            className={`flex-1 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+              activeView === 'simulador'
+                ? 'bg-white text-emerald-800 shadow-xs'
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Calculator className="w-3.5 h-3.5" /> Cotizador de Crédito
+          </button>
         </div>
 
-        {/* BUSCADOR */}
-        <div className="relative mt-3">
-          <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
-          <input
-            type="text"
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="Buscar por cliente o ID de préstamo..."
-            className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500"
-          />
-        </div>
+        {activeView === 'cartera' && (
+          <>
+            {/* MÉTRICAS RÁPIDAS */}
+            <div className="grid grid-cols-3 gap-2 mt-2 pt-2 border-t border-slate-100">
+              <div className="bg-slate-50 p-2 rounded-xl text-center border border-slate-100">
+                <p className="text-[9px] uppercase font-black text-slate-400">Prestado</p>
+                <p className="text-xs font-black text-slate-900 font-mono mt-0.5">U$S {Math.round(totalCapitalColocadoUsd).toLocaleString('es-AR')}</p>
+              </div>
+              <div className="bg-emerald-50 p-2 rounded-xl text-center border border-emerald-100">
+                <p className="text-[9px] uppercase font-black text-emerald-600">A Cobrar</p>
+                <p className="text-xs font-black text-emerald-700 font-mono mt-0.5">U$S {Math.round(totalADevolverUsd).toLocaleString('es-AR')}</p>
+              </div>
+              <div className="bg-indigo-50 p-2 rounded-xl text-center border border-indigo-100">
+                <p className="text-[9px] uppercase font-black text-indigo-600">Activos</p>
+                <p className="text-xs font-black text-indigo-700 font-mono mt-0.5">{totalActivos}</p>
+              </div>
+            </div>
 
-        {/* FILTROS */}
-        <div className="flex gap-1 mt-2.5">
-          <button
-            onClick={() => setFiltro('ACTIVOS')}
-            className={`flex-1 py-1 rounded-lg text-xs font-black transition-all ${
-              filtro === 'ACTIVOS' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600'
-            }`}
-          >
-            Activos ({prestamos.filter((p) => p.estado === 'ACTIVO').length})
-          </button>
-          <button
-            onClick={() => setFiltro('TODOS')}
-            className={`flex-1 py-1 rounded-lg text-xs font-black transition-all ${
-              filtro === 'TODOS' ? 'bg-slate-800 text-white shadow-xs' : 'bg-slate-100 text-slate-600'
-            }`}
-          >
-            Todos ({prestamos.length})
-          </button>
-          <button
-            onClick={() => setFiltro('FINALIZADOS')}
-            className={`flex-1 py-1 rounded-lg text-xs font-black transition-all ${
-              filtro === 'FINALIZADOS' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600'
-            }`}
-          >
-            Finalizados ({prestamos.filter((p) => p.estado === 'FINALIZADO').length})
-          </button>
-        </div>
+            {/* BUSCADOR */}
+            <div className="relative mt-3">
+              <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+              <input
+                type="text"
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                placeholder="Buscar por cliente o ID de préstamo..."
+                className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
+
+            {/* FILTROS */}
+            <div className="flex gap-1 mt-2.5">
+              <button
+                onClick={() => setFiltro('ACTIVOS')}
+                className={`flex-1 py-1 rounded-lg text-xs font-black transition-all ${
+                  filtro === 'ACTIVOS' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600'
+                }`}
+              >
+                Activos ({prestamos.filter((p) => p.estado === 'ACTIVO').length})
+              </button>
+              <button
+                onClick={() => setFiltro('TODOS')}
+                className={`flex-1 py-1 rounded-lg text-xs font-black transition-all ${
+                  filtro === 'TODOS' ? 'bg-slate-800 text-white shadow-xs' : 'bg-slate-100 text-slate-600'
+                }`}
+              >
+                Todos ({prestamos.length})
+              </button>
+              <button
+                onClick={() => setFiltro('FINALIZADOS')}
+                className={`flex-1 py-1 rounded-lg text-xs font-black transition-all ${
+                  filtro === 'FINALIZADOS' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600'
+                }`}
+              >
+                Finalizados ({prestamos.filter((p) => p.estado === 'FINALIZADO').length})
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
+      {/* VISTA SIMULADOR / COTIZADOR MÓVIL */}
+      {activeView === 'simulador' && (
+        <div className="p-3 space-y-4">
+          <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm space-y-4">
+            <div className="border-b border-slate-100 pb-3">
+              <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
+                <Calculator className="w-5 h-5 text-emerald-600" /> Cotizador y Simulador de Créditos
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Simulá planes de pago en pesos o dólares, recargo libre y cuotas adaptables.
+              </p>
+            </div>
+
+            {renderCalculadorControls(false)}
+
+            <button
+              type="button"
+              onClick={() => setModalNuevo(true)}
+              className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white rounded-xl font-black text-xs flex items-center justify-center gap-2 shadow-md transition-all mt-4"
+            >
+              <Plus className="w-4 h-4" /> Emitir Préstamo con esta Simulación
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* LISTADO DE PRÉSTAMOS */}
-      <div className="p-3 space-y-3">
+      {activeView === 'cartera' && (
+        <div className="p-3 space-y-3">
         {prestamosFiltrados.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-2xl border border-slate-200 p-6">
             <HandCoins className="w-10 h-10 text-slate-300 mx-auto mb-2" />
@@ -446,6 +749,7 @@ export default function PwaPrestamosClient({
           })
         )}
       </div>
+      )}
 
       {/* MODAL MÓVIL: GENERAR PRÉSTAMO */}
       {modalNuevo && (
@@ -461,121 +765,7 @@ export default function PwaPrestamosClient({
               </button>
             </div>
 
-            {/* SELECCIONAR CLIENTE */}
-            <label className="block">
-              <span className="text-xs font-black uppercase tracking-wider text-slate-600 block mb-1">
-                Cliente Prestatario *
-              </span>
-              <select
-                value={clienteSeleccionado}
-                onChange={(e) => setClienteSeleccionado(e.target.value)}
-                className="w-full p-2.5 text-xs font-bold border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
-              >
-                <option value="">-- Seleccionar cliente existente --</option>
-                {clientes.map((c) => (
-                  <option key={c.id_cliente} value={c.id_cliente}>
-                    {c.nombre_completo} {c.dni ? `(DNI: ${c.dni})` : ''}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            {/* CAPITAL EN DÓLARES */}
-            <label className="block">
-              <span className="text-xs font-black uppercase tracking-wider text-slate-600 block mb-1">
-                Capital a Entregar (USD) *
-              </span>
-              <div className="relative">
-                <input
-                  type="number"
-                  placeholder="Ej: 3000"
-                  value={capitalUsdInput}
-                  onChange={(e) => setCapitalUsdInput(e.target.value)}
-                  className="w-full p-3 text-lg font-mono font-black border border-emerald-400 bg-emerald-50/20 text-emerald-950 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-                <span className="absolute right-3 top-3.5 text-xs font-bold text-slate-400">
-                  ≈ $ {Math.round(sim.capArs).toLocaleString('es-AR')} ARS
-                </span>
-              </div>
-            </label>
-
-            {/* CANTIDAD DE CUOTAS (SELECTOR TÁCTIL) */}
-            <div>
-              <span className="text-xs font-black uppercase tracking-wider text-slate-600 block mb-1.5">
-                Plazo en Cuotas Mensuales
-              </span>
-              <div className="grid grid-cols-5 gap-1.5">
-                {[3, 6, 12, 18, 24].map((n) => (
-                  <button
-                    key={n}
-                    type="button"
-                    onClick={() => setCantidadCuotas(n)}
-                    className={`py-2 rounded-xl text-xs font-black transition-all ${
-                      cantidadCuotas === n
-                        ? 'bg-emerald-600 text-white shadow-sm'
-                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                    }`}
-                  >
-                    {n} m
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* TASA DE RECARGO */}
-            <div>
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-xs font-black uppercase tracking-wider text-slate-600">
-                  Interés / Recargo Total Pactado
-                </span>
-                <span className="text-xs font-black text-emerald-700 font-mono">{recargoPct}%</span>
-              </div>
-              <div className="grid grid-cols-4 gap-1.5 mb-2">
-                {['20', '30', '40', '50'].map((pct) => (
-                  <button
-                    key={pct}
-                    type="button"
-                    onClick={() => setRecargoPct(pct)}
-                    className={`py-1.5 rounded-lg text-xs font-bold ${
-                      recargoPct === pct ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'
-                    }`}
-                  >
-                    +{pct}%
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* FECHA DEL PRIMER VENCIMIENTO */}
-            <label className="block">
-              <span className="text-xs font-black uppercase tracking-wider text-slate-600 block mb-1">
-                Primer Vencimiento
-              </span>
-              <input
-                type="date"
-                value={primerVencimiento}
-                onChange={(e) => setPrimerVencimiento(e.target.value)}
-                className="w-full p-2.5 text-xs font-bold border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
-              />
-            </label>
-
-            {/* SIMULADOR EN VIVO */}
-            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3.5 space-y-1 text-xs">
-              <div className="flex justify-between">
-                <span className="text-emerald-800 font-medium">Cuota mensual estimada ({cantidadCuotas} cuotas):</span>
-                <strong className="text-emerald-950 font-mono font-black text-sm">
-                  U$S {sim.cuotaUsd.toFixed(2)}
-                </strong>
-              </div>
-              <div className="flex justify-between text-[11px] text-emerald-700">
-                <span>Equivalente mensual en ARS:</span>
-                <span className="font-mono font-bold">$ {Math.round(sim.cuotaArs).toLocaleString('es-AR')}</span>
-              </div>
-              <div className="flex justify-between pt-1 border-t border-emerald-200/60 font-bold text-emerald-950">
-                <span>Total final a cobrar:</span>
-                <span className="font-mono">U$S {sim.totUsd.toFixed(2)} (Interés U$S {sim.interesUsd.toFixed(2)})</span>
-              </div>
-            </div>
+            {renderCalculadorControls(true)}
 
             {/* BOTONES */}
             <div className="flex gap-2 pt-2">

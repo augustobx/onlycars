@@ -3,6 +3,7 @@ import { prisma as db } from '@/lib/prisma';
 import { getTenantContext } from '@/lib/tenant-context';
 import { requireTenantRole } from '@/lib/user-auth';
 import { tenantIsFinancialOnly } from '@/lib/tenant-modules';
+import { autoSyncDolar } from '@/actions/config';
 import { RolMembresia } from '@prisma/client';
 import { redirect } from 'next/navigation';
 import PwaAdminHubClient from './PwaAdminHubClient';
@@ -40,7 +41,13 @@ export default async function PwaAdminPage() {
     RolMembresia.ADMINISTRATIVO,
   ]);
 
-  const dolarActual = Number(tenant.settings?.dolarActual || 1400);
+  let dolarActual = Number(tenant.settings?.dolarActual || 1400);
+  try {
+    const syncRes = await autoSyncDolar();
+    if (syncRes.success && syncRes.valor) {
+      dolarActual = syncRes.valor;
+    }
+  } catch {}
   const isFinancialOnly = tenantIsFinancialOnly(tenant.features);
 
   const [vehiculosCount, cuotasPendientesCount, prestamosActivosCount, clientesCount] = await Promise.all([

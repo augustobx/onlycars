@@ -1,12 +1,17 @@
 import { prisma as db } from '@/lib/prisma';
 import { getTenantContext } from '@/lib/tenant-context';
 import { normalizeSellerPwaConfig } from '@/lib/seller-pwa-config';
+import { tenantIsFinancialOnly } from '@/lib/tenant-modules';
+import { redirect } from 'next/navigation';
 import DashboardMobileClient from './DashboardMobileClient';
 
 export const dynamic = 'force-dynamic';
 
 export default async function PWADashboardPage() {
   const tenant = await getTenantContext();
+  if (tenantIsFinancialOnly(tenant.features)) {
+    redirect('/pwa/admin');
+  }
   const dolarActual = Number(tenant.settings?.dolarActual || 1400);
 
   const [vehiculosDb, reservasDb, sellerPwaFeature] = await Promise.all([

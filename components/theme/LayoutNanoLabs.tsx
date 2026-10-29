@@ -35,7 +35,7 @@ import {
 } from 'lucide-react';
 import { logoutAction } from '@/actions/auth';
 import { useConfigStore } from '@/store/useConfigStore';
-import { syncDolarApi } from '@/actions/config';
+import { syncDolarApi, autoSyncDolar } from '@/actions/config';
 import { PaletteSelector } from './PaletteSelector';
 import { useERPTheme } from './ThemeContext';
 import { tenantIsFinancialOnly } from '@/lib/tenant-modules';
@@ -108,6 +108,11 @@ export function LayoutNanoLabs({
     setPlegado(localStorage.getItem(CLAVE_PLEGADO) === '1');
     setDolar(initialDolar);
     setTipoDolar(initialTipo);
+    autoSyncDolar().then((res) => {
+      if (res.success && res.valor && res.valor !== initialDolar) {
+        setDolar(res.valor);
+      }
+    }).catch(() => {});
   }, [initialDolar, initialTipo, setDolar, setTipoDolar]);
 
   useEffect(() => {

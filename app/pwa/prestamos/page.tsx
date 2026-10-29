@@ -22,7 +22,13 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function PwaPrestamosPage() {
+export default async function PwaPrestamosPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ tab?: string }>;
+}) {
+  const params = searchParams ? await searchParams : {};
+  const initialTab = params.tab === 'simulador' ? 'simulador' : 'cartera';
   const tenant = await getTenantContext();
   const dolarActual = Number(tenant.settings?.dolarActual || 1400);
 
@@ -75,6 +81,7 @@ export default async function PwaPrestamosPage() {
       clientes={clientesDb}
       dolarActual={dolarActual}
       tenantName={tenant.name}
+      initialTab={initialTab}
     />
   );
 }

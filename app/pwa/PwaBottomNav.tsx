@@ -3,16 +3,24 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { useSellerPwaEnabled } from './PwaCapabilities';
-import { Calculator, LayoutGrid, Handshake, CalendarClock, HandCoins } from 'lucide-react';
+import {
+  LayoutDashboard,
+  Calculator,
+  LayoutGrid,
+  CalendarClock,
+  HandCoins,
+  Wallet,
+  Users,
+} from 'lucide-react';
 
 export default function PwaBottomNav({
   active,
 }: {
-  active: 'stock' | 'quote' | 'operations' | 'cuotas' | 'prestamos';
+  active: 'dash' | 'stock' | 'quote' | 'operations' | 'cuotas' | 'prestamos' | 'caja' | 'clientes';
 }) {
   const sellerEnabled = useSellerPwaEnabled();
   const item = (
-    key: 'stock' | 'quote' | 'operations' | 'cuotas' | 'prestamos',
+    key: 'dash' | 'stock' | 'quote' | 'operations' | 'cuotas' | 'prestamos' | 'caja' | 'clientes',
     href: string,
     label: string,
     icon: ReactNode
@@ -44,11 +52,20 @@ export default function PwaBottomNav({
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 mx-auto flex w-full max-w-md items-center justify-around border-t border-slate-800/80 bg-slate-950/95 backdrop-blur-xl px-1.5 py-1.5 pb-safe shadow-[0_-10px_30px_rgba(0,0,0,0.6)]">
+      {/* 1. INICIO / DASH (SIEMPRE DISPONIBLE COMO INICIO OFICIAL DE LA APP) */}
+      {item('dash', '/pwa/admin', 'Inicio', <LayoutDashboard className="h-5 w-5" />)}
+
+      {/* SEGÚN SUSCRIPCIÓN: SOLO PRÉSTAMOS (FINANCIERA) */}
+      {!sellerEnabled && item('prestamos', '/pwa/prestamos', 'Préstamos', <HandCoins className="h-5 w-5" />)}
+      {!sellerEnabled && item('cuotas', '/pwa/cuotas', 'Cuotas', <CalendarClock className="h-5 w-5" />)}
+      {!sellerEnabled && item('caja', '/caja', 'Caja', <Wallet className="h-5 w-5" />)}
+      {!sellerEnabled && item('clientes', '/clientes', 'Clientes', <Users className="h-5 w-5" />)}
+
+      {/* SEGÚN SUSCRIPCIÓN: CONCESIONARIA COMPLETA (ONLYCARS VEHICULAR) */}
       {sellerEnabled && item('stock', '/pwa/dashboard', 'Stock', <LayoutGrid className="h-5 w-5" />)}
       {sellerEnabled && item('quote', '/pwa/cotizador', 'Cotizar', <Calculator className="h-5 w-5" />)}
-      {sellerEnabled && item('operations', '/pwa/operaciones', 'Operar', <Handshake className="h-5 w-5" />)}
-      {item('cuotas', '/pwa/cuotas', 'Cuotas', <CalendarClock className="h-5 w-5" />)}
-      {item('prestamos', '/pwa/prestamos', 'Préstamos', <HandCoins className="h-5 w-5" />)}
+      {sellerEnabled && item('cuotas', '/pwa/cuotas', 'Cuotas', <CalendarClock className="h-5 w-5" />)}
+      {sellerEnabled && item('prestamos', '/pwa/prestamos', 'Préstamos', <HandCoins className="h-5 w-5" />)}
     </nav>
   );
 }
