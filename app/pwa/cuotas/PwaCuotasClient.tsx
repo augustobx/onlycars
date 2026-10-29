@@ -157,8 +157,13 @@ export default function PwaCuotasClient({
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-100 pb-24 select-none">
-      {/* HEADER MÓVIL */}
-      <div className="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 py-3 shadow-xs">
+      {/* HEADER MÓVIL CON PROTECCIÓN DE NOTCH / DYNAMIC ISLAND EN IPHONE */}
+      <div
+        className="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 pb-3 shadow-xs"
+        style={{
+          paddingTop: 'max(14px, calc(env(safe-area-inset-top, 0px) + 12px))',
+        }}
+      >
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-xs">

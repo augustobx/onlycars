@@ -225,7 +225,7 @@ export function LayoutNanoLabs({
   return (
     <div className="bh-layout theme-nanolabs" data-nl-theme="2">
       {/* HEADER 80px */}
-      <header className="bh-header bh-header--retail">
+      <header className="bh-header bh-header--retail print:hidden">
         <div className="flex items-center gap-2">
           {/* Mobile hamburger menu toggle */}
           <button
@@ -318,7 +318,7 @@ export function LayoutNanoLabs({
       {/* BODY WITH COLLAPSIBLE SIDEBAR */}
       <div className="bh-layout__body">
         <aside
-          className={`bh-sidebar${plegado ? ' bh-sidebar--collapsed' : ''}${mobileMenuOpen ? ' bh-sidebar--mobile-open' : ''}`}
+          className={`bh-sidebar print:hidden${plegado ? ' bh-sidebar--collapsed' : ''}${mobileMenuOpen ? ' bh-sidebar--mobile-open' : ''}`}
           aria-label="Pantallas"
           style={plegado ? { ['--bh-sidebar-width' as string]: `${PLEGADO_W}px` } : undefined}
         >
@@ -404,7 +404,7 @@ export function LayoutNanoLabs({
         </aside>
 
         {/* MAIN CONTENT AREA */}
-        <main className="bh-main bh-cascada ot-pagina min-w-0 flex-1 overflow-y-auto">
+        <main className="bh-main bh-cascada ot-pagina min-w-0 flex-1 overflow-y-auto print:overflow-visible print:p-0 print:m-0 print:bg-white">
           {children}
         </main>
       </div>

@@ -33,235 +33,208 @@ export default async function BoletoPrestamoPage({
   const totalDevolverUsd = Number(prestamo.total_devolver_usd || 0);
   const totalDevolverArs = totalDevolverUsd * rate;
   const interesUsd = Math.max(0, totalDevolverUsd - capitalUsd);
-  const interesArs = interesUsd * rate;
+  const interesPct = capitalUsd > 0 ? ((interesUsd / capitalUsd) * 100).toFixed(1) : '0';
+
+  const cuotas = prestamo.cuotas || [];
+  const cuotasGridCols = cuotas.length > 12 ? 'grid-cols-3' : 'grid-cols-2';
 
   return (
-    <div className="min-h-screen bg-slate-100 print:bg-white p-4 sm:p-8 text-slate-900 font-sans">
-      <div className="max-w-4xl mx-auto mb-6 flex items-center justify-between print:hidden">
-        <span className="text-sm font-bold text-slate-600 flex items-center gap-2">
+    <div className="min-h-screen bg-slate-100 print:min-h-0 print:bg-white p-4 sm:p-6 print:p-0 text-slate-900 font-sans">
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            @page {
+              size: A4 portrait;
+              margin: 7mm 9mm 7mm 9mm;
+            }
+            @media print {
+              html, body {
+                background: white !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                font-size: 8pt !important;
+                color: #000 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+              .print-a4-sheet {
+                border: none !important;
+                box-shadow: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                page-break-inside: avoid !important;
+                page-break-after: avoid !important;
+              }
+            }
+          `,
+        }}
+      />
+
+      {/* Barra superior de acción (Oculta en impresión) */}
+      <div className="max-w-4xl mx-auto mb-4 flex items-center justify-between print:hidden">
+        <span className="text-sm font-bold text-slate-700 flex items-center gap-2">
           <HandCoins className="w-4 h-4 text-emerald-600" />
-          Vista previa de boleto y contrato de préstamo
+          Contrato de Mutuo Dinerario (A4 · 1 sola hoja)
         </span>
         <PrintButton
-          label="Imprimir contrato"
-          className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-xl shadow-md flex items-center gap-2 cursor-pointer"
+          label="Imprimir contrato (A4)"
+          className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl shadow-md flex items-center gap-2 cursor-pointer text-xs"
         />
       </div>
 
-      <div className="max-w-4xl mx-auto bg-white border border-slate-300 print:border-none p-8 sm:p-12 rounded-2xl shadow-xl print:shadow-none space-y-6 text-sm leading-relaxed">
+      {/* HOJA A4 OFICIAL DEL CONTRATO */}
+      <div className="print-a4-sheet max-w-4xl mx-auto bg-white border border-slate-300 print:border-none p-6 sm:p-8 print:p-0 rounded-2xl shadow-xl print:shadow-none space-y-3 print:space-y-2 text-slate-900 text-xs print:text-[8pt] print:leading-tight">
         {/* ENCABEZADO */}
-        <div className="flex items-start justify-between border-b-2 border-slate-900 pb-6 gap-4">
-          <div className="flex items-center gap-4">
-            {concesionaria.logoUrl && (
+        <div className="flex items-center justify-between border-b-2 border-slate-900 pb-2 gap-4">
+          <div className="flex items-center gap-3">
+            {concesionaria.logoUrl ? (
               <img
                 src={concesionaria.logoUrl}
                 alt={concesionaria.nombre}
-                className="max-h-16 max-w-[180px] object-contain"
+                className="max-h-10 max-w-[140px] object-contain"
               />
+            ) : (
+              <div className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center font-black text-xs">
+                {concesionaria.nombre.slice(0, 2).toUpperCase()}
+              </div>
             )}
             <div>
-              <h1 className="text-2xl font-black tracking-tight text-slate-950 uppercase">
+              <h1 className="text-base font-black tracking-tight text-slate-950 uppercase leading-none">
                 {concesionaria.nombre}
               </h1>
-              <p className="text-xs text-slate-600 mt-1 font-medium">
+              <p className="text-[10px] print:text-[7.5pt] text-slate-600 mt-0.5 font-medium">
                 CUIT: {concesionaria.cuit} · {concesionaria.direccion}
                 {concesionaria.ciudad ? ` · ${concesionaria.ciudad}` : ''}
+                {concesionaria.telefono ? ` · Tel: ${concesionaria.telefono}` : ''}
               </p>
-              {concesionaria.telefono && (
-                <p className="text-xs text-slate-600 font-medium">
-                  Tel: {concesionaria.telefono}
-                </p>
-              )}
             </div>
           </div>
           <div className="text-right shrink-0">
-            <span className="inline-block px-3 py-1 bg-slate-900 text-white font-black text-xs uppercase tracking-wider rounded">
-              Contrato de Mutuo Dinerario
+            <span className="inline-block px-2 py-0.5 bg-slate-950 text-white font-black text-[9px] print:text-[7pt] uppercase tracking-wider rounded">
+              Boleto y Mutuo de Crédito
             </span>
-            <p className="text-sm font-black text-slate-900 mt-2 font-mono">
+            <p className="text-xs font-black text-slate-900 font-mono mt-0.5">
               PREST-{prestamo.id_prestamo}
             </p>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-[9px] print:text-[7pt] text-slate-500">
               Fecha: {new Date(prestamo.fecha_prestamo).toLocaleDateString('es-AR')}
             </p>
           </div>
         </div>
 
         {/* PARTES INTERVINIENTES */}
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+        <div className="grid grid-cols-2 gap-2 bg-slate-50 border border-slate-200 rounded-lg p-2 text-[10px] print:text-[7.5pt]">
           <div>
-            <p className="font-black text-slate-900 uppercase tracking-wider mb-1">
+            <p className="font-black text-slate-900 uppercase tracking-wider text-[9px] print:text-[7pt] mb-0.5 border-b border-slate-200 pb-0.5">
               Parte Acreedora (Prestamista)
             </p>
-            <p>
-              <strong>Razón social:</strong> {concesionaria.nombre}
-            </p>
-            <p>
-              <strong>CUIT:</strong> {concesionaria.cuit}
-            </p>
-            <p>
-              <strong>Domicilio:</strong> {concesionaria.direccion}
-            </p>
+            <p><strong>Razón Social:</strong> {concesionaria.nombre}</p>
+            <p><strong>CUIT:</strong> {concesionaria.cuit} · <strong>Domicilio:</strong> {concesionaria.direccion}</p>
           </div>
           <div>
-            <p className="font-black text-slate-900 uppercase tracking-wider mb-1">
+            <p className="font-black text-slate-900 uppercase tracking-wider text-[9px] print:text-[7pt] mb-0.5 border-b border-slate-200 pb-0.5">
               Parte Deudora (Prestatario)
             </p>
-            <p>
-              <strong>Nombre completo:</strong> {deudor.nombre_completo}
-            </p>
-            <p>
-              <strong>DNI / CUIT:</strong> {deudor.dni || deudor.cuit_cuil || 'S/D'}
-            </p>
-            <p>
-              <strong>Teléfono:</strong> {deudor.telefono || 'S/D'}
-            </p>
-            <p>
-              <strong>Domicilio:</strong> {[deudor.domicilio, deudor.localidad, deudor.provincia].filter(Boolean).join(', ') || 'S/D'}
-            </p>
+            <p><strong>Nombre y Apellido:</strong> {deudor.nombre_completo}</p>
+            <p><strong>DNI/CUIT:</strong> {deudor.dni || deudor.cuit_cuil || 'S/D'} · <strong>Tel:</strong> {deudor.telefono || 'S/D'}</p>
+            <p><strong>Domicilio:</strong> {[deudor.domicilio, deudor.localidad].filter(Boolean).join(', ') || 'S/D'}</p>
           </div>
         </div>
 
-        {/* CLÁUSULA PRIMERA: CAPITAL ENTREGADO */}
-        <section className="space-y-2">
-          <h2 className="text-xs font-black uppercase tracking-wider border-b border-slate-200 pb-1">
-            Cláusula Primera: Objeto y Capital Mutuado
-          </h2>
-          <p className="text-xs text-slate-700 leading-relaxed">
-            La parte ACREEDORA entrega en este acto a la parte DEUDORA, en calidad de mutuo dinerario con destino de financiación, la suma líquida de dinero especificada a continuación, sirviendo el presente de eficaz y formal recibo de entrega:
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-xl border">
-            <div>
-              <span className="text-[10px] uppercase font-black text-slate-400">Capital en Dólares (USD)</span>
-              <strong className="block text-lg font-black text-slate-900 mt-0.5">U$S {money(capitalUsd)}</strong>
-            </div>
-            <div>
-              <span className="text-[10px] uppercase font-black text-slate-400">Capital Equivalente (ARS)</span>
-              <strong className="block text-lg font-black text-slate-900 mt-0.5">$ {money(capitalArs)}</strong>
-            </div>
-            <div>
-              <span className="text-[10px] uppercase font-black text-slate-400">Tipo de Cambio Fijado</span>
-              <strong className="block text-lg font-black text-slate-900 mt-0.5 font-mono">$ {money(rate)}</strong>
-            </div>
+        {/* CONDICIONES FINANCIERAS (FRANJA RESUMEN) */}
+        <div className="grid grid-cols-4 gap-1.5 bg-slate-900 text-white p-2 rounded-lg text-center">
+          <div>
+            <span className="text-[8px] print:text-[6.5pt] uppercase font-bold text-slate-400 block">Capital Desembolsado</span>
+            <strong className="text-xs print:text-[8.5pt] font-black text-emerald-400 block">U$S {money(capitalUsd)}</strong>
+            <span className="text-[8px] print:text-[6.5pt] text-slate-300 font-mono">$ {money(capitalArs)} ARS</span>
           </div>
-        </section>
+          <div>
+            <span className="text-[8px] print:text-[6.5pt] uppercase font-bold text-slate-400 block">Total a Reintegrar</span>
+            <strong className="text-xs print:text-[8.5pt] font-black text-white block">U$S {money(totalDevolverUsd)}</strong>
+            <span className="text-[8px] print:text-[6.5pt] text-emerald-300 font-mono">$ {money(totalDevolverArs)} ARS</span>
+          </div>
+          <div>
+            <span className="text-[8px] print:text-[6.5pt] uppercase font-bold text-slate-400 block">Interés / Recargo</span>
+            <strong className="text-xs print:text-[8.5pt] font-black text-amber-300 block">+{interesPct}%</strong>
+            <span className="text-[8px] print:text-[6.5pt] text-slate-300">U$S {money(interesUsd)}</span>
+          </div>
+          <div>
+            <span className="text-[8px] print:text-[6.5pt] uppercase font-bold text-slate-400 block">Plan y Tipo Cambio</span>
+            <strong className="text-xs print:text-[8.5pt] font-black text-white block">{cuotas.length} Cuotas</strong>
+            <span className="text-[8px] print:text-[6.5pt] text-slate-300 font-mono">TC: $ {money(rate)}</span>
+          </div>
+        </div>
 
-        {/* CLÁUSULA SEGUNDA: CONDICIONES FINANCIERAS Y TOTAL A DEVOLVER */}
-        <section className="space-y-2">
-          <h2 className="text-xs font-black uppercase tracking-wider border-b border-slate-200 pb-1">
-            Cláusula Segunda: Reintegro, Intereses y Total Pactado
-          </h2>
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-            <p className="text-[10px] uppercase tracking-wider font-black text-emerald-700">
-              Monto total a reintegrar por el prestatario
-            </p>
-            <p className="text-2xl font-black text-emerald-950 mt-1">
-              $ {money(totalDevolverArs)} ARS
-            </p>
-            <p className="text-sm font-bold text-emerald-800">
-              USD {money(totalDevolverUsd)} · Interés compensatorio USD {money(interesUsd)}
-            </p>
+        {/* CRONOGRAMA DE CUOTAS (COMPACTO Y MULTI-COLUMNA PARA 1 HOJA) */}
+        <div>
+          <div className="flex items-center justify-between border-b border-slate-300 pb-0.5 mb-1">
+            <h2 className="text-[9px] print:text-[7pt] font-black uppercase tracking-wider text-slate-800">
+              Cronograma de Amortización y Vencimientos
+            </h2>
+            <span className="text-[8px] print:text-[6.5pt] text-slate-500 font-bold">
+              {cuotas.length} cuotas consecutivas mensuales
+            </span>
           </div>
-          <div className="space-y-1.5 text-xs bg-slate-50 p-3 rounded-lg border">
-            <div className="flex justify-between py-1 border-b">
-              <span>Interés compensatorio pactado</span>
-              <strong>{capitalUsd > 0 ? ((interesUsd / capitalUsd) * 100).toFixed(1) : '0'}% (USD {money(interesUsd)})</strong>
-            </div>
-            <div className="flex justify-between py-1 border-b">
-              <span>Cantidad de cuotas pactadas</span>
-              <strong>{prestamo.cuotas.length} cuotas mensuales consecutivas</strong>
-            </div>
-            <div className="flex justify-between py-1">
-              <span>Estado formal</span>
-              <strong className="text-emerald-700 uppercase font-black">{prestamo.estado}</strong>
-            </div>
-          </div>
-        </section>
 
-        {/* CLÁUSULA TERCERA: PLAN DE CUOTAS */}
-        <section className="space-y-2 text-xs">
-          <h2 className="text-xs font-black uppercase tracking-wider border-b border-slate-200 pb-1">
-            Cláusula Tercera: Cronograma de Vencimientos y Plan de Pagos
-          </h2>
-          <p className="text-xs text-slate-700 mb-2">
-            La amortización del capital y sus intereses compensatorios se efectuará en las fechas estipuladas en el siguiente cronograma:
-          </p>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border border-slate-200 rounded-lg overflow-hidden">
-              <thead className="bg-slate-100 text-slate-600 font-black uppercase text-[10px]">
-                <tr>
-                  <th className="p-2 border-b">Cuota N°</th>
-                  <th className="p-2 border-b">Vencimiento</th>
-                  <th className="p-2 border-b text-right">Importe USD</th>
-                  <th className="p-2 border-b text-right">Contravalor ARS</th>
-                  <th className="p-2 border-b text-center">Estado</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 font-mono">
-                {prestamo.cuotas.map((c: any) => {
-                  const usd = Number(c.monto_usd || 0);
-                  const ars = Number(c.monto_ars || 0) || usd * rate;
-                  return (
-                    <tr key={c.id_cuota} className="hover:bg-slate-50">
-                      <td className="p-2 font-bold font-sans">Cuota #{c.numero_cuota}</td>
-                      <td className="p-2">
-                        {new Date(c.fecha_vencimiento).toLocaleDateString('es-AR')}
-                      </td>
-                      <td className="p-2 text-right font-black text-slate-900">
-                        U$S {money(usd)}
-                      </td>
-                      <td className="p-2 text-right text-slate-600">
-                        $ {money(ars)}
-                      </td>
-                      <td className="p-2 text-center font-sans">
-                        <span
-                          className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                            c.estado === 'PAGADA'
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : 'bg-amber-100 text-amber-800'
-                          }`}
-                        >
-                          {c.estado}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div className={`grid ${cuotasGridCols} gap-x-2 gap-y-0.5 text-[8.5px] print:text-[7pt] font-mono`}>
+            {cuotas.map((c: any) => {
+              const usd = Number(c.monto_usd || 0);
+              const ars = Number(c.monto_ars || 0) || usd * rate;
+              const isPagada = c.estado === 'PAGADA';
+              return (
+                <div
+                  key={c.id_cuota}
+                  className={`flex items-center justify-between px-1.5 py-0.5 rounded border ${
+                    isPagada
+                      ? 'bg-emerald-50/70 border-emerald-200 text-emerald-950'
+                      : 'bg-slate-50 border-slate-200 text-slate-900'
+                  }`}
+                >
+                  <span className="font-bold font-sans">#{c.numero_cuota}</span>
+                  <span className="text-slate-600">{new Date(c.fecha_vencimiento).toLocaleDateString('es-AR')}</span>
+                  <span className="font-black">U$S {money(usd)}</span>
+                  <span className="text-[7.5px] print:text-[6pt] text-slate-500">${Math.round(ars).toLocaleString('es-AR')}</span>
+                  <span
+                    className={`text-[7px] print:text-[5.5pt] px-1 py-0.2 rounded font-sans font-black ${
+                      isPagada ? 'bg-emerald-200 text-emerald-900' : 'bg-slate-200 text-slate-700'
+                    }`}
+                  >
+                    {isPagada ? 'PAGADA' : 'PENDIENTE'}
+                  </span>
+                </div>
+              );
+            })}
           </div>
-        </section>
+        </div>
 
-        {/* CLÁUSULAS LEGALES */}
-        <div className="space-y-2 text-[11px] text-slate-600 text-justify">
+        {/* CLÁUSULAS LEGALES DE RIGOR */}
+        <div className="space-y-1 text-[8.5px] print:text-[6.8pt] text-slate-600 leading-tight text-justify border-t border-slate-200 pt-1.5">
           <p>
-            <strong>Cláusula Cuarta (Mora y Caducidad de Plazos):</strong> La falta de pago de cualquiera de las cuotas a su respectivo vencimiento constituirá al DEUDOR en mora de pleno derecho por el mero transcurso del tiempo, sin necesidad de interpelación judicial o extrajudicial alguna. En tal supuesto, la parte ACREEDORA se reserva el derecho de declarar la caducidad de todos los plazos pendientes y exigir el pago íntegro de la deuda con más los intereses moratorios y punitorios correspondientes.
+            <strong>PRIMERA (Objeto y Entrega):</strong> La parte Acreedora entrega a la parte Deudora en calidad de mutuo dinerario con destino financiero el capital indicado, sirviendo el presente de suficiente recibo y carta de pago por los importes percibidos en este acto.
           </p>
           <p>
-            <strong>Cláusula Quinta (Imputación y Moneda):</strong> Todo pago que realice el DEUDOR se imputará primeramente a gastos, luego a intereses y finalmente a capital. En caso de cancelaciones en moneda nacional, regirá el tipo de cambio pactado en las condiciones particulares.
+            <strong>SEGUNDA (Reintegro e Intereses):</strong> El Deudor se obliga irrevocablemente a restituir el monto total pactado en las fechas y cuotas convenidas en el cronograma superior. Toda cancelación en moneda nacional se liquidará según la pauta cambiaria establecida en las condiciones particulares.
           </p>
           <p>
-            <strong>Cláusula Sexta (Jurisdicción y Domicilio):</strong> Para todos los efectos legales derivados del presente contrato, las partes fijan domicilios especiales en los consignados precedentemente, sometiéndose a la jurisdicción de los Tribunales Ordinarios competentes, renunciando a cualquier otro fuero que pudiera corresponder.
+            <strong>TERCERA (Mora Automática y Caducidad):</strong> La falta de pago de cualquier cuota a su respectivo vencimiento constituirá al Deudor en mora de pleno derecho sin necesidad de intimación judicial o extrajudicial, facultando al Acreedor a declarar la caducidad de todos los plazos y exigir la totalidad del saldo adeudado con intereses moratorios y punitorios.
+          </p>
+          <p>
+            <strong>CUARTA (Jurisdicción):</strong> Las partes constituyen domicilios especiales en los consignados precedentemente, sometiéndose a la competencia de los Tribunales Ordinarios de la jurisdicción del Acreedor, renunciando a todo otro fuero o fuero federal.
           </p>
         </div>
 
-        {/* PIE DE IMPRESIÓN */}
-        {concesionaria.pieImpresion && (
-          <p className="text-[10px] text-slate-500 border-t pt-3">
-            {concesionaria.pieImpresion}
-          </p>
-        )}
-
-        {/* FIRMAS */}
-        <div className="pt-16 grid grid-cols-2 gap-12 text-center text-xs">
-          <div className="border-t border-slate-900 pt-2">
+        {/* FIRMAS (AL PIE DE PÁGINA) */}
+        <div className="pt-6 print:pt-4 grid grid-cols-2 gap-8 text-center text-[9px] print:text-[7pt]">
+          <div className="border-t border-slate-900 pt-1">
             <p className="font-black uppercase">{concesionaria.nombre}</p>
-            <p className="text-slate-500">Parte Acreedora (Prestamista)</p>
+            <p className="text-slate-500 text-[8px] print:text-[6.5pt]">Parte Acreedora (Prestamista)</p>
           </div>
-          <div className="border-t border-slate-900 pt-2">
+          <div className="border-t border-slate-900 pt-1">
             <p className="font-black uppercase">{deudor.nombre_completo}</p>
-            <p className="text-slate-500">
-              Parte Deudora · DNI {deudor.dni || '..........'}
+            <p className="text-slate-500 text-[8px] print:text-[6.5pt]">
+              Parte Deudora · DNI: {deudor.dni || deudor.cuit_cuil || '.......................'}
             </p>
           </div>
         </div>

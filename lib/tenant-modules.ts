@@ -57,3 +57,4 @@ export function tenantHasCash(features: Set<string> | string[] | undefined | nul
   const set = features instanceof Set ? features : new Set(features);
   return !set.has('sin_caja');
 }
+

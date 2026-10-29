@@ -129,3 +129,49 @@
     @apply font-sans;
   }
 }
+
+/* Safe area support for iOS / iPhones with notch & dynamic island */
+.pt-safe {
+  padding-top: max(16px, env(safe-area-inset-top, 0px));
+}
+.pb-safe {
+  padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+}
+
+/* Global Print Standardization for single-sheet clean printouts */
+@media print {
+  header,
+  aside,
+  nav,
+  .bh-header,
+  .bh-sidebar,
+  .print\:hidden,
+  [data-nl-theme] > header,
+  [data-nl-theme] > aside,
+  #nl-toast-root {
+    display: none !important;
+  }
+
+  html,
+  body {
+    background: white !important;
+    color: #000 !important;
+    font-family: inherit !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .bh-layout,
+  .bh-main,
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    display: block !important;
+    height: auto !important;
+    background: transparent !important;
+    border: none !important;
+  }
+}

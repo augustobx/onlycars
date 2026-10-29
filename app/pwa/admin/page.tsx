@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { prisma as db } from '@/lib/prisma';
 import { getTenantContext } from '@/lib/tenant-context';
 import { requireTenantRole } from '@/lib/user-auth';
+import { tenantIsFinancialOnly } from '@/lib/tenant-modules';
 import { RolMembresia } from '@prisma/client';
 import { redirect } from 'next/navigation';
 import PwaAdminHubClient from './PwaAdminHubClient';
@@ -17,7 +18,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     title: `${tenantName} · Admin PWA`,
-    description: 'Panel de Administración Móvil para Concesionarias',
+    description: 'Panel de Administración Móvil',
     manifest: '/api/pwa/manifest/admin',
     icons: {
       icon: '/icons/admin-192.png',
@@ -40,11 +41,17 @@ export default async function PwaAdminPage() {
   ]);
 
   const dolarActual = Number(tenant.settings?.dolarActual || 1400);
+  const isFinancialOnly = tenantIsFinancialOnly(tenant.features);
 
-  const [vehiculosCount, cuotasPendientesCount, prestamosActivosCount] = await Promise.all([
-    db.vehiculo.count({ where: { tenantId: tenant.id, estado: { not: 'VENDIDO' } } }),
-    db.ventaCuota.count({ where: { tenantId: tenant.id, estado: 'PENDIENTE' } }),
+  const [vehiculosCount, cuotasPendientesCount, prestamosActivosCount, clientesCount] = await Promise.all([
+    isFinancialOnly
+      ? 0
+      : db.vehiculo.count({ where: { tenantId: tenant.id, estado: { not: 'VENDIDO' } } }),
+    isFinancialOnly
+      ? db.prestamoCuota.count({ where: { tenantId: tenant.id, estado: 'PENDIENTE' } })
+      : db.ventaCuota.count({ where: { tenantId: tenant.id, estado: 'PENDIENTE' } }),
     db.prestamo.count({ where: { tenantId: tenant.id, estado: 'ACTIVO' } }),
+    db.cliente.count({ where: { tenantId: tenant.id } }),
   ]);
 
   return (
@@ -58,6 +65,8 @@ export default async function PwaAdminPage() {
         vehiculosCount={vehiculosCount}
         cuotasPendientesCount={cuotasPendientesCount}
         prestamosActivosCount={prestamosActivosCount}
+        clientesCount={clientesCount}
+        isFinancialOnly={isFinancialOnly}
       />
     </>
   );

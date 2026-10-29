@@ -4,6 +4,7 @@ import { getTenantContext } from '@/lib/tenant-context';
 import { requireTenantRole } from '@/lib/user-auth';
 import { headers } from 'next/headers';
 import { managedModuleEnabled } from '@/lib/hub-features';
+import { tenantIsFinancialOnly } from '@/lib/tenant-modules';
 import { PwaCapabilities } from './PwaCapabilities';
 import { notFound, redirect } from 'next/navigation';
 import PWASplash from './PWASplash';
@@ -80,7 +81,7 @@ export default async function PWALayout({ children }: { children: React.ReactNod
       <div className="max-w-md mx-auto min-h-screen bg-slate-50 shadow-2xl relative overflow-hidden flex flex-col">
         <ModuleHelpButton variant="floating" />
         <PWASplash logo={tenant.settings?.logoUrl || null} initialDolar={tenant.settings?.dolarActual || 1400} tenantName={tenant.name}>
-          <PwaCapabilities sellerEnabled={managedModuleEnabled(tenant, 'seller_pwa')}>{children}</PwaCapabilities>
+          <PwaCapabilities sellerEnabled={!tenantIsFinancialOnly(tenant.features) && managedModuleEnabled(tenant, 'seller_pwa')}>{children}</PwaCapabilities>
         </PWASplash>
       </div>
     </div>

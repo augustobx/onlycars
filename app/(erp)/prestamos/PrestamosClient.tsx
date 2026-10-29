@@ -21,9 +21,11 @@ import {
   DollarSign,
   Phone,
   Printer,
+  BarChart3,
 } from 'lucide-react';
 import DualMoney from '@/components/common/DualMoney';
 import { cambiarEstadoSolicitudWebAction, aprobarYGenerarPrestamoAction } from '@/actions/prestamos-admin';
+import PrestamosMetricasView from '@/components/prestamos/PrestamosMetricasView';
 
 export default function PrestamosClient({
   prestamos,
@@ -35,7 +37,7 @@ export default function PrestamosClient({
   dolarActual: number;
 }) {
   const [mounted, setMounted] = useState(false);
-  const [activeTab, setActiveTab] = useState<'CARTERA' | 'SOLICITUDES'>('CARTERA');
+  const [activeTab, setActiveTab] = useState<'CARTERA' | 'SOLICITUDES' | 'METRICAS'>('CARTERA');
   const [searchTerm, setSearchTerm] = useState('');
   const [filtroEstado, setFiltroEstado] = useState<'ACTIVOS' | 'FINALIZADOS'>('ACTIVOS');
   const [filtroSolicitudes, setFiltroSolicitudes] = useState<string>('TODAS');
@@ -219,9 +221,24 @@ export default function PrestamosClient({
             </span>
           )}
         </button>
+
+        <button
+          onClick={() => setActiveTab('METRICAS')}
+          className={`pb-3.5 text-sm font-black flex items-center gap-2 border-b-2 transition relative ${
+            activeTab === 'METRICAS'
+              ? 'border-indigo-600 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+          }`}
+        >
+          <BarChart3 className="w-4 h-4" /> Centro de Métricas & Auditoría
+        </button>
       </div>
 
-      {activeTab === 'CARTERA' ? (
+      {activeTab === 'METRICAS' && (
+        <PrestamosMetricasView prestamos={prestamos} dolarActual={dolarActual} />
+      )}
+
+      {activeTab === 'CARTERA' && (
         <>
           {/* Métricas de Cartera */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -387,7 +404,9 @@ export default function PrestamosClient({
             )}
           </div>
         </>
-      ) : (
+      )}
+
+      {activeTab === 'SOLICITUDES' && (
         /* Pestaña: Solicitudes Web de Clientes */
         <div className="space-y-4">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex flex-col md:flex-row gap-3 justify-between">
