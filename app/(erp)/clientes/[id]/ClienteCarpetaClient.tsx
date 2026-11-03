@@ -241,7 +241,7 @@ export default function ClienteCarpetaClient({
                     href={`https://wa.me/${cleanPhone}?text=${encodeURIComponent(
                       `Hola ${cliente.nombre_completo}! Tu nueva clave de acceso para ver tus cuotas y préstamos en nuestro portal de clientes es: *${resetResult.passwordGenerada}*. Podés ingresar con tu DNI: *${cliente.dni || ''}*.`
                     )}`}
-                    target="_blank"
+                    target="whatsapp_web"
                     rel="noreferrer"
                     className="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-black flex items-center justify-center gap-1.5 transition text-white cursor-pointer"
                   >

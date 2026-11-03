@@ -447,11 +447,11 @@ export default function PwaCuotasClient({
         )}
       </div>
 
-      {/* MODAL MÓVIL DE COBRO (BOTTOM SHEET / DIALOG) */}
+      {/* MODAL MÓVIL DE COBRO (CENTER DIALOG CON FOOTER FIJO) */}
       {cuotaACobrar && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in">
-          <div className="w-full max-w-md bg-white rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b pb-3">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in">
+          <div className="w-full max-w-md bg-white rounded-2xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[85vh] sm:max-h-[90vh] overflow-hidden">
+            <div className="shrink-0 flex items-center justify-between border-b border-slate-100 p-4 sm:p-5">
               <div>
                 <h3 className="font-black text-slate-900 text-base">Registrar Cobro de Cuota</h3>
                 <p className="text-xs text-slate-500 font-semibold">
@@ -460,65 +460,68 @@ export default function PwaCuotasClient({
               </div>
               <button
                 onClick={() => setCuotaACobrar(null)}
-                className="p-1 rounded-full text-slate-400 hover:text-slate-700"
+                className="p-1 rounded-full text-slate-400 hover:text-slate-700 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-1 text-xs">
-              <div className="flex justify-between items-baseline">
-                <span className="text-slate-500">Monto pactado:</span>
-                <div className="text-right">
-                  <strong className="text-emerald-700 font-mono font-black text-sm block">
-                    $ {Math.round(cuotaACobrar.monto_usd * (Number(cotizacionDia) || dolarActual)).toLocaleString('es-AR')}
-                  </strong>
-                  <span className="text-[10px] text-slate-400 font-mono">≈ U$S {cuotaACobrar.monto_usd}</span>
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+              <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-1 text-xs">
+                <div className="flex justify-between items-baseline">
+                  <span className="text-slate-500">Monto pactado:</span>
+                  <div className="text-right">
+                    <strong className="text-emerald-700 font-mono font-black text-sm block">
+                      $ {Math.round(cuotaACobrar.monto_usd * (Number(cotizacionDia) || dolarActual)).toLocaleString('es-AR')}
+                    </strong>
+                    <span className="text-[10px] text-slate-400 font-mono">≈ U$S {cuotaACobrar.monto_usd}</span>
+                  </div>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Operación:</span>
+                  <strong className="text-slate-800">{cuotaACobrar.id_operacion}</strong>
                 </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Operación:</span>
-                <strong className="text-slate-800">{cuotaACobrar.id_operacion}</strong>
-              </div>
+
+              {/* COTIZACIÓN DÓLAR */}
+              <label className="block">
+                <span className="text-xs font-black uppercase tracking-wider text-slate-600 block mb-1">
+                  Cotización Dólar del Cobro ($)
+                </span>
+                <input
+                  type="number"
+                  value={cotizacionDia}
+                  onChange={(e) => {
+                    setCotizacionDia(e.target.value);
+                    const rate = Number(e.target.value) || 0;
+                    if (rate > 0) {
+                      setMontoCobradoArs(String(Math.round(cuotaACobrar.monto_usd * rate)));
+                    }
+                  }}
+                  className="w-full p-2.5 text-sm font-mono font-bold border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </label>
+
+              {/* MONTO EN PESOS RECIBIDO */}
+              <label className="block">
+                <span className="text-xs font-black uppercase tracking-wider text-slate-600 block mb-1">
+                  Monto Recibido en Pesos (ARS)
+                </span>
+                <input
+                  type="number"
+                  value={montoCobradoArs}
+                  onChange={(e) => setMontoCobradoArs(e.target.value)}
+                  className="w-full p-3 text-lg font-mono font-black border border-emerald-400 bg-emerald-50/30 text-emerald-950 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </label>
             </div>
 
-            {/* COTIZACIÓN DÓLAR */}
-            <label className="block">
-              <span className="text-xs font-black uppercase tracking-wider text-slate-600 block mb-1">
-                Cotización Dólar del Cobro ($)
-              </span>
-              <input
-                type="number"
-                value={cotizacionDia}
-                onChange={(e) => {
-                  setCotizacionDia(e.target.value);
-                  const rate = Number(e.target.value) || 0;
-                  if (rate > 0) {
-                    setMontoCobradoArs(String(Math.round(cuotaACobrar.monto_usd * rate)));
-                  }
-                }}
-                className="w-full p-2.5 text-sm font-mono font-bold border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500"
-              />
-            </label>
-
-            {/* MONTO EN PESOS RECIBIDO */}
-            <label className="block">
-              <span className="text-xs font-black uppercase tracking-wider text-slate-600 block mb-1">
-                Monto Recibido en Pesos (ARS)
-              </span>
-              <input
-                type="number"
-                value={montoCobradoArs}
-                onChange={(e) => setMontoCobradoArs(e.target.value)}
-                className="w-full p-3 text-lg font-mono font-black border border-emerald-400 bg-emerald-50/30 text-emerald-950 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500"
-              />
-            </label>
-
-            <div className="flex gap-2 pt-2">
+            {/* BOTONES FIJOS EN EL FOOTER DEL MODAL */}
+            <div className="shrink-0 p-4 border-t border-slate-100 bg-slate-50/80 flex gap-2">
               <button
                 type="button"
                 onClick={() => setCuotaACobrar(null)}
-                className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl"
+                className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl cursor-pointer"
               >
                 Cancelar
               </button>
@@ -526,7 +529,7 @@ export default function PwaCuotasClient({
                 type="button"
                 onClick={confirmarCobro}
                 disabled={procesando}
-                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-md active:scale-95 disabled:opacity-50"
+                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-md active:scale-95 disabled:opacity-50 cursor-pointer"
               >
                 {procesando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                 Confirmar Cobro

@@ -89,6 +89,7 @@ export default function ModalWhatsAppRecordatorio({
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateTipo>(defaultTemplate);
   const [customText, setCustomText] = useState<string>('');
   const [copied, setCopied] = useState(false);
+  const [abrirEnMismaVentana, setAbrirEnMismaVentana] = useState(false);
 
   // Generador de plantillas prearmadas con datos dinámicos
   const generatedTemplates = useMemo(() => {
@@ -156,17 +157,26 @@ export default function ModalWhatsAppRecordatorio({
       alert('El cliente no tiene un teléfono válido registrado.');
       return;
     }
-    const url = `https://wa.me/${telLimpio}?text=${encodeURIComponent(mensajeActual)}`;
-    window.open(url, '_blank');
+    const isMobile = typeof window !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const url = isMobile
+      ? `https://wa.me/${telLimpio}?text=${encodeURIComponent(mensajeActual)}`
+      : `https://web.whatsapp.com/send?phone=${telLimpio}&text=${encodeURIComponent(mensajeActual)}`;
+
+    if (abrirEnMismaVentana) {
+      window.location.href = url;
+    } else {
+      // Reutiliza siempre la misma pestaña con nombre 'whatsapp_web' para NO abrir pestañas nuevas repetidas ni cerrar la sesión en Linux Mint/PC
+      window.open(url, 'whatsapp_web');
+    }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in select-none">
-      <div className="w-full max-w-lg bg-white rounded-t-3xl sm:rounded-2xl p-5 sm:p-6 shadow-2xl space-y-4 max-h-[92vh] flex flex-col">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in select-none">
+      <div className="w-full max-w-lg bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 flex flex-col max-h-[90vh] overflow-hidden">
         {/* ENCABEZADO */}
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="shrink-0 flex items-center justify-between border-b border-slate-100 p-4 sm:p-5">
           <div className="flex items-center gap-2.5">
             <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center shrink-0">
               <MessageCircle className="w-5 h-5" />
@@ -175,18 +185,19 @@ export default function ModalWhatsAppRecordatorio({
               <span className="text-[10px] uppercase font-black tracking-wider text-emerald-700 block">
                 Avisos y Recordatorios de Cobranza
               </span>
-              <h3 className="font-black text-slate-900 text-sm">{cliente.nombre}</h3>
+              <h3 className="font-black text-slate-900 text-sm truncate max-w-[240px]">{cliente.nombre}</h3>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+            className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* DETALLE RÁPIDO DE CUOTA / ESTADO */}
+        {/* CUERPO CON SCROLL INDEPENDIENTE */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
         {cuota && (
           <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 grid grid-cols-2 gap-2 text-xs">
             <div>
@@ -307,32 +318,47 @@ export default function ModalWhatsAppRecordatorio({
             rows={5}
             value={mensajeActual}
             onChange={(e) => setCustomText(e.target.value)}
-            className="w-full flex-1 p-3 text-xs font-sans text-slate-800 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 resize-none leading-relaxed"
+            className="w-full p-3 text-xs font-sans text-slate-800 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 resize-none leading-relaxed"
             placeholder="Escribí o modificá el mensaje a enviar..."
           />
         </div>
 
-        {/* ACCIONES FINALES */}
-        <div className="pt-2 border-t border-slate-100 flex items-center gap-2">
-          <button
-            type="button"
-            onClick={copiarAlPortapapeles}
-            className="px-3 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition active:scale-95"
-            title="Copiar texto"
-          >
-            {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-            <span className="hidden sm:inline">{copied ? 'Copiado' : 'Copiar'}</span>
-          </button>
+        {/* ACCIONES FINALES (FOOTER FIJO, SIEMPRE VISIBLE EN PANTALLA) */}
+        <div className="shrink-0 p-4 sm:p-5 pt-3 border-t border-slate-100 bg-slate-50/70 space-y-2.5">
+          <div className="flex items-center justify-between text-[11px] text-slate-500 font-semibold px-0.5">
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={abrirEnMismaVentana}
+                onChange={(e) => setAbrirEnMismaVentana(e.target.checked)}
+                className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+              />
+              <span>Abrir en esta misma ventana (sin pestañas nuevas)</span>
+            </label>
+            <span className="text-[10px] text-slate-400">Pestaña única</span>
+          </div>
 
-          <button
-            type="button"
-            onClick={abrirWhatsApp}
-            disabled={!telLimpio}
-            className="flex-1 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-black text-xs flex items-center justify-center gap-2 shadow-md shadow-emerald-600/30 transition-all disabled:opacity-50"
-          >
-            <Send className="w-4 h-4" />
-            <span>Abrir WhatsApp con Mensaje</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={copiarAlPortapapeles}
+              className="px-3.5 py-3 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition active:scale-95 cursor-pointer shadow-xs"
+              title="Copiar texto"
+            >
+              {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+              <span>{copied ? 'Copiado' : 'Copiar'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={abrirWhatsApp}
+              disabled={!telLimpio}
+              className="flex-1 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-black text-xs flex items-center justify-center gap-2 shadow-md shadow-emerald-600/30 transition-all disabled:opacity-50 cursor-pointer"
+            >
+              <Send className="w-4 h-4" />
+              <span>{abrirEnMismaVentana ? 'Enviar en esta Pestaña' : 'Abrir WhatsApp (Pestaña Fija)'}</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

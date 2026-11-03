@@ -849,26 +849,28 @@ export default function PwaPrestamosClient({
 
       {/* MODAL MÓVIL: GENERAR PRÉSTAMO */}
       {modalNuevo && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in">
-          <div className="w-full max-w-md bg-white rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b pb-3">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in">
+          <div className="w-full max-w-md bg-white rounded-2xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[85vh] sm:max-h-[90vh] overflow-hidden">
+            <div className="shrink-0 flex items-center justify-between border-b border-slate-100 p-4 sm:p-5">
               <div>
                 <h3 className="font-black text-slate-900 text-base">Generar Nuevo Préstamo</h3>
                 <p className="text-xs text-slate-500 font-semibold">Financiación dineraria en minutos</p>
               </div>
-              <button onClick={() => setModalNuevo(false)} className="p-1 rounded-full text-slate-400 hover:text-slate-700">
+              <button onClick={() => setModalNuevo(false)} className="p-1 rounded-full text-slate-400 hover:text-slate-700 cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {renderCalculadorControls(true)}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+              {renderCalculadorControls(true)}
+            </div>
 
-            {/* BOTONES */}
-            <div className="flex gap-2 pt-2">
+            {/* BOTONES FIJOS EN EL FOOTER DEL MODAL */}
+            <div className="shrink-0 p-4 border-t border-slate-100 bg-slate-50/80 flex gap-2">
               <button
                 type="button"
                 onClick={() => setModalNuevo(false)}
-                className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl"
+                className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl cursor-pointer"
               >
                 Cancelar
               </button>
@@ -876,7 +878,7 @@ export default function PwaPrestamosClient({
                 type="button"
                 onClick={confirmarNuevoPrestamo}
                 disabled={guardando}
-                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-md active:scale-95 disabled:opacity-50"
+                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-md active:scale-95 disabled:opacity-50 cursor-pointer"
               >
                 {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                 Confirmar y Emitir
@@ -888,47 +890,54 @@ export default function PwaPrestamosClient({
 
       {/* MODAL COBRO RÁPIDO DENTRO DE PRÉSTAMOS */}
       {cuotaCobrando && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in">
-          <div className="w-full max-w-md bg-white rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b pb-2">
-              <h3 className="font-black text-slate-900 text-sm">Cobrar Cuota de Préstamo</h3>
-              <button onClick={() => setCuotaCobrando(null)} className="text-slate-400">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in">
+          <div className="w-full max-w-md bg-white rounded-2xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[85vh] sm:max-h-[90vh] overflow-hidden">
+            <div className="shrink-0 flex items-center justify-between border-b border-slate-100 p-4 sm:p-5">
+              <div>
+                <h3 className="font-black text-slate-900 text-sm">Cobrar Cuota de Préstamo</h3>
+                <p className="text-xs text-slate-500 font-medium">Cuota #{cuotaCobrando.numero_cuota} de {cuotaCobrando.total_cuotas}</p>
+              </div>
+              <button onClick={() => setCuotaCobrando(null)} className="text-slate-400 hover:text-slate-700 cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <p className="text-xs text-slate-600">
-              Cliente: <strong>{cuotaCobrando.cliente_nombre}</strong> · Importe pactado: <strong className="text-emerald-700 font-mono">$ {Math.round(cuotaCobrando.monto_usd * (Number(cotizacionCobro) || dolarActual)).toLocaleString('es-AR')}</strong> <span className="text-slate-400 font-mono text-[11px]">(U$S {cuotaCobrando.monto_usd})</span>
-            </p>
-            <label className="block">
-              <span className="text-[10px] font-black uppercase text-slate-500 block mb-1">Cotización Dólar ($)</span>
-              <input
-                type="number"
-                value={cotizacionCobro}
-                onChange={(e) => {
-                  setCotizacionCobro(e.target.value);
-                  const rate = Number(e.target.value) || 0;
-                  setMontoCobroArs(String(Math.round(cuotaCobrando.monto_usd * rate)));
-                }}
-                className="w-full p-2.5 text-xs font-mono font-bold border border-slate-300 rounded-xl outline-none"
-              />
-            </label>
-            <label className="block">
-              <span className="text-[10px] font-black uppercase text-slate-500 block mb-1">Total Pesos Recibido ($)</span>
-              <input
-                type="number"
-                value={montoCobroArs}
-                onChange={(e) => setMontoCobroArs(e.target.value)}
-                className="w-full p-2.5 text-base font-mono font-black border border-emerald-400 rounded-xl bg-emerald-50/30 text-emerald-950"
-              />
-            </label>
-            <div className="flex gap-2">
-              <button onClick={() => setCuotaCobrando(null)} className="flex-1 py-2.5 bg-slate-100 rounded-xl text-xs font-bold">
+
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+              <p className="text-xs text-slate-600">
+                Cliente: <strong>{cuotaCobrando.cliente_nombre}</strong> · Importe pactado: <strong className="text-emerald-700 font-mono">$ {Math.round(cuotaCobrando.monto_usd * (Number(cotizacionCobro) || dolarActual)).toLocaleString('es-AR')}</strong> <span className="text-slate-400 font-mono text-[11px]">(U$S {cuotaCobrando.monto_usd})</span>
+              </p>
+              <label className="block">
+                <span className="text-[10px] font-black uppercase text-slate-500 block mb-1">Cotización Dólar ($)</span>
+                <input
+                  type="number"
+                  value={cotizacionCobro}
+                  onChange={(e) => {
+                    setCotizacionCobro(e.target.value);
+                    const rate = Number(e.target.value) || 0;
+                    setMontoCobroArs(String(Math.round(cuotaCobrando.monto_usd * rate)));
+                  }}
+                  className="w-full p-2.5 text-xs font-mono font-bold border border-slate-300 rounded-xl outline-none"
+                />
+              </label>
+              <label className="block">
+                <span className="text-[10px] font-black uppercase text-slate-500 block mb-1">Total Pesos Recibido ($)</span>
+                <input
+                  type="number"
+                  value={montoCobroArs}
+                  onChange={(e) => setMontoCobroArs(e.target.value)}
+                  className="w-full p-2.5 text-base font-mono font-black border border-emerald-400 rounded-xl bg-emerald-50/30 text-emerald-950"
+                />
+              </label>
+            </div>
+
+            <div className="shrink-0 p-4 border-t border-slate-100 bg-slate-50/80 flex gap-2">
+              <button onClick={() => setCuotaCobrando(null)} className="flex-1 py-2.5 bg-slate-100 rounded-xl text-xs font-bold cursor-pointer">
                 Cancelar
               </button>
               <button
                 onClick={ejecutarCobroCuota}
                 disabled={procesandoCobro}
-                className="flex-1 py-2.5 bg-emerald-600 text-white rounded-xl text-xs font-black flex items-center justify-center gap-1"
+                className="flex-1 py-2.5 bg-emerald-600 text-white rounded-xl text-xs font-black flex items-center justify-center gap-1 cursor-pointer"
               >
                 {procesandoCobro ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                 Confirmar Cobro

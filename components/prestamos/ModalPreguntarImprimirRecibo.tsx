@@ -122,7 +122,7 @@ export default function ModalPreguntarImprimirRecibo({
               href={`https://wa.me/${clienteTelefono.replace(/\D/g, '')}?text=${encodeURIComponent(
                 `Hola ${clienteNombre}! Te confirmamos el cobro de la cuota #${numeroCuota}/${totalCuotas} por $ ${Math.round(montoArs).toLocaleString('es-AR')} ARS. Comprobante Oficial N° ${reciboNro}. ¡Muchas gracias!`
               )}`}
-              target="_blank"
+              target="whatsapp_web"
               rel="noreferrer"
               onClick={onClose}
               className="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 active:scale-98 text-emerald-700 dark:text-emerald-400 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer border border-slate-200 dark:border-slate-700"

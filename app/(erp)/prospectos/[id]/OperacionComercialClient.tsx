@@ -212,7 +212,7 @@ export default function OperacionComercialClient({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {prospecto.telefono && <a href={`https://wa.me/${String(prospecto.telefono).replace(/\D/g, '')}`} target="_blank" className="px-3 py-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-black flex items-center gap-1.5"><MessageSquare className="w-4 h-4" /> WhatsApp</a>}
+          {prospecto.telefono && <a href={`https://wa.me/${String(prospecto.telefono).replace(/\D/g, '')}`} target="whatsapp_web" className="px-3 py-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-black flex items-center gap-1.5"><MessageSquare className="w-4 h-4" /> WhatsApp</a>}
           {currentVehicle && <Link href={`/vehiculos/${currentVehicle.id_vehiculo}`} className="px-3 py-2 rounded-xl bg-slate-900 text-white text-xs font-black flex items-center gap-1.5"><Car className="w-4 h-4" /> Ver unidad</Link>}
         </div>
       </div>

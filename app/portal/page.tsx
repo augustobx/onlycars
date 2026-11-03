@@ -43,11 +43,18 @@ export default async function PortalHomePage() {
   let solicitudesPendientesCount = 0;
 
   if (currentCliente) {
-    const [cuotas, prestamos, solicitudes] = await Promise.all([
+    const [ventaCuotas, prestamoCuotas, prestamos, solicitudes] = await Promise.all([
       db.ventaCuota.count({
         where: {
           tenantId: tenant.id,
           venta: { id_cliente: currentCliente.id_cliente },
+          estado: 'PENDIENTE',
+        },
+      }),
+      db.prestamoCuota.count({
+        where: {
+          tenantId: tenant.id,
+          prestamo: { id_cliente: currentCliente.id_cliente },
           estado: 'PENDIENTE',
         },
       }),
@@ -66,7 +73,7 @@ export default async function PortalHomePage() {
         },
       }),
     ]);
-    cuotasPendientesCount = cuotas;
+    cuotasPendientesCount = ventaCuotas + prestamoCuotas;
     prestamosActivosCount = prestamos;
     solicitudesPendientesCount = solicitudes;
   }

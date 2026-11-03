@@ -31,18 +31,40 @@ export default async function PortalCuotasPage() {
 
   const dolarActual = Number(tenant.settings?.dolarActual || 1400);
 
-  const ventasDb = await db.venta.findMany({
-    where: {
-      tenantId: tenant.id,
-      id_cliente: currentCliente.id_cliente,
-      forma_pago: 'Cuotas',
-    },
-    orderBy: { fecha_venta: 'desc' },
-    include: {
-      vehiculo: true,
-      cuotas: { orderBy: { numero_cuota: 'asc' } },
-    },
-  });
+  const [soloPrestamosFeature, ventasDb, prestamosDb] = await Promise.all([
+    db.tenantFeature.findUnique({
+      where: {
+        tenantId_featureKey: {
+          tenantId: tenant.id,
+          featureKey: 'solo_prestamos',
+        },
+      },
+    }),
+    db.venta.findMany({
+      where: {
+        tenantId: tenant.id,
+        id_cliente: currentCliente.id_cliente,
+        forma_pago: 'Cuotas',
+      },
+      orderBy: { fecha_venta: 'desc' },
+      include: {
+        vehiculo: true,
+        cuotas: { orderBy: { numero_cuota: 'asc' } },
+      },
+    }),
+    db.prestamo.findMany({
+      where: {
+        tenantId: tenant.id,
+        id_cliente: currentCliente.id_cliente,
+      },
+      orderBy: { fecha_prestamo: 'desc' },
+      include: {
+        cuotas: { orderBy: { numero_cuota: 'asc' } },
+      },
+    }),
+  ]);
+
+  const isSoloPrestamos = !!soloPrestamosFeature?.isEnabled || config.habilitarCatalogo === false;
 
   const ventas = ventasDb.map((v) => ({
     ...v,
@@ -56,5 +78,28 @@ export default async function PortalCuotasPage() {
     })),
   }));
 
-  return <CuotasClient ventas={ventas} dolarActual={dolarActual} />;
+  const prestamos = prestamosDb.map((p) => ({
+    ...p,
+    capital_entregado_usd: Number(p.capital_entregado_usd),
+    total_devolver_usd: Number(p.total_devolver_usd),
+    cotizacion_dolar_prestamo: Number(p.cotizacion_dolar_prestamo || dolarActual),
+    cuotas: p.cuotas.map((c) => ({
+      ...c,
+      monto_usd: Number(c.monto_usd),
+      monto_pagado_ars: c.monto_pagado_ars ? Number(c.monto_pagado_ars) : null,
+      cotizacion_pago: c.cotizacion_pago ? Number(c.cotizacion_pago) : null,
+    })),
+  }));
+
+  return (
+    <CuotasClient
+      ventas={ventas}
+      prestamos={prestamos}
+      dolarActual={dolarActual}
+      isSoloPrestamos={isSoloPrestamos}
+      habilitarCatalogo={config.habilitarCatalogo !== false}
+      habilitarPrestamos={config.habilitarPrestamos !== false}
+      habilitarSolicitudPrestamos={config.habilitarSolicitudPrestamos !== false}
+    />
+  );
 }

@@ -32,9 +32,6 @@ export default async function BoletoPrestamoPage({
   const capitalArs = capitalUsd * rate;
   const totalDevolverUsd = Number(prestamo.total_devolver_usd || 0);
   const totalDevolverArs = totalDevolverUsd * rate;
-  const interesUsd = Math.max(0, totalDevolverUsd - capitalUsd);
-  const interesArs = interesUsd * rate;
-  const interesPct = capitalUsd > 0 ? ((interesUsd / capitalUsd) * 100).toFixed(1) : '0';
 
   const cuotas = prestamo.cuotas || [];
   const cuotasCount = cuotas.length;
@@ -46,18 +43,22 @@ export default async function BoletoPrestamoPage({
           __html: `
             @page {
               size: A4 portrait;
-              margin: 7mm 9mm 7mm 9mm;
+              margin: 6mm 10mm 6mm 10mm;
             }
             @media print {
               html, body {
                 background: white !important;
                 margin: 0 !important;
                 padding: 0 !important;
-                height: 100% !important;
-                font-size: 8pt !important;
+                font-size: 7.8pt !important;
                 color: #000 !important;
+                height: 100% !important;
+                overflow: hidden !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
+              }
+              a[href]:after {
+                content: none !important;
               }
               .print-a4-sheet {
                 border: none !important;
@@ -66,8 +67,8 @@ export default async function BoletoPrestamoPage({
                 padding: 0 !important;
                 width: 100% !important;
                 max-width: 100% !important;
-                min-height: 282mm !important;
-                height: 282mm !important;
+                height: 100% !important;
+                max-height: 278mm !important;
                 display: flex !important;
                 flex-direction: column !important;
                 justify-content: space-between !important;
@@ -96,24 +97,24 @@ export default async function BoletoPrestamoPage({
         {/* BLOQUE SUPERIOR: HEADER, PARTES Y RESUMEN FINANCIERO */}
         <div className="space-y-2.5 print:space-y-2">
           {/* ENCABEZADO */}
-          <div className="flex items-center justify-between border-b-2 border-slate-900 pb-2 gap-4">
-            <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between border-b-2 border-slate-900 pb-2.5 gap-4">
+            <div className="flex items-center gap-4">
               {concesionaria.logoUrl ? (
                 <img
                   src={concesionaria.logoUrl}
                   alt={concesionaria.nombre}
-                  className="max-h-11 max-w-[150px] object-contain"
+                  className="max-h-16 print:max-h-14 max-w-[220px] object-contain"
                 />
               ) : (
-                <div className="w-9 h-9 rounded-lg bg-slate-900 text-white flex items-center justify-center font-black text-xs">
+                <div className="w-12 h-12 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black text-sm">
                   {concesionaria.nombre.slice(0, 2).toUpperCase()}
                 </div>
               )}
               <div>
-                <h1 className="text-base print:text-sm font-black tracking-tight text-slate-950 uppercase leading-none">
+                <h1 className="text-lg print:text-base font-black tracking-tight text-slate-950 uppercase leading-none">
                   {concesionaria.nombre}
                 </h1>
-                <p className="text-[10px] print:text-[7.5pt] text-slate-600 mt-0.5 font-medium">
+                <p className="text-[10.5px] print:text-[8pt] text-slate-600 mt-1 font-medium">
                   CUIT: {concesionaria.cuit} · {concesionaria.direccion}
                   {concesionaria.ciudad ? ` · ${concesionaria.ciudad}` : ''}
                   {concesionaria.telefono ? ` · Tel: ${concesionaria.telefono}` : ''}
@@ -121,13 +122,13 @@ export default async function BoletoPrestamoPage({
               </div>
             </div>
             <div className="text-right shrink-0">
-              <span className="inline-block px-2.5 py-0.5 bg-slate-950 text-white font-black text-[9px] print:text-[7pt] uppercase tracking-wider rounded">
+              <span className="inline-block px-3 py-1 bg-slate-950 text-white font-black text-[9.5px] print:text-[7.5pt] uppercase tracking-wider rounded">
                 Boleto y Mutuo de Crédito
               </span>
-              <p className="text-xs print:text-[8.5pt] font-black text-slate-900 font-mono mt-0.5">
+              <p className="text-sm print:text-[9.5pt] font-black text-slate-900 font-mono mt-0.5">
                 PREST-{prestamo.id_prestamo}
               </p>
-              <p className="text-[9px] print:text-[7pt] text-slate-500">
+              <p className="text-[9.5px] print:text-[7.5pt] text-slate-500">
                 Fecha: {new Date(prestamo.fecha_prestamo).toLocaleDateString('es-AR')}
               </p>
             </div>
@@ -152,27 +153,22 @@ export default async function BoletoPrestamoPage({
             </div>
           </div>
 
-          {/* CONDICIONES FINANCIERAS (FRANJA RESUMEN - ARS EN FOCO, USD SECUNDARIO) */}
-          <div className="grid grid-cols-4 gap-2 bg-slate-950 text-white p-2.5 rounded-lg text-center">
+          {/* CONDICIONES FINANCIERAS (FRANJA RESUMEN - ARS EN FOCO, USD SECUNDARIO, SIN RECARGO VISIBLE) */}
+          <div className="grid grid-cols-3 gap-3 bg-slate-950 text-white p-3 rounded-lg text-center">
             <div>
-              <span className="text-[8px] print:text-[6.5pt] uppercase font-bold text-slate-400 block">Capital Desembolsado</span>
-              <strong className="text-xs print:text-[8.5pt] font-black text-emerald-400 block">$ {money(capitalArs)} ARS</strong>
-              <span className="text-[8px] print:text-[6.5pt] text-slate-300 font-mono">U$S {money(capitalUsd)}</span>
+              <span className="text-[8.5px] print:text-[7pt] uppercase font-bold text-slate-400 block">Capital Desembolsado</span>
+              <strong className="text-sm print:text-[9.5pt] font-black text-emerald-400 block">$ {money(capitalArs)} ARS</strong>
+              <span className="text-[8.5px] print:text-[7pt] text-slate-300 font-mono">U$S {money(capitalUsd)}</span>
             </div>
             <div>
-              <span className="text-[8px] print:text-[6.5pt] uppercase font-bold text-slate-400 block">Total a Reintegrar</span>
-              <strong className="text-xs print:text-[8.5pt] font-black text-white block">$ {money(totalDevolverArs)} ARS</strong>
-              <span className="text-[8px] print:text-[6.5pt] text-emerald-300 font-mono">U$S {money(totalDevolverUsd)}</span>
+              <span className="text-[8.5px] print:text-[7pt] uppercase font-bold text-slate-400 block">Total a Reintegrar</span>
+              <strong className="text-sm print:text-[9.5pt] font-black text-white block">$ {money(totalDevolverArs)} ARS</strong>
+              <span className="text-[8.5px] print:text-[7pt] text-emerald-300 font-mono">U$S {money(totalDevolverUsd)}</span>
             </div>
             <div>
-              <span className="text-[8px] print:text-[6.5pt] uppercase font-bold text-slate-400 block">Interés / Recargo</span>
-              <strong className="text-xs print:text-[8.5pt] font-black text-amber-300 block">+{interesPct}%</strong>
-              <span className="text-[8px] print:text-[6.5pt] text-slate-300 font-mono">$ {money(interesArs)} ARS</span>
-            </div>
-            <div>
-              <span className="text-[8px] print:text-[6.5pt] uppercase font-bold text-slate-400 block">Plan y Tipo Cambio</span>
-              <strong className="text-xs print:text-[8.5pt] font-black text-white block">{cuotasCount} Cuotas</strong>
-              <span className="text-[8px] print:text-[6.5pt] text-slate-300 font-mono">TC: $ {money(rate)}</span>
+              <span className="text-[8.5px] print:text-[7pt] uppercase font-bold text-slate-400 block">Plan de Amortización</span>
+              <strong className="text-sm print:text-[9.5pt] font-black text-white block">{cuotasCount} Cuotas Consecutivas</strong>
+              <span className="text-[8.5px] print:text-[7pt] text-slate-300 font-mono">TC Referencia: $ {money(rate)}</span>
             </div>
           </div>
         </div>
@@ -362,16 +358,16 @@ export default async function BoletoPrestamoPage({
             </p>
           </div>
 
-          {/* ESPACIO DE FIRMAS ANCLADO AL PIE DE PÁGINA */}
-          <div className="pt-4 print:pt-3 grid grid-cols-2 gap-8 text-center text-[9px] print:text-[7pt]">
-            <div className="border-t border-slate-900 pt-1">
-              <p className="font-black uppercase">{concesionaria.nombre}</p>
-              <p className="text-slate-500 text-[8px] print:text-[6pt]">Parte Acreedora (Prestamista)</p>
+          {/* ESPACIO DE FIRMAS ANCLADO AL PIE DE PÁGINA (DESPEGADO CON AMPLIO ESPACIO PARA FIRMA A MANO ALZADA) */}
+          <div className="pt-12 print:pt-10 grid grid-cols-2 gap-12 text-center text-[9.5px] print:text-[7.5pt]">
+            <div className="border-t-2 border-slate-900 pt-2 space-y-0.5">
+              <p className="font-black uppercase tracking-wider text-slate-950">{concesionaria.nombre}</p>
+              <p className="text-slate-500 text-[8px] print:text-[6.5pt]">Parte Acreedora (Prestamista · Firma y Sello)</p>
             </div>
-            <div className="border-t border-slate-900 pt-1">
-              <p className="font-black uppercase">{deudor.nombre_completo}</p>
-              <p className="text-slate-500 text-[8px] print:text-[6pt]">
-                Parte Deudora · DNI: {deudor.dni || deudor.cuit_cuil || '.......................'}
+            <div className="border-t-2 border-slate-900 pt-2 space-y-0.5">
+              <p className="font-black uppercase tracking-wider text-slate-950">{deudor.nombre_completo}</p>
+              <p className="text-slate-500 text-[8px] print:text-[6.5pt]">
+                Parte Deudora (Prestatario) · DNI: {deudor.dni || deudor.cuit_cuil || '.......................'}
               </p>
             </div>
           </div>
