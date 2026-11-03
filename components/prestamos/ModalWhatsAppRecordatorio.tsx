@@ -322,9 +322,10 @@ export default function ModalWhatsAppRecordatorio({
             placeholder="Escribí o modificá el mensaje a enviar..."
           />
         </div>
+      </div>
 
-        {/* ACCIONES FINALES (FOOTER FIJO, SIEMPRE VISIBLE EN PANTALLA) */}
-        <div className="shrink-0 p-4 sm:p-5 pt-3 border-t border-slate-100 bg-slate-50/70 space-y-2.5">
+      {/* ACCIONES FINALES (FOOTER FIJO, SIEMPRE VISIBLE EN PANTALLA) */}
+      <div className="shrink-0 p-4 sm:p-5 pt-3 border-t border-slate-100 bg-slate-50/70 space-y-2.5">
           <div className="flex items-center justify-between text-[11px] text-slate-500 font-semibold px-0.5">
             <label className="flex items-center gap-1.5 cursor-pointer">
               <input
