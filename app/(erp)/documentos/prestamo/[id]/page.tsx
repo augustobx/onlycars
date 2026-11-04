@@ -36,6 +36,17 @@ export default async function BoletoPrestamoPage({
   const cuotas = prestamo.cuotas || [];
   const cuotasCount = cuotas.length;
 
+  let freqLabel = 'mensuales';
+  if (cuotas.length >= 2) {
+    const t0 = new Date(cuotas[0].fecha_vencimiento).getTime();
+    const t1 = new Date(cuotas[1].fecha_vencimiento).getTime();
+    const diffDays = Math.round(Math.abs(t1 - t0) / (1000 * 60 * 60 * 24));
+    if (diffDays <= 2) freqLabel = 'diarias';
+    else if (diffDays >= 6 && diffDays <= 8) freqLabel = 'semanales';
+    else if (diffDays >= 13 && diffDays <= 16) freqLabel = 'quincenales';
+    else freqLabel = 'mensuales';
+  }
+
   /* ─── Determinar layout de tabla según cantidad de cuotas ─── */
   // <= 6:  tabla única con filas generosas (py-3)
   // 7-12:  tabla única con filas normales (py-2)
@@ -179,7 +190,7 @@ export default async function BoletoPrestamoPage({
           </div>
           <div>
             <span className="text-[8.5px] print:text-[7pt] uppercase font-bold text-slate-400 block">Plan de Amortización</span>
-            <strong className="text-sm print:text-[9.5pt] font-black text-white block">{cuotasCount} Cuotas Consecutivas</strong>
+            <strong className="text-sm print:text-[9.5pt] font-black text-white block">{cuotasCount} Cuotas ({freqLabel.toUpperCase()})</strong>
             <span className="text-[8.5px] print:text-[7pt] text-slate-300 font-mono">TC Referencia: $ {money(rate)}</span>
           </div>
         </div>
@@ -194,7 +205,7 @@ export default async function BoletoPrestamoPage({
               Cronograma de Amortización y Vencimientos
             </h2>
             <span className="text-[8.5px] print:text-[6.5pt] text-slate-500 font-bold italic">
-              {cuotasCount} cuotas consecutivas mensuales
+              {cuotasCount} cuotas consecutivas {freqLabel}
             </span>
           </div>
 

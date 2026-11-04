@@ -23,11 +23,14 @@ import {
   Printer,
   BarChart3,
   MessageCircle,
+  Sliders,
+  Pencil,
 } from 'lucide-react';
 import DualMoney from '@/components/common/DualMoney';
 import { cambiarEstadoSolicitudWebAction, aprobarYGenerarPrestamoAction } from '@/actions/prestamos-admin';
 import PrestamosMetricasView from '@/components/prestamos/PrestamosMetricasView';
 import ModalWhatsAppRecordatorio from '@/components/prestamos/ModalWhatsAppRecordatorio';
+import ModalEditarPlanPrestamo from '@/components/prestamos/ModalEditarPlanPrestamo';
 
 export default function PrestamosClient({
   prestamos,
@@ -52,6 +55,9 @@ export default function PrestamosClient({
     cuota: any;
   } | null>(null);
 
+  // Modal Editar Plan de Préstamo
+  const [prestamoEditando, setPrestamoEditando] = useState<any | null>(null);
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -61,6 +67,7 @@ export default function PrestamosClient({
   const [capitalUsd, setCapitalUsd] = useState<number>(0);
   const [totalUsd, setTotalUsd] = useState<number>(0);
   const [cuotasCount, setCuotasCount] = useState<number>(12);
+  const [frecuenciaAprobar, setFrecuenciaAprobar] = useState<'MENSUAL' | 'SEMANAL' | 'DIARIA' | 'QUINCENAL'>('MENSUAL');
   const [primeraFecha, setPrimeraFecha] = useState<string>('');
   const [loadingAction, setLoadingAction] = useState(false);
   const [actionError, setActionError] = useState('');
@@ -153,6 +160,7 @@ export default function PrestamosClient({
       totalDevolverUsd: totalUsd,
       cantidadCuotas: cuotasCount,
       primeraFechaVto: primeraFecha,
+      frecuencia: frecuenciaAprobar,
     });
 
     setLoadingAction(false);
@@ -434,6 +442,14 @@ export default function PrestamosClient({
                       >
                         <Printer className="w-3.5 h-3.5" /> Boleto
                       </Link>
+                      <button
+                        type="button"
+                        onClick={() => setPrestamoEditando(p)}
+                        className="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                        title="Editar plan de cuotas, montos o frecuencia"
+                      >
+                        <Sliders className="w-3.5 h-3.5" /> Editar Plan
+                      </button>
                       <Link
                         href={`/cuotas?q=${encodeURIComponent(p.cliente?.nombre_completo || '')}`}
                         className="text-xs font-black text-[var(--color-primary-default,#FF6600)] flex items-center gap-1 hover:underline ml-1"
@@ -703,15 +719,31 @@ export default function PrestamosClient({
                 </div>
                 <div>
                   <label className="block text-[10px] font-black uppercase text-slate-500 dark:text-slate-400 mb-1">
-                    Primer Vencimiento
+                    Frecuencia
                   </label>
-                  <input
-                    type="date"
-                    value={primeraFecha}
-                    onChange={(e) => setPrimeraFecha(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[var(--border-focus,#FF6600)]"
-                  />
+                  <select
+                    value={frecuenciaAprobar}
+                    onChange={(e) => setFrecuenciaAprobar(e.target.value as any)}
+                    className="w-full px-2 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[var(--border-focus,#FF6600)]"
+                  >
+                    <option value="MENSUAL">📅 Mensual</option>
+                    <option value="SEMANAL">🗓️ Semanal</option>
+                    <option value="DIARIA">⏱️ Diaria</option>
+                    <option value="QUINCENAL">📆 Quincenal</option>
+                  </select>
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black uppercase text-slate-500 dark:text-slate-400 mb-1">
+                  Primer Vencimiento
+                </label>
+                <input
+                  type="date"
+                  value={primeraFecha}
+                  onChange={(e) => setPrimeraFecha(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[var(--border-focus,#FF6600)]"
+                />
               </div>
             </div>
 
@@ -746,6 +778,18 @@ export default function PrestamosClient({
           cuota={prestamoWhatsApp.cuota}
           dolarActual={dolarActual}
           tenantName={tenantName}
+        />
+      )}
+
+      {prestamoEditando && (
+        <ModalEditarPlanPrestamo
+          isOpen={Boolean(prestamoEditando)}
+          onClose={() => setPrestamoEditando(null)}
+          prestamo={prestamoEditando}
+          dolarActual={dolarActual}
+          onSuccess={() => {
+            window.location.reload();
+          }}
         />
       )}
     </div>

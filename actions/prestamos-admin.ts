@@ -48,6 +48,7 @@ export async function aprobarYGenerarPrestamoAction(params: {
   totalDevolverUsd: number;
   cantidadCuotas: number;
   primeraFechaVto: string; // ISO date YYYY-MM-DD
+  frecuencia?: 'MENSUAL' | 'SEMANAL' | 'DIARIA' | 'QUINCENAL';
   resolucionMotivo?: string;
 }) {
   try {
@@ -65,6 +66,7 @@ export async function aprobarYGenerarPrestamoAction(params: {
     const capital = Number(params.capitalEntregadoUsd);
     const total = Number(params.totalDevolverUsd);
     const cuotasCount = Math.max(1, Number(params.cantidadCuotas));
+    const frecuencia = params.frecuencia || 'MENSUAL';
 
     if (capital <= 0 || total < capital) {
       return { success: false, error: 'El capital o total a devolver son inválidos.' };
@@ -86,11 +88,21 @@ export async function aprobarYGenerarPrestamoAction(params: {
         },
       });
 
-      // 2. Generar cuotas
+      // 2. Generar cuotas respetando la frecuencia (mensual, semanal, diaria, quincenal)
       const cuotasData = [];
       for (let i = 1; i <= cuotasCount; i++) {
-        const vtoDate = new Date(baseDate);
-        vtoDate.setMonth(vtoDate.getMonth() + (i - 1));
+        let vtoDate: Date;
+        if (frecuencia === 'DIARIA') {
+          vtoDate = new Date(baseDate.getTime() + (i - 1) * 24 * 60 * 60 * 1000);
+        } else if (frecuencia === 'SEMANAL') {
+          vtoDate = new Date(baseDate.getTime() + (i - 1) * 7 * 24 * 60 * 60 * 1000);
+        } else if (frecuencia === 'QUINCENAL') {
+          vtoDate = new Date(baseDate.getTime() + (i - 1) * 14 * 24 * 60 * 60 * 1000);
+        } else {
+          vtoDate = new Date(baseDate);
+          vtoDate.setMonth(vtoDate.getMonth() + (i - 1));
+        }
+
         cuotasData.push({
           tenantId: tenant.id,
           id_prestamo: nuevoPrestamo.id_prestamo,

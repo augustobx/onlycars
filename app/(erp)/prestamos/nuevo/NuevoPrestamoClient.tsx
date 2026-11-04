@@ -15,6 +15,7 @@ export default function NuevoPrestamoClient({ clientes, dolarActual }: { cliente
   const [capital, setCapital] = useState({ ars: '', usd: '' });
   const [recargoPct, setRecargoPct] = useState('30');
   const [cantidadCuotas, setCantidadCuotas] = useState('12');
+  const [frecuencia, setFrecuencia] = useState<'MENSUAL' | 'SEMANAL' | 'DIARIA' | 'QUINCENAL'>('MENSUAL');
   const [primerVencimiento, setPrimerVencimiento] = useState(() => {
     const d = new Date();
     d.setMonth(d.getMonth() + 1);
@@ -37,13 +38,38 @@ export default function NuevoPrestamoClient({ clientes, dolarActual }: { cliente
   const cuotaArs = totalArs / count;
   const cuotaUsd = dolarActual > 0 ? cuotaArs / dolarActual : 0;
 
+  const handleCambiarFrecuencia = (nuevaFreq: 'MENSUAL' | 'SEMANAL' | 'DIARIA' | 'QUINCENAL') => {
+    setFrecuencia(nuevaFreq);
+    const d = new Date();
+    if (nuevaFreq === 'DIARIA') {
+      d.setDate(d.getDate() + 1);
+    } else if (nuevaFreq === 'SEMANAL') {
+      d.setDate(d.getDate() + 7);
+    } else if (nuevaFreq === 'QUINCENAL') {
+      d.setDate(d.getDate() + 14);
+    } else {
+      d.setMonth(d.getMonth() + 1);
+    }
+    setPrimerVencimiento(d.toISOString().slice(0, 10));
+  };
+
   const submit = async () => {
     if (!clienteId || capitalArs <= 0 || capitalUsd <= 0) return alert('Seleccioná cliente y capital del préstamo.');
     if (!primerVencimiento) return alert('Indicá el primer vencimiento.');
     setSaving(true);
     const [y, m, d] = primerVencimiento.split('-').map(Number);
+    const baseDate = new Date(Date.UTC(y, m - 1, d, 12));
     const cuotas = Array.from({ length: count }).map((_, index) => {
-      const date = new Date(Date.UTC(y, m - 1 + index, d, 12));
+      let date: Date;
+      if (frecuencia === 'DIARIA') {
+        date = new Date(baseDate.getTime() + index * 24 * 60 * 60 * 1000);
+      } else if (frecuencia === 'SEMANAL') {
+        date = new Date(baseDate.getTime() + index * 7 * 24 * 60 * 60 * 1000);
+      } else if (frecuencia === 'QUINCENAL') {
+        date = new Date(baseDate.getTime() + index * 14 * 24 * 60 * 60 * 1000);
+      } else {
+        date = new Date(Date.UTC(y, m - 1 + index, d, 12));
+      }
       return { numero_cuota: index + 1, monto_usd: Number(cuotaUsd.toFixed(2)), fecha_vencimiento: date.toISOString() };
     });
     const res = await registrarPrestamo({
@@ -79,6 +105,36 @@ export default function NuevoPrestamoClient({ clientes, dolarActual }: { cliente
       <section className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-5">
         <SearchCombobox label="Cliente" required value={clienteId} onChange={setClienteId} options={clientOptions} placeholder="Buscar por nombre, DNI, CUIT o teléfono..." />
         <DualCurrencyInput label="Capital entregado" required ars={capital.ars} usd={capital.usd} rate={dolarActual} onChange={setCapital} />
+
+        {/* SELECTOR DE FRECUENCIA DE PAGO */}
+        <div className="space-y-1.5">
+          <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider block">
+            Frecuencia de las Cuotas *
+          </span>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {[
+              { id: 'MENSUAL', label: '📅 Mensual', desc: 'Cada 30 días' },
+              { id: 'SEMANAL', label: '🗓️ Semanal', desc: 'Cada 7 días' },
+              { id: 'DIARIA', label: '⏱️ Diaria', desc: 'Día a día consecutivo' },
+              { id: 'QUINCENAL', label: '📆 Quincenal', desc: 'Cada 14 días' },
+            ].map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => handleCambiarFrecuencia(f.id as any)}
+                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                  frecuencia === f.id
+                    ? 'border-[var(--color-primary-default,#FF6600)] bg-[var(--color-primary-default,#FF6600)]/10 text-[var(--color-primary-default,#FF6600)] font-black shadow-xs ring-1 ring-[var(--color-primary-default,#FF6600)]'
+                    : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 hover:border-slate-300'
+                }`}
+              >
+                <span className="block text-xs font-black">{f.label}</span>
+                <span className="block text-[10px] opacity-70 font-medium">{f.desc}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <label>
             <span className="text-xs font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">Recargo total (%) *</span>
@@ -123,8 +179,8 @@ export default function NuevoPrestamoClient({ clientes, dolarActual }: { cliente
           <DualMoney ars={totalArs} usd={totalUsd} rate={dolarActual} primaryClassName="text-xl font-black text-white" secondaryClassName="text-xs text-slate-400" />
         </div>
         <div>
-          <p className="text-[10px] uppercase font-black text-slate-400 tracking-wider">Plan de pago</p>
-          <p className="text-xl font-black">{count} × $ {cuotaArs.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</p>
+          <p className="text-[10px] uppercase font-black text-slate-400 tracking-wider">Plan de pago ({frecuencia.toLowerCase()})</p>
+          <p className="text-xl font-black">{count} {frecuencia === 'DIARIA' ? 'días' : frecuencia === 'SEMANAL' ? 'semanas' : frecuencia === 'QUINCENAL' ? 'quincenas' : 'cuotas'} × $ {cuotaArs.toLocaleString('es-AR', { maximumFractionDigits: 0 })}</p>
           <p className="text-xs text-slate-400">U$S {cuotaUsd.toLocaleString('es-AR', { maximumFractionDigits: 2 })} por cuota</p>
         </div>
       </section>

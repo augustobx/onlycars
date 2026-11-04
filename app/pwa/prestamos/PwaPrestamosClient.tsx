@@ -20,11 +20,14 @@ import {
   ArrowRight,
   DollarSign,
   Calendar,
+  Sliders,
+  Pencil,
 } from 'lucide-react';
 import PwaBottomNav from '../PwaBottomNav';
 import PwaInstallPrompt from '@/components/pwa/PwaInstallPrompt';
 import ModalWhatsAppRecordatorio from '@/components/prestamos/ModalWhatsAppRecordatorio';
 import ModalPreguntarImprimirRecibo from '@/components/prestamos/ModalPreguntarImprimirRecibo';
+import ModalEditarPlanPrestamo from '@/components/prestamos/ModalEditarPlanPrestamo';
 import { registrarPrestamo } from '@/actions/prestamos';
 import { registrarPagoCuotaPrestamo } from '@/actions/cuotas';
 import { useRouter } from 'next/navigation';
@@ -86,12 +89,14 @@ export default function PwaPrestamosClient({
   const [montoInput, setMontoInput] = useState('');
   const [recargoPct, setRecargoPct] = useState('30');
   const [cantidadCuotas, setCantidadCuotas] = useState(12);
+  const [frecuencia, setFrecuencia] = useState<'MENSUAL' | 'SEMANAL' | 'DIARIA' | 'QUINCENAL'>('MENSUAL');
   const [primerVencimiento, setPrimerVencimiento] = useState(() => {
     const d = new Date();
     d.setMonth(d.getMonth() + 1);
     return d.toISOString().slice(0, 10);
   });
   const [guardando, setGuardando] = useState(false);
+  const [prestamoEditando, setPrestamoEditando] = useState<any | null>(null);
 
   // Cobro rápido dentro de cuotas expandidas
   const [cuotaCobrando, setCuotaCobrando] = useState<{
@@ -189,8 +194,18 @@ export default function PwaPrestamosClient({
 
     setGuardando(true);
     const [y, m, d] = primerVencimiento.split('-').map(Number);
+    const baseDate = new Date(Date.UTC(y, m - 1, d, 12));
     const cuotas = Array.from({ length: Math.max(1, cantidadCuotas) }).map((_, index) => {
-      const date = new Date(Date.UTC(y, m - 1 + index, d, 12));
+      let date: Date;
+      if (frecuencia === 'DIARIA') {
+        date = new Date(baseDate.getTime() + index * 24 * 60 * 60 * 1000);
+      } else if (frecuencia === 'SEMANAL') {
+        date = new Date(baseDate.getTime() + index * 7 * 24 * 60 * 60 * 1000);
+      } else if (frecuencia === 'QUINCENAL') {
+        date = new Date(baseDate.getTime() + index * 14 * 24 * 60 * 60 * 1000);
+      } else {
+        date = new Date(Date.UTC(y, m - 1 + index, d, 12));
+      }
       return {
         numero_cuota: index + 1,
         monto_usd: Number(sim.cuotaUsd.toFixed(2)),
@@ -382,11 +397,50 @@ export default function PwaPrestamosClient({
         </div>
       </div>
 
+      {/* FRECUENCIA DE COBRO */}
+      <div className="space-y-1.5">
+        <span className="text-xs font-black uppercase tracking-wider text-slate-700 block">
+          Frecuencia de las Cuotas
+        </span>
+        <div className="grid grid-cols-4 gap-1">
+          {[
+            { id: 'MENSUAL', label: 'Mensual', desc: '30 días' },
+            { id: 'SEMANAL', label: 'Semanal', desc: '7 días' },
+            { id: 'DIARIA', label: 'Diaria', desc: '1 día' },
+            { id: 'QUINCENAL', label: 'Quincenal', desc: '14 días' },
+          ].map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              onClick={() => {
+                setFrecuencia(f.id as any);
+                const d = new Date();
+                if (f.id === 'DIARIA') d.setDate(d.getDate() + 1);
+                else if (f.id === 'SEMANAL') d.setDate(d.getDate() + 7);
+                else if (f.id === 'QUINCENAL') d.setDate(d.getDate() + 14);
+                else d.setMonth(d.getMonth() + 1);
+                setPrimerVencimiento(d.toISOString().slice(0, 10));
+              }}
+              className={`py-1.5 px-1 rounded-xl text-center border transition-all text-xs font-black cursor-pointer ${
+                frecuencia === f.id
+                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              <span className="block text-[11px] leading-tight">{f.label}</span>
+              <span className={`block text-[9px] font-medium ${frecuencia === f.id ? 'text-white/80' : 'text-slate-400'}`}>
+                {f.desc}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* PLAZO EN CUOTAS */}
       <div className="space-y-1.5">
         <div className="flex justify-between items-center">
           <span className="text-xs font-black uppercase tracking-wider text-slate-700">
-            Plazo en Cuotas Mensuales
+            Plazo en Cuotas ({frecuencia.toLowerCase()}s)
           </span>
           <div className="flex items-center gap-1">
             <input
@@ -768,6 +822,39 @@ export default function PwaPrestamosClient({
                   </a>
 
                   <button
+                    type="button"
+                    onClick={() => {
+                      setPrestamoEditando({
+                        id_prestamo: p.id_prestamo,
+                        id_cliente: p.cliente_id,
+                        cliente: {
+                          nombre_completo: p.cliente_nombre,
+                          dni: p.cliente_dni,
+                          telefono: p.cliente_telefono,
+                        },
+                        capital_entregado_usd: p.capital_entregado_usd,
+                        total_devolver_usd: p.total_devolver_usd,
+                        cotizacion_dolar_prestamo: p.cotizacion_dolar,
+                        fecha_prestamo: p.fecha_prestamo,
+                        cuotas: p.cuotas.map((c) => ({
+                          id_cuota: c.id_cuota,
+                          numero_cuota: c.numero_cuota,
+                          monto_usd: c.monto_usd,
+                          monto_pagado_ars: c.monto_pagado_ars,
+                          fecha_vencimiento: c.fecha_vencimiento,
+                          estado: c.estado,
+                          recibo_nro: c.recibo_nro,
+                        })),
+                      });
+                    }}
+                    className="py-2 px-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 flex items-center justify-center gap-1 text-xs font-black transition cursor-pointer active:scale-95"
+                    title="Editar Plan del Préstamo"
+                  >
+                    <Sliders className="w-3.5 h-3.5" />
+                    <span>Editar</span>
+                  </button>
+
+                  <button
                     onClick={() => setExpandidoId(expandido ? null : p.id_prestamo)}
                     className="py-2 px-3 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-black text-xs flex items-center justify-center gap-1 transition-colors"
                   >
@@ -976,6 +1063,19 @@ export default function PwaPrestamosClient({
           totalCuotas={reciboPrompt.totalCuotas}
           montoArs={reciboPrompt.montoArs}
           montoUsd={reciboPrompt.montoUsd}
+        />
+      )}
+
+      {/* MODAL EDITAR PLAN DE PRÉSTAMO */}
+      {prestamoEditando && (
+        <ModalEditarPlanPrestamo
+          isOpen={Boolean(prestamoEditando)}
+          onClose={() => setPrestamoEditando(null)}
+          prestamo={prestamoEditando}
+          dolarActual={dolarActual}
+          onSuccess={() => {
+            router.refresh();
+          }}
         />
       )}
 
