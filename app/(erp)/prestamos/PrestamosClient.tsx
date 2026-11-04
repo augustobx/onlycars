@@ -25,6 +25,8 @@ import {
   MessageCircle,
   Sliders,
   Pencil,
+  LayoutGrid,
+  List,
 } from 'lucide-react';
 import DualMoney from '@/components/common/DualMoney';
 import { cambiarEstadoSolicitudWebAction, aprobarYGenerarPrestamoAction } from '@/actions/prestamos-admin';
@@ -58,9 +60,71 @@ export default function PrestamosClient({
   // Modal Editar Plan de Préstamo
   const [prestamoEditando, setPrestamoEditando] = useState<any | null>(null);
 
+  // Modo de visualización: Tarjetas vs Lista
+  const [modoVista, setModoVista] = useState<'CARDS' | 'LISTA'>('CARDS');
+
   useEffect(() => {
     setMounted(true);
+    try {
+      const saved = localStorage.getItem('onlycars_prestamos_view');
+      if (saved === 'LISTA' || saved === 'CARDS') {
+        setModoVista(saved);
+      }
+    } catch {}
   }, []);
+
+  const handleToggleVista = (modo: 'CARDS' | 'LISTA') => {
+    setModoVista(modo);
+    try {
+      localStorage.setItem('onlycars_prestamos_view', modo);
+    } catch {}
+  };
+
+  const getFreqLabel = (cuotas: any[]) => {
+    if (!cuotas || cuotas.length < 2) return 'Mensual';
+    const t0 = new Date(cuotas[0].fecha_vto_str || cuotas[0].fecha_vencimiento).getTime();
+    const t1 = new Date(cuotas[1].fecha_vto_str || cuotas[1].fecha_vencimiento).getTime();
+    const diffDays = Math.round(Math.abs(t1 - t0) / (1000 * 60 * 60 * 24));
+    if (diffDays <= 2) return 'Diaria';
+    if (diffDays >= 6 && diffDays <= 8) return 'Semanal';
+    if (diffDays >= 13 && diffDays <= 16) return 'Quincenal';
+    return 'Mensual';
+  };
+
+  const handleAbrirWhatsApp = (p: any) => {
+    if (!p.cliente?.telefono) return;
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const cuotasPend = p.cuotas.filter((c: any) => c.estado !== 'PAGADA');
+    const cTarget = cuotasPend[0] || p.cuotas[0];
+    const vtoDate = cTarget?.fecha_vto_str ? new Date(cTarget.fecha_vto_str) : new Date();
+    vtoDate.setHours(0, 0, 0, 0);
+    const diffDays = Math.floor((hoy.getTime() - vtoDate.getTime()) / (1000 * 60 * 60 * 24));
+    setPrestamoWhatsApp({
+      cliente: {
+        nombre: p.cliente.nombre_completo,
+        telefono: p.cliente.telefono,
+        dni: p.cliente.dni,
+      },
+      cuota: cTarget
+        ? {
+            numero_cuota: cTarget.numero_cuota,
+            total_cuotas: p.cuotas.length,
+            monto_usd: cTarget.monto_usd,
+            monto_ars:
+              cTarget.monto_pagado_ars ||
+              Math.round(
+                Number(cTarget.monto_usd || 0) * (p.cotizacion_dolar_prestamo || dolarActual)
+              ),
+            fecha_vencimiento: cTarget.fecha_vto_str,
+            id_operacion: `PREST-${p.id_prestamo}`,
+            dias_mora: Math.max(0, diffDays),
+            isVencida: diffDays > 0,
+            isHoy: diffDays === 0,
+          }
+        : null,
+    });
+  };
 
   // Approval modal state
   const [modalAprobar, setModalAprobar] = useState<any | null>(null);
@@ -287,8 +351,8 @@ export default function PrestamosClient({
             </div>
           </div>
 
-          {/* Filtros */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex flex-col md:flex-row gap-3 justify-between">
+          {/* Filtros y Selector de Vista */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex flex-col md:flex-row gap-3 justify-between items-stretch md:items-center">
             <div className="relative flex-1 max-w-lg">
               <Search className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
               <input
@@ -298,175 +362,348 @@ export default function PrestamosClient({
                 className="w-full pl-9 pr-3 py-2.5 border border-slate-300 dark:border-slate-700 rounded-xl text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[var(--border-focus,#FF6600)]"
               />
             </div>
-            <div className="grid grid-cols-2 gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-              <button
-                onClick={() => setFiltroEstado('ACTIVOS')}
-                className={`px-4 py-2 rounded-lg text-xs font-black transition-colors ${
-                  filtroEstado === 'ACTIVOS' ? 'bg-white dark:bg-slate-700 shadow text-[var(--color-primary-default,#FF6600)] dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'
-                }`}
-              >
-                Activos
-              </button>
-              <button
-                onClick={() => setFiltroEstado('FINALIZADOS')}
-                className={`px-4 py-2 rounded-lg text-xs font-black transition-colors ${
-                  filtroEstado === 'FINALIZADOS' ? 'bg-white dark:bg-slate-700 shadow text-emerald-700 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'
-                }`}
-              >
-                Finalizados
-              </button>
+            
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="grid grid-cols-2 gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setFiltroEstado('ACTIVOS')}
+                  className={`px-4 py-2 rounded-lg text-xs font-black transition-colors cursor-pointer ${
+                    filtroEstado === 'ACTIVOS'
+                      ? 'bg-white dark:bg-slate-700 shadow text-[var(--color-primary-default,#FF6600)] dark:text-slate-100'
+                      : 'text-slate-500 dark:text-slate-400'
+                  }`}
+                >
+                  Activos
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFiltroEstado('FINALIZADOS')}
+                  className={`px-4 py-2 rounded-lg text-xs font-black transition-colors cursor-pointer ${
+                    filtroEstado === 'FINALIZADOS'
+                      ? 'bg-white dark:bg-slate-700 shadow text-emerald-700 dark:text-emerald-400'
+                      : 'text-slate-500 dark:text-slate-400'
+                  }`}
+                >
+                  Finalizados
+                </button>
+              </div>
+
+              {/* Selector de Modo de Visualización: Tarjetas vs Lista */}
+              <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl gap-1">
+                <button
+                  type="button"
+                  onClick={() => handleToggleVista('CARDS')}
+                  className={`px-3 py-2 rounded-lg text-xs font-black flex items-center gap-1.5 transition cursor-pointer ${
+                    modoVista === 'CARDS'
+                      ? 'bg-white dark:bg-slate-700 shadow text-[var(--color-primary-default,#FF6600)] dark:text-slate-100'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                  }`}
+                  title="Ver en Tarjetas"
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Tarjetas</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleToggleVista('LISTA')}
+                  className={`px-3 py-2 rounded-lg text-xs font-black flex items-center gap-1.5 transition cursor-pointer ${
+                    modoVista === 'LISTA'
+                      ? 'bg-white dark:bg-slate-700 shadow text-[var(--color-primary-default,#FF6600)] dark:text-slate-100'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                  }`}
+                  title="Ver en Lista / Tabla"
+                >
+                  <List className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Lista</span>
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Lista de préstamos */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-            {cartera.map((p) => {
-              const historicalRate = Number(p.cotizacion_dolar_prestamo || dolarActual);
-              const capitalArsOriginal = Number(p.capital_entregado_usd || 0) * historicalRate;
-              const totalArsOriginal = Number(p.total_devolver_usd || 0) * historicalRate;
-              return (
-                <div
-                  key={p.id_prestamo}
-                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-xs font-black uppercase text-slate-400 dark:text-slate-500">
-                        Préstamo #{p.id_prestamo}
-                      </p>
-                      <p className="text-lg font-black text-slate-900 dark:text-slate-100 flex items-center gap-2 mt-1">
-                        <UserRound className="w-4 h-4 text-[var(--color-primary-default,#FF6600)]" /> {p.cliente?.nombre_completo}
-                      </p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                        DNI {p.cliente?.dni || 'S/N'} · <Calendar className="inline w-3 h-3" />{' '}
-                        {new Date(p.fecha_str).toLocaleDateString('es-AR')}
-                      </p>
-                    </div>
-                    {p.resumen.finalizado ? (
-                      <span className="text-[10px] font-black bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40 rounded-full px-2.5 py-1 flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3" /> FINALIZADO
-                      </span>
-                    ) : p.cuotas.some(
-                        (c: any) => c.estado === 'PENDIENTE' && new Date(c.fecha_vto_str) < new Date()
-                      ) ? (
-                      <span className="text-[10px] font-black bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800/40 rounded-full px-2.5 py-1 flex items-center gap-1">
-                        <AlertTriangle className="w-3 h-3" /> MORA
-                      </span>
-                    ) : (
-                      <span className="text-[10px] font-black bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/40 rounded-full px-2.5 py-1">
-                        ACTIVO
-                      </span>
-                    )}
-                  </div>
+          {/* VISTA SEGÚN MODO SELECCIONADO */}
+          {modoVista === 'CARDS' ? (
+            /* VISTA A: TARJETAS (CARDS) */
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+              {cartera.map((p) => {
+                const historicalRate = Number(p.cotizacion_dolar_prestamo || dolarActual);
+                const capitalArsOriginal = Number(p.capital_entregado_usd || 0) * historicalRate;
+                const totalArsOriginal = Number(p.total_devolver_usd || 0) * historicalRate;
+                const freq = getFreqLabel(p.cuotas);
+                const isMora =
+                  !p.resumen.finalizado &&
+                  p.cuotas.some((c: any) => c.estado === 'PENDIENTE' && new Date(c.fecha_vto_str) < new Date());
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div className="rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-100 dark:border-slate-800 p-3">
-                      <p className="text-[10px] uppercase font-black text-slate-400">Capital original</p>
-                      <DualMoney
-                        ars={capitalArsOriginal}
-                        usd={p.capital_entregado_usd}
-                        rate={historicalRate}
-                        compact
-                        primaryClassName="font-black text-slate-900 dark:text-slate-100"
-                      />
+                return (
+                  <div
+                    key={p.id_prestamo}
+                    className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs font-black uppercase text-slate-400 dark:text-slate-500 font-mono">
+                            Préstamo #{p.id_prestamo}
+                          </p>
+                          <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                            {freq}
+                          </span>
+                        </div>
+                        <p className="text-lg font-black text-slate-900 dark:text-slate-100 flex items-center gap-2 mt-1">
+                          <UserRound className="w-4 h-4 text-[var(--color-primary-default,#FF6600)]" /> {p.cliente?.nombre_completo}
+                        </p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                          DNI {p.cliente?.dni || 'S/N'} · <Calendar className="inline w-3 h-3" />{' '}
+                          {new Date(p.fecha_str).toLocaleDateString('es-AR')}
+                        </p>
+                      </div>
+                      {p.resumen.finalizado ? (
+                        <span className="text-[10px] font-black bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40 rounded-full px-2.5 py-1 flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" /> FINALIZADO
+                        </span>
+                      ) : isMora ? (
+                        <span className="text-[10px] font-black bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800/40 rounded-full px-2.5 py-1 flex items-center gap-1">
+                          <AlertTriangle className="w-3 h-3" /> MORA
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-black bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/40 rounded-full px-2.5 py-1">
+                          ACTIVO
+                        </span>
+                      )}
                     </div>
-                    <div className="rounded-xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-800/40 p-3">
-                      <p className="text-[10px] uppercase font-black text-indigo-500">Total contrato</p>
-                      <DualMoney
-                        ars={totalArsOriginal}
-                        usd={p.total_devolver_usd}
-                        rate={historicalRate}
-                        compact
-                        primaryClassName="font-black text-indigo-950 dark:text-indigo-300"
-                      />
-                    </div>
-                    <div className="rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-800/40 p-3">
-                      <p className="text-[10px] uppercase font-black text-amber-600">Saldo a valor de hoy</p>
-                      <DualMoney
-                        usd={p.resumen.pendienteUsd}
-                        rate={dolarActual}
-                        compact
-                        primaryClassName="font-black text-amber-950 dark:text-amber-300"
-                      />
-                    </div>
-                  </div>
 
-                  <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-3">
-                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                      Cuotas pagadas: {p.resumen.pagadas}/{p.resumen.total}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      {p.cliente?.telefono && (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-100 dark:border-slate-800 p-3">
+                        <p className="text-[10px] uppercase font-black text-slate-400">Capital original</p>
+                        <DualMoney
+                          ars={capitalArsOriginal}
+                          usd={p.capital_entregado_usd}
+                          rate={historicalRate}
+                          compact
+                          primaryClassName="font-black text-slate-900 dark:text-slate-100"
+                        />
+                      </div>
+                      <div className="rounded-xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-800/40 p-3">
+                        <p className="text-[10px] uppercase font-black text-indigo-500">Total contrato</p>
+                        <DualMoney
+                          ars={totalArsOriginal}
+                          usd={p.total_devolver_usd}
+                          rate={historicalRate}
+                          compact
+                          primaryClassName="font-black text-indigo-950 dark:text-indigo-300"
+                        />
+                      </div>
+                      <div className="rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-800/40 p-3">
+                        <p className="text-[10px] uppercase font-black text-amber-600">Saldo a valor de hoy</p>
+                        <DualMoney
+                          usd={p.resumen.pendienteUsd}
+                          rate={dolarActual}
+                          compact
+                          primaryClassName="font-black text-amber-950 dark:text-amber-300"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-3">
+                      <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                        Cuotas pagadas: {p.resumen.pagadas}/{p.resumen.total} ({freq})
+                      </span>
+                      <div className="flex items-center gap-2">
+                        {p.cliente?.telefono && (
+                          <button
+                            type="button"
+                            onClick={() => handleAbrirWhatsApp(p)}
+                            className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                            title="Enviar aviso o recordatorio por WhatsApp"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+                          </button>
+                        )}
+                        <Link
+                          href={`/documentos/prestamo/${p.id_prestamo}`}
+                          target="_blank"
+                          className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors"
+                          title="Imprimir contrato / boleto de préstamo"
+                        >
+                          <Printer className="w-3.5 h-3.5" /> Boleto
+                        </Link>
                         <button
                           type="button"
-                          onClick={() => {
-                            const hoy = new Date();
-                            hoy.setHours(0, 0, 0, 0);
-                            const cuotasPend = p.cuotas.filter((c: any) => c.estado !== 'PAGADA');
-                            const cTarget = cuotasPend[0] || p.cuotas[0];
-                            const vtoDate = cTarget?.fecha_vto_str ? new Date(cTarget.fecha_vto_str) : new Date();
-                            vtoDate.setHours(0, 0, 0, 0);
-                            const diffDays = Math.floor((hoy.getTime() - vtoDate.getTime()) / (1000 * 60 * 60 * 24));
-                            setPrestamoWhatsApp({
-                              cliente: {
-                                nombre: p.cliente.nombre_completo,
-                                telefono: p.cliente.telefono,
-                                dni: p.cliente.dni,
-                              },
-                              cuota: cTarget
-                                ? {
-                                    numero_cuota: cTarget.numero_cuota,
-                                    total_cuotas: p.cuotas.length,
-                                    monto_usd: cTarget.monto_usd,
-                                    monto_ars: cTarget.monto_pagado_ars || Math.round(Number(cTarget.monto_usd || 0) * (p.cotizacion_dolar_prestamo || dolarActual)),
-                                    fecha_vencimiento: cTarget.fecha_vto_str,
-                                    id_operacion: `PREST-${p.id_prestamo}`,
-                                    dias_mora: Math.max(0, diffDays),
-                                    isVencida: diffDays > 0,
-                                    isHoy: diffDays === 0,
-                                  }
-                                : null,
-                            });
-                          }}
-                          className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 text-xs font-bold flex items-center gap-1.5 transition-colors"
-                          title="Enviar aviso o recordatorio por WhatsApp"
+                          onClick={() => setPrestamoEditando(p)}
+                          className="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                          title="Editar plan de cuotas, montos o frecuencia"
                         >
-                          <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+                          <Sliders className="w-3.5 h-3.5" /> Editar Plan
                         </button>
-                      )}
-                      <Link
-                        href={`/documentos/prestamo/${p.id_prestamo}`}
-                        target="_blank"
-                        className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors"
-                        title="Imprimir contrato / boleto de préstamo"
-                      >
-                        <Printer className="w-3.5 h-3.5" /> Boleto
-                      </Link>
-                      <button
-                        type="button"
-                        onClick={() => setPrestamoEditando(p)}
-                        className="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-                        title="Editar plan de cuotas, montos o frecuencia"
-                      >
-                        <Sliders className="w-3.5 h-3.5" /> Editar Plan
-                      </button>
-                      <Link
-                        href={`/cuotas?q=${encodeURIComponent(p.cliente?.nombre_completo || '')}`}
-                        className="text-xs font-black text-[var(--color-primary-default,#FF6600)] flex items-center gap-1 hover:underline ml-1"
-                      >
-                        Ver cobranzas <ArrowRight className="w-3 h-3" />
-                      </Link>
+                        <Link
+                          href={`/cuotas?q=${encodeURIComponent(p.cliente?.nombre_completo || '')}`}
+                          className="text-xs font-black text-[var(--color-primary-default,#FF6600)] flex items-center gap-1 hover:underline ml-1"
+                        >
+                          Ver cobranzas <ArrowRight className="w-3 h-3" />
+                        </Link>
+                      </div>
                     </div>
                   </div>
+                );
+              })}
+              {cartera.length === 0 && (
+                <div className="xl:col-span-2 p-12 text-center bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-800 rounded-2xl text-slate-500 dark:text-slate-400">
+                  No hay préstamos para este filtro.
                 </div>
-              );
-            })}
-            {cartera.length === 0 && (
-              <div className="xl:col-span-2 p-12 text-center bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-800 rounded-2xl text-slate-500 dark:text-slate-400">
-                No hay préstamos para este filtro.
+              )}
+            </div>
+          ) : (
+            /* VISTA B: LISTA / TABLA DETALLADA (RESPONSIVA CON SCROLL HORIZONTAL) */
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+              <div className="overflow-x-auto custom-scrollbar">
+                <table className="w-full text-left text-xs border-collapse min-w-[980px]">
+                  <thead>
+                    <tr className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                      <th className="py-3 px-4"># Préstamo</th>
+                      <th className="py-3 px-4">Cliente</th>
+                      <th className="py-3 px-4">Otorgado</th>
+                      <th className="py-3 px-4 text-right">Capital</th>
+                      <th className="py-3 px-4 text-right">Total Contrato</th>
+                      <th className="py-3 px-4 text-right">Saldo Pendiente</th>
+                      <th className="py-3 px-4 text-center">Plan / Cuotas</th>
+                      <th className="py-3 px-4 text-center">Estado</th>
+                      <th className="py-3 px-4 text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-sans">
+                    {cartera.map((p) => {
+                      const historicalRate = Number(p.cotizacion_dolar_prestamo || dolarActual);
+                      const capitalArsOriginal = Number(p.capital_entregado_usd || 0) * historicalRate;
+                      const totalArsOriginal = Number(p.total_devolver_usd || 0) * historicalRate;
+                      const saldoPendienteArs = p.resumen.pendienteUsd * dolarActual;
+                      const freq = getFreqLabel(p.cuotas);
+                      const isMora =
+                        !p.resumen.finalizado &&
+                        p.cuotas.some((c: any) => c.estado === 'PENDIENTE' && new Date(c.fecha_vto_str) < new Date());
+
+                      return (
+                        <tr
+                          key={p.id_prestamo}
+                          className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors"
+                        >
+                          <td className="py-3.5 px-4 font-mono font-black text-slate-900 dark:text-slate-100">
+                            #{p.id_prestamo}
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <span className="font-bold text-slate-900 dark:text-slate-100 block">
+                              {p.cliente?.nombre_completo}
+                            </span>
+                            <span className="text-[11px] text-slate-400 dark:text-slate-500 block">
+                              DNI {p.cliente?.dni || 'S/D'}
+                              {p.cliente?.telefono ? ` · Tel: ${p.cliente.telefono}` : ''}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 text-slate-600 dark:text-slate-400">
+                            {new Date(p.fecha_str).toLocaleDateString('es-AR')}
+                          </td>
+                          <td className="py-3.5 px-4 text-right">
+                            <span className="font-black text-slate-900 dark:text-slate-100 block">
+                              $ {Math.round(capitalArsOriginal).toLocaleString('es-AR')}
+                            </span>
+                            <span className="font-mono text-[10px] text-slate-400 block">
+                              U$S {Number(p.capital_entregado_usd).toFixed(2)}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 text-right">
+                            <span className="font-black text-slate-900 dark:text-slate-100 block">
+                              $ {Math.round(totalArsOriginal).toLocaleString('es-AR')}
+                            </span>
+                            <span className="font-mono text-[10px] text-slate-400 block">
+                              U$S {Number(p.total_devolver_usd).toFixed(2)}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 text-right">
+                            <span
+                              className={`font-black block ${
+                                p.resumen.pendienteUsd > 0
+                                  ? 'text-amber-700 dark:text-amber-400'
+                                  : 'text-slate-400'
+                              }`}
+                            >
+                              $ {Math.round(saldoPendienteArs).toLocaleString('es-AR')}
+                            </span>
+                            <span className="font-mono text-[10px] text-slate-400 block">
+                              U$S {Number(p.resumen.pendienteUsd).toFixed(2)}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 text-center">
+                            <span className="font-bold text-slate-800 dark:text-slate-200 block text-xs">
+                              {p.resumen.pagadas}/{p.resumen.total}
+                            </span>
+                            <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 mt-0.5">
+                              {freq}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 text-center">
+                            {p.resumen.finalizado ? (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
+                                <CheckCircle2 className="w-3 h-3" /> Finalizado
+                              </span>
+                            ) : isMora ? (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800">
+                                <AlertTriangle className="w-3 h-3" /> Mora
+                              </span>
+                            ) : (
+                              <span className="inline-block text-[10px] font-black px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800">
+                                Activo
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              {p.cliente?.telefono && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleAbrirWhatsApp(p)}
+                                  className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800 transition cursor-pointer"
+                                  title="WhatsApp / Cobranza"
+                                >
+                                  <MessageCircle className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                              <Link
+                                href={`/documentos/prestamo/${p.id_prestamo}`}
+                                target="_blank"
+                                className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition"
+                                title="Imprimir Boleto A4"
+                              >
+                                <Printer className="w-3.5 h-3.5" />
+                              </Link>
+                              <button
+                                type="button"
+                                onClick={() => setPrestamoEditando(p)}
+                                className="p-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 transition cursor-pointer"
+                                title="Editar Plan"
+                              >
+                                <Sliders className="w-3.5 h-3.5" />
+                              </button>
+                              <Link
+                                href={`/cuotas?q=${encodeURIComponent(p.cliente?.nombre_completo || '')}`}
+                                className="p-1.5 rounded-lg bg-[var(--color-primary-default,#FF6600)]/10 text-[var(--color-primary-default,#FF6600)] hover:bg-[var(--color-primary-default,#FF6600)]/20 transition"
+                                title="Ver Cobranzas"
+                              >
+                                <ArrowRight className="w-3.5 h-3.5" />
+                              </Link>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
-            )}
-          </div>
+              {cartera.length === 0 && (
+                <div className="p-12 text-center text-slate-500 dark:text-slate-400">
+                  No hay préstamos para este filtro.
+                </div>
+              )}
+            </div>
+          )}
         </>
       )}
 

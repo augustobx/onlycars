@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
   HandCoins,
   Plus,
@@ -22,6 +22,8 @@ import {
   Calendar,
   Sliders,
   Pencil,
+  LayoutGrid,
+  List,
 } from 'lucide-react';
 import PwaBottomNav from '../PwaBottomNav';
 import PwaInstallPrompt from '@/components/pwa/PwaInstallPrompt';
@@ -81,6 +83,34 @@ export default function PwaPrestamosClient({
   const [filtro, setFiltro] = useState<'ACTIVOS' | 'TODOS' | 'FINALIZADOS'>('ACTIVOS');
   const [busqueda, setBusqueda] = useState('');
   const [expandidoId, setExpandidoId] = useState<number | null>(null);
+  const [modoVista, setModoVista] = useState<'CARDS' | 'LISTA'>('CARDS');
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('onlycars_pwa_prestamos_view');
+      if (saved === 'LISTA' || saved === 'CARDS') {
+        setModoVista(saved);
+      }
+    } catch {}
+  }, []);
+
+  const handleToggleVista = (modo: 'CARDS' | 'LISTA') => {
+    setModoVista(modo);
+    try {
+      localStorage.setItem('onlycars_pwa_prestamos_view', modo);
+    } catch {}
+  };
+
+  const getFreqLabel = (cuotas: any[]) => {
+    if (!cuotas || cuotas.length < 2) return 'Mensual';
+    const t0 = new Date(cuotas[0].fecha_vencimiento).getTime();
+    const t1 = new Date(cuotas[1].fecha_vencimiento).getTime();
+    const diffDays = Math.round(Math.abs(t1 - t0) / (1000 * 60 * 60 * 24));
+    if (diffDays <= 2) return 'Diaria';
+    if (diffDays >= 6 && diffDays <= 8) return 'Semanal';
+    if (diffDays >= 13 && diffDays <= 16) return 'Quincenal';
+    return 'Mensual';
+  };
 
   // Estado del Cotizador y Generador de Préstamos
   const [modalNuevo, setModalNuevo] = useState(false);
@@ -638,32 +668,65 @@ export default function PwaPrestamosClient({
               />
             </div>
 
-            {/* FILTROS */}
-            <div className="flex gap-1 mt-2.5">
-              <button
-                onClick={() => setFiltro('ACTIVOS')}
-                className={`flex-1 py-1 rounded-lg text-xs font-black transition-all ${
-                  filtro === 'ACTIVOS' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600'
-                }`}
-              >
-                Activos ({prestamos.filter((p) => p.estado === 'ACTIVO').length})
-              </button>
-              <button
-                onClick={() => setFiltro('TODOS')}
-                className={`flex-1 py-1 rounded-lg text-xs font-black transition-all ${
-                  filtro === 'TODOS' ? 'bg-slate-800 text-white shadow-xs' : 'bg-slate-100 text-slate-600'
-                }`}
-              >
-                Todos ({prestamos.length})
-              </button>
-              <button
-                onClick={() => setFiltro('FINALIZADOS')}
-                className={`flex-1 py-1 rounded-lg text-xs font-black transition-all ${
-                  filtro === 'FINALIZADOS' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600'
-                }`}
-              >
-                Finalizados ({prestamos.filter((p) => p.estado === 'FINALIZADO').length})
-              </button>
+            {/* FILTROS Y SELECTOR DE VISTA */}
+            <div className="flex items-center justify-between gap-1.5 mt-2.5">
+              <div className="flex gap-1 flex-1 min-w-0">
+                <button
+                  type="button"
+                  onClick={() => setFiltro('ACTIVOS')}
+                  className={`flex-1 py-1 rounded-lg text-[11px] font-black transition-all ${
+                    filtro === 'ACTIVOS' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600'
+                  }`}
+                >
+                  Activos ({prestamos.filter((p) => p.estado === 'ACTIVO').length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFiltro('TODOS')}
+                  className={`flex-1 py-1 rounded-lg text-[11px] font-black transition-all ${
+                    filtro === 'TODOS' ? 'bg-slate-800 text-white shadow-xs' : 'bg-slate-100 text-slate-600'
+                  }`}
+                >
+                  Todos ({prestamos.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFiltro('FINALIZADOS')}
+                  className={`flex-1 py-1 rounded-lg text-[11px] font-black transition-all ${
+                    filtro === 'FINALIZADOS' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600'
+                  }`}
+                >
+                  Fin ({prestamos.filter((p) => p.estado === 'FINALIZADO').length})
+                </button>
+              </div>
+
+              {/* SELECTOR VISTA: TARJETAS / LISTA */}
+              <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => handleToggleVista('CARDS')}
+                  className={`p-1.5 rounded-md transition-all ${
+                    modoVista === 'CARDS'
+                      ? 'bg-white text-emerald-700 shadow-xs'
+                      : 'text-slate-400 hover:text-slate-600'
+                  }`}
+                  title="Vista en Tarjetas"
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleToggleVista('LISTA')}
+                  className={`p-1.5 rounded-md transition-all ${
+                    modoVista === 'LISTA'
+                      ? 'bg-white text-emerald-700 shadow-xs'
+                      : 'text-slate-400 hover:text-slate-600'
+                  }`}
+                  title="Vista en Lista Compacta"
+                >
+                  <List className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           </>
         )}
@@ -704,12 +767,13 @@ export default function PwaPrestamosClient({
             <p className="text-sm font-bold text-slate-700">No hay préstamos para mostrar</p>
             <p className="text-xs text-slate-400 mt-1">Podés crear uno nuevo con el botón superior.</p>
           </div>
-        ) : (
+        ) : modoVista === 'CARDS' ? (
           prestamosFiltrados.map((p) => {
             const fechaFormateada = new Date(p.fecha_prestamo).toLocaleDateString('es-AR');
             const pctProgreso = p.cuotas_totales > 0 ? (p.cuotas_pagadas / p.cuotas_totales) * 100 : 0;
             const telLimpio = limpiarTelefono(p.cliente_telefono);
             const expandido = expandidoId === p.id_prestamo;
+            const freq = getFreqLabel(p.cuotas);
 
             return (
               <div
@@ -720,7 +784,7 @@ export default function PwaPrestamosClient({
                 <div className="flex items-start justify-between">
                   <div>
                     <span className="text-[9px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
-                      PREST-{p.id_prestamo} · {fechaFormateada}
+                      PREST-{p.id_prestamo} · {fechaFormateada} · {freq}
                     </span>
                     <h3 className="font-black text-slate-900 text-sm mt-1">{p.cliente_nombre}</h3>
                     {p.cliente_dni && <p className="text-[10px] text-slate-400 font-medium">DNI/CUIT: {p.cliente_dni}</p>}
@@ -930,6 +994,240 @@ export default function PwaPrestamosClient({
               </div>
             );
           })
+        ) : (
+          /* VISTA B: LISTA COMPACTA DE PRÉSTAMOS */
+          <div className="space-y-2">
+            {prestamosFiltrados.map((p) => {
+              const pctProgreso = p.cuotas_totales > 0 ? (p.cuotas_pagadas / p.cuotas_totales) * 100 : 0;
+              const telLimpio = limpiarTelefono(p.cliente_telefono);
+              const expandido = expandidoId === p.id_prestamo;
+              const freq = getFreqLabel(p.cuotas);
+
+              return (
+                <div
+                  key={p.id_prestamo}
+                  className="bg-white rounded-xl border border-slate-200 p-3 shadow-2xs space-y-2 hover:border-slate-300 transition-all"
+                >
+                  {/* FILA SUPERIOR: ID, FRECUENCIA, CLIENTE, ESTADO */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-[10px] font-black font-mono bg-emerald-50 text-emerald-800 border border-emerald-200 px-1.5 py-0.5 rounded">
+                        #{p.id_prestamo}
+                      </span>
+                      <span className="text-[9px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
+                        {freq}
+                      </span>
+                      <h3 className="font-black text-slate-900 text-xs truncate" title={p.cliente_nombre}>
+                        {p.cliente_nombre}
+                      </h3>
+                    </div>
+
+                    <span
+                      className={`text-[9px] font-black px-2 py-0.5 rounded-full shrink-0 ${
+                        p.estado === 'ACTIVO' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'
+                      }`}
+                    >
+                      {p.estado}
+                    </span>
+                  </div>
+
+                  {/* FILA INTERMEDIA: IMPORTES Y CUOTAS COMPACTAS */}
+                  <div className="grid grid-cols-3 gap-1.5 bg-slate-50 p-2 rounded-lg text-xs">
+                    <div>
+                      <span className="text-[8px] uppercase font-bold text-slate-400 block">Capital</span>
+                      <span className="font-mono font-black text-slate-900 text-xs block">
+                        ${Math.round(p.capital_entregado_usd * p.cotizacion_dolar).toLocaleString('es-AR')}
+                      </span>
+                      <span className="text-[9px] font-mono text-slate-500 block">
+                        ≈ U$S {p.capital_entregado_usd.toLocaleString('es-AR')}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[8px] uppercase font-bold text-slate-400 block">Total</span>
+                      <span className="font-mono font-black text-emerald-700 text-xs block">
+                        ${Math.round(p.total_devolver_usd * p.cotizacion_dolar).toLocaleString('es-AR')}
+                      </span>
+                      <span className="text-[9px] font-mono text-emerald-600 block">
+                        ≈ U$S {p.total_devolver_usd.toLocaleString('es-AR')}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[8px] uppercase font-bold text-slate-400 block">Cuotas</span>
+                      <span className="font-bold text-slate-700 text-xs block">
+                        {p.cuotas_pagadas}/{p.cuotas_totales}
+                      </span>
+                      <span className="text-[9px] font-medium text-slate-400 block">
+                        {Math.round(pctProgreso)}% pagado
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* FILA INFERIOR: ACCIONES COMPACTAS */}
+                  <div className="flex items-center justify-between gap-1.5 pt-1 border-t border-slate-100">
+                    <div className="flex items-center gap-1">
+                      {telLimpio && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const hoy = new Date();
+                            hoy.setHours(0, 0, 0, 0);
+                            const cuotasPend = p.cuotas.filter((c) => c.estado !== 'PAGADA');
+                            const cTarget = cuotasPend[0] || p.cuotas[0];
+                            const vtoDate = cTarget ? new Date(cTarget.fecha_vencimiento) : new Date();
+                            vtoDate.setHours(0, 0, 0, 0);
+                            const diffDays = Math.floor((hoy.getTime() - vtoDate.getTime()) / (1000 * 60 * 60 * 24));
+                            setPrestamoAvisar({
+                              cliente_nombre: p.cliente_nombre,
+                              cliente_telefono: p.cliente_telefono,
+                              cliente_dni: p.cliente_dni,
+                              cuota: cTarget
+                                ? {
+                                    numero_cuota: cTarget.numero_cuota,
+                                    total_cuotas: p.cuotas.length,
+                                    monto_usd: cTarget.monto_usd,
+                                    monto_ars:
+                                      cTarget.monto_pagado_ars ||
+                                      Math.round(cTarget.monto_usd * (p.cotizacion_dolar || dolarActual)),
+                                    fecha_vencimiento: cTarget.fecha_vencimiento,
+                                    id_operacion: `PREST-${p.id_prestamo}`,
+                                    dias_mora: Math.max(0, diffDays),
+                                    isVencida: diffDays > 0,
+                                    isHoy: diffDays === 0,
+                                  }
+                                : null,
+                            });
+                          }}
+                          className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 flex items-center justify-center active:scale-95 transition"
+                          title="WhatsApp / Cobranza"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+
+                      <a
+                        href={`/documentos/prestamo/${p.id_prestamo}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="py-1 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-[11px] flex items-center gap-1 transition"
+                        title="Ver Boleto A4"
+                      >
+                        <FileText className="w-3 h-3" /> Boleto
+                      </a>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPrestamoEditando({
+                            id_prestamo: p.id_prestamo,
+                            id_cliente: p.cliente_id,
+                            cliente: {
+                              nombre_completo: p.cliente_nombre,
+                              dni: p.cliente_dni,
+                              telefono: p.cliente_telefono,
+                            },
+                            capital_entregado_usd: p.capital_entregado_usd,
+                            total_devolver_usd: p.total_devolver_usd,
+                            cotizacion_dolar_prestamo: p.cotizacion_dolar,
+                            fecha_prestamo: p.fecha_prestamo,
+                            cuotas: p.cuotas.map((c) => ({
+                              id_cuota: c.id_cuota,
+                              numero_cuota: c.numero_cuota,
+                              monto_usd: c.monto_usd,
+                              monto_pagado_ars: c.monto_pagado_ars,
+                              fecha_vencimiento: c.fecha_vencimiento,
+                              estado: c.estado,
+                              recibo_nro: c.recibo_nro,
+                            })),
+                          });
+                        }}
+                        className="py-1 px-2 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-1 text-[11px] font-bold transition active:scale-95"
+                        title="Editar Plan"
+                      >
+                        <Sliders className="w-3 h-3" /> Editar
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setExpandidoId(expandido ? null : p.id_prestamo)}
+                      className="py-1 px-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[11px] flex items-center gap-1 transition"
+                    >
+                      <span>Cuotas</span>
+                      {expandido ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                    </button>
+                  </div>
+
+                  {/* LISTADO EXPANDIBLE DE CUOTAS */}
+                  {expandido && (
+                    <div className="pt-2 border-t border-slate-100 space-y-1.5 animate-in fade-in">
+                      <p className="text-[10px] uppercase font-black tracking-wider text-slate-400 mb-1">
+                        Cronograma de cuotas ({p.cuotas.length})
+                      </p>
+                      {p.cuotas.map((c) => {
+                        const vto = new Date(c.fecha_vencimiento).toLocaleDateString('es-AR');
+                        return (
+                          <div
+                            key={c.id_cuota}
+                            className="flex items-center justify-between p-2 rounded-lg bg-slate-50 text-xs border border-slate-100"
+                          >
+                            <div>
+                              <span className="font-bold text-slate-800">Cuota {c.numero_cuota}</span>
+                              <span className="text-[10px] text-slate-500 block">Vto: {vto}</span>
+                            </div>
+                            <div className="text-right flex items-center gap-2">
+                              <div className="text-right">
+                                <span className="font-mono font-black text-slate-900 block text-xs">
+                                  $ {Math.round(c.monto_usd * (p.cotizacion_dolar || dolarActual)).toLocaleString('es-AR')}
+                                </span>
+                                <span className="text-[9px] font-mono text-slate-400 block">
+                                  U$S {c.monto_usd.toLocaleString('es-AR')}
+                                </span>
+                              </div>
+                              {c.estado === 'PAGADA' ? (
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
+                                    Pagada
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      window.open(`/documentos/recibo-cuota/${c.id_cuota}?tipo=PRESTAMO`, '_blank')
+                                    }
+                                    className="text-[10px] font-bold text-slate-700 bg-white border border-slate-200 px-2 py-0.5 rounded hover:bg-slate-50 flex items-center gap-1 shadow-2xs"
+                                  >
+                                    <FileText className="w-3 h-3 text-slate-400" />
+                                    Recibo
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setCuotaCobrando({
+                                      id_cuota: c.id_cuota,
+                                      monto_usd: c.monto_usd,
+                                      cliente_nombre: p.cliente_nombre,
+                                      cliente_telefono: p.cliente_telefono,
+                                      numero_cuota: c.numero_cuota,
+                                      total_cuotas: p.cuotas.length,
+                                    });
+                                    setMontoCobroArs(String(Math.round(c.monto_usd * dolarActual)));
+                                  }}
+                                  className="text-[10px] font-black bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1 rounded shadow-xs active:scale-95"
+                                >
+                                  Cobrar
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
       )}
