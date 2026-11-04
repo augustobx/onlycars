@@ -27,6 +27,8 @@ import {
   Pencil,
   LayoutGrid,
   List,
+  TrendingUp,
+  Percent,
 } from 'lucide-react';
 import DualMoney from '@/components/common/DualMoney';
 import { cambiarEstadoSolicitudWebAction, aprobarYGenerarPrestamoAction } from '@/actions/prestamos-admin';
@@ -423,12 +425,23 @@ export default function PrestamosClient({
 
           {/* VISTA SEGÚN MODO SELECCIONADO */}
           {modoVista === 'CARDS' ? (
-            /* VISTA A: TARJETAS (CARDS) */
+            /* VISTA A: TARJETAS (CARDS) DETALLADAS */
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
               {cartera.map((p) => {
                 const historicalRate = Number(p.cotizacion_dolar_prestamo || dolarActual);
-                const capitalArsOriginal = Number(p.capital_entregado_usd || 0) * historicalRate;
-                const totalArsOriginal = Number(p.total_devolver_usd || 0) * historicalRate;
+                const capUsd = Number(p.capital_entregado_usd || 0);
+                const totUsd = Number(p.total_devolver_usd || 0);
+                const gananciaUsd = Math.max(0, totUsd - capUsd);
+                const capitalArsOriginal = capUsd * historicalRate;
+                const totalArsOriginal = totUsd * historicalRate;
+                const gananciaArs = gananciaUsd * historicalRate;
+                const margenPct = capUsd > 0 ? ((totUsd - capUsd) / capUsd) * 100 : 0;
+                const margenStr = (margenPct % 1 === 0 ? margenPct.toFixed(0) : margenPct.toFixed(1)) + '%';
+                const cuotasTotal = p.resumen?.total || p.cuotas?.length || 1;
+                const cuotaMontoUsd = cuotasTotal > 0 ? totUsd / cuotasTotal : 0;
+                const cuotaMontoArs = cuotaMontoUsd * historicalRate;
+                const saldoPendienteArs = p.resumen.pendienteUsd * dolarActual;
+                const pctAmortizado = cuotasTotal > 0 ? (p.resumen.pagadas / cuotasTotal) * 100 : 0;
                 const freq = getFreqLabel(p.cuotas);
                 const isMora =
                   !p.resumen.finalizado &&
@@ -437,76 +450,139 @@ export default function PrestamosClient({
                 return (
                   <div
                     key={p.id_prestamo}
-                    className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4"
+                    className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4 hover:border-slate-300 dark:hover:border-slate-700 transition-all"
                   >
+                    {/* ENCABEZADO DE TARJETA CON MARGEN DESTACADO */}
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <p className="text-xs font-black uppercase text-slate-400 dark:text-slate-500 font-mono">
                             Préstamo #{p.id_prestamo}
                           </p>
-                          <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                          <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                             {freq}
+                          </span>
+                          <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700/60 shadow-2xs">
+                            <TrendingUp className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /> +{margenStr} MARGEN
                           </span>
                         </div>
                         <p className="text-lg font-black text-slate-900 dark:text-slate-100 flex items-center gap-2 mt-1">
                           <UserRound className="w-4 h-4 text-[var(--color-primary-default,#FF6600)]" /> {p.cliente?.nombre_completo}
                         </p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                          DNI {p.cliente?.dni || 'S/N'} · <Calendar className="inline w-3 h-3" />{' '}
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                          DNI {p.cliente?.dni || 'S/N'} {p.cliente?.telefono ? `· Tel: ${p.cliente.telefono}` : ''} · <Calendar className="inline w-3 h-3" />{' '}
                           {new Date(p.fecha_str).toLocaleDateString('es-AR')}
                         </p>
                       </div>
+
                       {p.resumen.finalizado ? (
-                        <span className="text-[10px] font-black bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40 rounded-full px-2.5 py-1 flex items-center gap-1">
+                        <span className="text-[10px] font-black bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40 rounded-full px-2.5 py-1 flex items-center gap-1 shrink-0">
                           <CheckCircle2 className="w-3 h-3" /> FINALIZADO
                         </span>
                       ) : isMora ? (
-                        <span className="text-[10px] font-black bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800/40 rounded-full px-2.5 py-1 flex items-center gap-1">
+                        <span className="text-[10px] font-black bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800/40 rounded-full px-2.5 py-1 flex items-center gap-1 shrink-0">
                           <AlertTriangle className="w-3 h-3" /> MORA
                         </span>
                       ) : (
-                        <span className="text-[10px] font-black bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/40 rounded-full px-2.5 py-1">
+                        <span className="text-[10px] font-black bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/40 rounded-full px-2.5 py-1 shrink-0">
                           ACTIVO
                         </span>
                       )}
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <div className="rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-100 dark:border-slate-800 p-3">
-                        <p className="text-[10px] uppercase font-black text-slate-400">Capital original</p>
-                        <DualMoney
-                          ars={capitalArsOriginal}
-                          usd={p.capital_entregado_usd}
-                          rate={historicalRate}
-                          compact
-                          primaryClassName="font-black text-slate-900 dark:text-slate-100"
-                        />
+                    {/* GRILLA DE VALORES FINANCIEROS CLAROS: CAPITAL, MARGEN, TOTAL Y CUOTA */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+                      {/* CAPITAL */}
+                      <div className="rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-100 dark:border-slate-800 p-2.5">
+                        <p className="text-[9px] uppercase font-black text-slate-400">Capital Desembolsado</p>
+                        <strong className="text-slate-900 dark:text-slate-100 font-mono text-sm block mt-0.5">
+                          $ {Math.round(capitalArsOriginal).toLocaleString('es-AR')}
+                        </strong>
+                        <span className="text-[10px] text-slate-500 font-mono block">
+                          ≈ U$S {capUsd.toFixed(2)}
+                        </span>
                       </div>
-                      <div className="rounded-xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-800/40 p-3">
-                        <p className="text-[10px] uppercase font-black text-indigo-500">Total contrato</p>
-                        <DualMoney
-                          ars={totalArsOriginal}
-                          usd={p.total_devolver_usd}
-                          rate={historicalRate}
-                          compact
-                          primaryClassName="font-black text-indigo-950 dark:text-indigo-300"
-                        />
+
+                      {/* MARGEN / INTERÉS COLOCADO */}
+                      <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 p-2.5">
+                        <div className="flex items-center justify-between">
+                          <p className="text-[9px] uppercase font-black text-emerald-700 dark:text-emerald-400">Margen Pactado</p>
+                          <span className="text-[9px] font-black text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/60 px-1.5 py-0.2 rounded font-mono">
+                            +{margenStr}
+                          </span>
+                        </div>
+                        <strong className="text-emerald-950 dark:text-emerald-200 font-mono text-sm block mt-0.5">
+                          +$ {Math.round(gananciaArs).toLocaleString('es-AR')}
+                        </strong>
+                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono block">
+                          +U$S {gananciaUsd.toFixed(2)}
+                        </span>
                       </div>
-                      <div className="rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-800/40 p-3">
-                        <p className="text-[10px] uppercase font-black text-amber-600">Saldo a valor de hoy</p>
-                        <DualMoney
-                          usd={p.resumen.pendienteUsd}
-                          rate={dolarActual}
-                          compact
-                          primaryClassName="font-black text-amber-950 dark:text-amber-300"
+
+                      {/* TOTAL CONTRATO */}
+                      <div className="rounded-xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-800/40 p-2.5">
+                        <p className="text-[9px] uppercase font-black text-indigo-500">Total Contrato</p>
+                        <strong className="text-indigo-950 dark:text-indigo-200 font-mono text-sm block mt-0.5">
+                          $ {Math.round(totalArsOriginal).toLocaleString('es-AR')}
+                        </strong>
+                        <span className="text-[10px] text-indigo-700 dark:text-indigo-400 font-mono block">
+                          ≈ U$S {totUsd.toFixed(2)}
+                        </span>
+                      </div>
+
+                      {/* VALOR POR CUOTA */}
+                      <div className="rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-100 dark:border-slate-800 p-2.5">
+                        <p className="text-[9px] uppercase font-black text-slate-400">Valor Cuota ({freq})</p>
+                        <strong className="text-slate-900 dark:text-slate-100 font-mono text-sm block mt-0.5">
+                          $ {Math.round(cuotaMontoArs).toLocaleString('es-AR')}
+                        </strong>
+                        <span className="text-[10px] text-slate-400 font-mono block">
+                          {cuotasTotal} cuotas · U$S {cuotaMontoUsd.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* BARRA DE SALDO PENDIENTE Y TIPO DE CAMBIO PACTADO */}
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 rounded-xl px-3.5 py-2 text-xs">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[11px] font-bold text-amber-900 dark:text-amber-300">
+                          Saldo pendiente a cobrar:
+                        </span>
+                        <strong className="text-amber-950 dark:text-amber-200 font-mono font-black text-sm">
+                          $ {Math.round(saldoPendienteArs).toLocaleString('es-AR')}
+                        </strong>
+                        <span className="text-[10px] font-mono text-amber-700 dark:text-amber-400">
+                          (≈ U$S {p.resumen.pendienteUsd.toFixed(2)})
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                        <span>TC Pactado: <strong className="font-mono text-slate-700 dark:text-slate-200">${historicalRate.toLocaleString('es-AR')}</strong></span>
+                        {historicalRate !== dolarActual && (
+                          <span className="text-[10px] text-slate-400 font-mono">(Hoy: ${dolarActual.toLocaleString('es-AR')})</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* PROGRESO DE AMORTIZACIÓN */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs font-bold text-slate-600 dark:text-slate-400">
+                        <span>Progreso de amortización</span>
+                        <span>
+                          {p.resumen.pagadas} de {cuotasTotal} cuotas pagadas ({Math.round(pctAmortizado)}%)
+                        </span>
+                      </div>
+                      <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
+                        <div
+                          className="bg-emerald-500 h-2 rounded-full transition-all"
+                          style={{ width: `${pctAmortizado}%` }}
                         />
                       </div>
                     </div>
 
+                    {/* ACCIONES DE TARJETA */}
                     <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-3">
                       <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                        Cuotas pagadas: {p.resumen.pagadas}/{p.resumen.total} ({freq})
+                        {p.resumen.pagadas}/{cuotasTotal} cuotas ({freq})
                       </span>
                       <div className="flex items-center gap-2">
                         {p.cliente?.telefono && (
@@ -553,29 +629,41 @@ export default function PrestamosClient({
               )}
             </div>
           ) : (
-            /* VISTA B: LISTA / TABLA DETALLADA (RESPONSIVA CON SCROLL HORIZONTAL) */
+            /* VISTA B: LISTA / TABLA DETALLADA COMPLETA (RESPONSIVA CON SCROLL HORIZONTAL) */
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
               <div className="overflow-x-auto custom-scrollbar">
-                <table className="w-full text-left text-xs border-collapse min-w-[980px]">
+                <table className="w-full text-left text-xs border-collapse min-w-[1180px]">
                   <thead>
                     <tr className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                      <th className="py-3 px-4"># Préstamo</th>
-                      <th className="py-3 px-4">Cliente</th>
-                      <th className="py-3 px-4">Otorgado</th>
-                      <th className="py-3 px-4 text-right">Capital</th>
-                      <th className="py-3 px-4 text-right">Total Contrato</th>
-                      <th className="py-3 px-4 text-right">Saldo Pendiente</th>
-                      <th className="py-3 px-4 text-center">Plan / Cuotas</th>
-                      <th className="py-3 px-4 text-center">Estado</th>
-                      <th className="py-3 px-4 text-right">Acciones</th>
+                      <th className="py-3 px-3"># Préstamo</th>
+                      <th className="py-3 px-3">Cliente</th>
+                      <th className="py-3 px-3">Otorgado / TC</th>
+                      <th className="py-3 px-3 text-right">Capital Desembolsado</th>
+                      <th className="py-3 px-3 text-center">Margen Pactado</th>
+                      <th className="py-3 px-3 text-right">Total Contrato</th>
+                      <th className="py-3 px-3 text-center">Cuota / Plan</th>
+                      <th className="py-3 px-3 text-right">Saldo Pendiente</th>
+                      <th className="py-3 px-3 text-center">Progreso</th>
+                      <th className="py-3 px-3 text-center">Estado</th>
+                      <th className="py-3 px-3 text-right">Acciones</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-sans">
                     {cartera.map((p) => {
                       const historicalRate = Number(p.cotizacion_dolar_prestamo || dolarActual);
-                      const capitalArsOriginal = Number(p.capital_entregado_usd || 0) * historicalRate;
-                      const totalArsOriginal = Number(p.total_devolver_usd || 0) * historicalRate;
+                      const capUsd = Number(p.capital_entregado_usd || 0);
+                      const totUsd = Number(p.total_devolver_usd || 0);
+                      const gananciaUsd = Math.max(0, totUsd - capUsd);
+                      const capitalArsOriginal = capUsd * historicalRate;
+                      const totalArsOriginal = totUsd * historicalRate;
+                      const gananciaArs = gananciaUsd * historicalRate;
+                      const margenPct = capUsd > 0 ? ((totUsd - capUsd) / capUsd) * 100 : 0;
+                      const margenStr = (margenPct % 1 === 0 ? margenPct.toFixed(0) : margenPct.toFixed(1)) + '%';
+                      const cuotasTotal = p.resumen?.total || p.cuotas?.length || 1;
+                      const cuotaMontoUsd = cuotasTotal > 0 ? totUsd / cuotasTotal : 0;
+                      const cuotaMontoArs = cuotaMontoUsd * historicalRate;
                       const saldoPendienteArs = p.resumen.pendienteUsd * dolarActual;
+                      const pctAmortizado = cuotasTotal > 0 ? (p.resumen.pagadas / cuotasTotal) * 100 : 0;
                       const freq = getFreqLabel(p.cuotas);
                       const isMora =
                         !p.resumen.finalizado &&
@@ -586,10 +674,13 @@ export default function PrestamosClient({
                           key={p.id_prestamo}
                           className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors"
                         >
-                          <td className="py-3.5 px-4 font-mono font-black text-slate-900 dark:text-slate-100">
+                          {/* ID PRÉSTAMO */}
+                          <td className="py-3.5 px-3 font-mono font-black text-slate-900 dark:text-slate-100">
                             #{p.id_prestamo}
                           </td>
-                          <td className="py-3.5 px-4">
+
+                          {/* CLIENTE */}
+                          <td className="py-3.5 px-3">
                             <span className="font-bold text-slate-900 dark:text-slate-100 block">
                               {p.cliente?.nombre_completo}
                             </span>
@@ -598,28 +689,62 @@ export default function PrestamosClient({
                               {p.cliente?.telefono ? ` · Tel: ${p.cliente.telefono}` : ''}
                             </span>
                           </td>
-                          <td className="py-3.5 px-4 text-slate-600 dark:text-slate-400">
-                            {new Date(p.fecha_str).toLocaleDateString('es-AR')}
+
+                          {/* OTORGADO Y TC */}
+                          <td className="py-3.5 px-3 text-slate-600 dark:text-slate-400">
+                            <span className="block font-medium">{new Date(p.fecha_str).toLocaleDateString('es-AR')}</span>
+                            <span className="text-[10px] text-slate-400 font-mono block">
+                              TC: ${historicalRate.toLocaleString('es-AR')}
+                            </span>
                           </td>
-                          <td className="py-3.5 px-4 text-right">
-                            <span className="font-black text-slate-900 dark:text-slate-100 block">
+
+                          {/* CAPITAL */}
+                          <td className="py-3.5 px-3 text-right">
+                            <span className="font-black text-slate-900 dark:text-slate-100 block font-mono">
                               $ {Math.round(capitalArsOriginal).toLocaleString('es-AR')}
                             </span>
                             <span className="font-mono text-[10px] text-slate-400 block">
-                              U$S {Number(p.capital_entregado_usd).toFixed(2)}
+                              U$S {capUsd.toFixed(2)}
                             </span>
                           </td>
-                          <td className="py-3.5 px-4 text-right">
-                            <span className="font-black text-slate-900 dark:text-slate-100 block">
+
+                          {/* MARGEN PACTADO Y GANANCIA */}
+                          <td className="py-3.5 px-3 text-center">
+                            <span className="inline-flex items-center gap-1 text-[11px] font-black px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800 shadow-2xs font-mono">
+                              +{margenStr}
+                            </span>
+                            <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 block font-mono mt-0.5">
+                              +$ {Math.round(gananciaArs).toLocaleString('es-AR')}
+                            </span>
+                            <span className="text-[9px] text-slate-400 block font-mono">
+                              +U$S {gananciaUsd.toFixed(2)}
+                            </span>
+                          </td>
+
+                          {/* TOTAL CONTRATO */}
+                          <td className="py-3.5 px-3 text-right">
+                            <span className="font-black text-slate-900 dark:text-slate-100 block font-mono">
                               $ {Math.round(totalArsOriginal).toLocaleString('es-AR')}
                             </span>
                             <span className="font-mono text-[10px] text-slate-400 block">
-                              U$S {Number(p.total_devolver_usd).toFixed(2)}
+                              U$S {totUsd.toFixed(2)}
                             </span>
                           </td>
-                          <td className="py-3.5 px-4 text-right">
+
+                          {/* CUOTA Y PLAN */}
+                          <td className="py-3.5 px-3 text-center">
+                            <span className="font-black text-slate-900 dark:text-slate-100 block font-mono">
+                              $ {Math.round(cuotaMontoArs).toLocaleString('es-AR')}
+                            </span>
+                            <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 mt-0.5">
+                              {cuotasTotal} cuotas {freq}
+                            </span>
+                          </td>
+
+                          {/* SALDO PENDIENTE */}
+                          <td className="py-3.5 px-3 text-right">
                             <span
-                              className={`font-black block ${
+                              className={`font-black block font-mono ${
                                 p.resumen.pendienteUsd > 0
                                   ? 'text-amber-700 dark:text-amber-400'
                                   : 'text-slate-400'
@@ -628,18 +753,22 @@ export default function PrestamosClient({
                               $ {Math.round(saldoPendienteArs).toLocaleString('es-AR')}
                             </span>
                             <span className="font-mono text-[10px] text-slate-400 block">
-                              U$S {Number(p.resumen.pendienteUsd).toFixed(2)}
+                              U$S {p.resumen.pendienteUsd.toFixed(2)}
                             </span>
                           </td>
-                          <td className="py-3.5 px-4 text-center">
+
+                          {/* PROGRESO */}
+                          <td className="py-3.5 px-3 text-center">
                             <span className="font-bold text-slate-800 dark:text-slate-200 block text-xs">
-                              {p.resumen.pagadas}/{p.resumen.total}
+                              {p.resumen.pagadas}/{cuotasTotal}
                             </span>
-                            <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 mt-0.5">
-                              {freq}
+                            <span className="text-[10px] text-slate-400 font-mono block">
+                              {Math.round(pctAmortizado)}%
                             </span>
                           </td>
-                          <td className="py-3.5 px-4 text-center">
+
+                          {/* ESTADO */}
+                          <td className="py-3.5 px-3 text-center">
                             {p.resumen.finalizado ? (
                               <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
                                 <CheckCircle2 className="w-3 h-3" /> Finalizado
@@ -654,7 +783,9 @@ export default function PrestamosClient({
                               </span>
                             )}
                           </td>
-                          <td className="py-3.5 px-4 text-right">
+
+                          {/* ACCIONES */}
+                          <td className="py-3.5 px-3 text-right">
                             <div className="flex items-center justify-end gap-1.5">
                               {p.cliente?.telefono && (
                                 <button

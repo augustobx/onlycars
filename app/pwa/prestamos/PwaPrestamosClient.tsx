@@ -16,6 +16,7 @@ import {
   X,
   Check,
   Percent,
+  TrendingUp,
   Calculator,
   ArrowRight,
   DollarSign,
@@ -774,18 +775,37 @@ export default function PwaPrestamosClient({
             const telLimpio = limpiarTelefono(p.cliente_telefono);
             const expandido = expandidoId === p.id_prestamo;
             const freq = getFreqLabel(p.cuotas);
+            const capUsd = Number(p.capital_entregado_usd || 0);
+            const totUsd = Number(p.total_devolver_usd || 0);
+            const gananciaUsd = Math.max(0, totUsd - capUsd);
+            const rate = Number(p.cotizacion_dolar || dolarActual);
+            const capArs = capUsd * rate;
+            const totArs = totUsd * rate;
+            const gananciaArs = gananciaUsd * rate;
+            const margenPct = capUsd > 0 ? ((totUsd - capUsd) / capUsd) * 100 : 0;
+            const margenStr = (margenPct % 1 === 0 ? margenPct.toFixed(0) : margenPct.toFixed(1)) + '%';
+            const cantCuotas = p.cuotas_totales || p.cuotas?.length || 1;
+            const cuotaArs = cantCuotas > 0 ? totArs / cantCuotas : 0;
+            const cuotasPendientes = p.cuotas?.filter((c) => c.estado !== 'PAGADA') || [];
+            const saldoPendienteUsd = cuotasPendientes.reduce((acc, c) => acc + Number(c.monto_usd || 0), 0);
+            const saldoPendienteArs = saldoPendienteUsd * dolarActual;
 
             return (
               <div
                 key={p.id_prestamo}
                 className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs space-y-3 transition-all"
               >
-                {/* ENCABEZADO DE TARJETA */}
-                <div className="flex items-start justify-between">
+                {/* ENCABEZADO DE TARJETA CON MARGEN DESTACADO */}
+                <div className="flex items-start justify-between gap-2">
                   <div>
-                    <span className="text-[9px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
-                      PREST-{p.id_prestamo} · {fechaFormateada} · {freq}
-                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[9px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                        PREST-{p.id_prestamo} · {fechaFormateada} · {freq}
+                      </span>
+                      <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-full shadow-2xs font-mono">
+                        <TrendingUp className="w-2.5 h-2.5 text-emerald-600" /> +{margenStr} MARGEN
+                      </span>
+                    </div>
                     <h3 className="font-black text-slate-900 text-sm mt-1">{p.cliente_nombre}</h3>
                     {p.cliente_dni && <p className="text-[10px] text-slate-400 font-medium">DNI/CUIT: {p.cliente_dni}</p>}
                   </div>
@@ -799,39 +819,64 @@ export default function PwaPrestamosClient({
                   </span>
                 </div>
 
-                {/* CAPITAL Y TOTAL (ARS EN FOCO, USD SECUNDARIO) */}
+                {/* 4 MÉTRICAS FINANCIERAS CLARAS: CAPITAL, MARGEN, TOTAL Y CUOTA */}
                 <div className="grid grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-xs">
                   <div>
                     <span className="text-[9px] uppercase font-black text-slate-400 block">Capital Entregado</span>
                     <strong className="text-slate-900 font-mono text-sm block">
-                      $ {Math.round(p.capital_entregado_usd * p.cotizacion_dolar).toLocaleString('es-AR')}
+                      $ {Math.round(capArs).toLocaleString('es-AR')}
                     </strong>
                     <span className="text-[10px] text-slate-500 block font-mono">
-                      ≈ U$S {p.capital_entregado_usd.toLocaleString('es-AR')}
+                      ≈ U$S {capUsd.toFixed(2)}
                     </span>
                   </div>
                   <div className="text-right">
-                    <span className="text-[9px] uppercase font-black text-slate-400 block">Total a Reintegrar</span>
+                    <div className="flex items-center justify-end gap-1">
+                      <span className="text-[9px] uppercase font-black text-emerald-700 block">Margen Pactado</span>
+                      <span className="text-[9px] font-black font-mono text-emerald-800 bg-emerald-100 px-1 rounded">
+                        +{margenStr}
+                      </span>
+                    </div>
                     <strong className="text-emerald-700 font-mono text-sm block">
-                      $ {Math.round(p.total_devolver_usd * p.cotizacion_dolar).toLocaleString('es-AR')}
+                      +$ {Math.round(gananciaArs).toLocaleString('es-AR')}
                     </strong>
                     <span className="text-[10px] text-emerald-600 block font-mono">
-                      ≈ U$S {p.total_devolver_usd.toLocaleString('es-AR')}
+                      +U$S {gananciaUsd.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="pt-1.5 border-t border-slate-200/60">
+                    <span className="text-[9px] uppercase font-black text-indigo-500 block">Total a Reintegrar</span>
+                    <strong className="text-indigo-950 font-mono text-sm block">
+                      $ {Math.round(totArs).toLocaleString('es-AR')}
+                    </strong>
+                    <span className="text-[10px] text-indigo-700 block font-mono">
+                      ≈ U$S {totUsd.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="text-right pt-1.5 border-t border-slate-200/60">
+                    <span className="text-[9px] uppercase font-black text-slate-400 block">Valor Cuota ({cantCuotas})</span>
+                    <strong className="text-slate-900 font-mono text-sm block">
+                      $ {Math.round(cuotaArs).toLocaleString('es-AR')}
+                    </strong>
+                    <span className="text-[10px] text-slate-500 block font-mono">
+                      TC: ${rate.toLocaleString('es-AR')}
                     </span>
                   </div>
                 </div>
 
-                {/* BARRA DE PROGRESO DE CUOTAS */}
-                <div className="space-y-1">
-                  <div className="flex justify-between text-[11px] font-bold text-slate-600">
-                    <span>Progreso de amortización</span>
-                    <span>
-                      {p.cuotas_pagadas} de {p.cuotas_totales} cuotas
+                {/* SALDO PENDIENTE Y PROGRESO DE CUOTAS */}
+                <div className="space-y-1 bg-amber-50/60 border border-amber-200/50 rounded-xl p-2.5">
+                  <div className="flex justify-between items-center text-[11px] font-bold">
+                    <span className="text-amber-900">
+                      Saldo a cobrar: <strong className="font-mono font-black text-xs">$ {Math.round(saldoPendienteArs).toLocaleString('es-AR')}</strong>
+                    </span>
+                    <span className="text-slate-600">
+                      {p.cuotas_pagadas}/{cantCuotas} cuotas ({Math.round(pctProgreso)}%)
                     </span>
                   </div>
-                  <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                  <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
                     <div
-                      className="bg-emerald-500 h-2 rounded-full transition-all"
+                      className="bg-emerald-500 h-1.5 rounded-full transition-all"
                       style={{ width: `${pctProgreso}%` }}
                     />
                   </div>
@@ -995,27 +1040,41 @@ export default function PwaPrestamosClient({
             );
           })
         ) : (
-          /* VISTA B: LISTA COMPACTA DE PRÉSTAMOS */
+          /* VISTA B: LISTA COMPACTA DE PRÉSTAMOS CON MARGEN Y DETALLES */
           <div className="space-y-2">
             {prestamosFiltrados.map((p) => {
               const pctProgreso = p.cuotas_totales > 0 ? (p.cuotas_pagadas / p.cuotas_totales) * 100 : 0;
               const telLimpio = limpiarTelefono(p.cliente_telefono);
               const expandido = expandidoId === p.id_prestamo;
               const freq = getFreqLabel(p.cuotas);
+              const capUsd = Number(p.capital_entregado_usd || 0);
+              const totUsd = Number(p.total_devolver_usd || 0);
+              const gananciaUsd = Math.max(0, totUsd - capUsd);
+              const rate = Number(p.cotizacion_dolar || dolarActual);
+              const capArs = capUsd * rate;
+              const totArs = totUsd * rate;
+              const gananciaArs = gananciaUsd * rate;
+              const margenPct = capUsd > 0 ? ((totUsd - capUsd) / capUsd) * 100 : 0;
+              const margenStr = (margenPct % 1 === 0 ? margenPct.toFixed(0) : margenPct.toFixed(1)) + '%';
+              const cantCuotas = p.cuotas_totales || p.cuotas?.length || 1;
+              const cuotaArs = cantCuotas > 0 ? totArs / cantCuotas : 0;
 
               return (
                 <div
                   key={p.id_prestamo}
                   className="bg-white rounded-xl border border-slate-200 p-3 shadow-2xs space-y-2 hover:border-slate-300 transition-all"
                 >
-                  {/* FILA SUPERIOR: ID, FRECUENCIA, CLIENTE, ESTADO */}
-                  <div className="flex items-center justify-between gap-2">
+                  {/* FILA SUPERIOR: ID, FRECUENCIA, MARGEN, CLIENTE, ESTADO */}
+                  <div className="flex items-center justify-between gap-1.5 flex-wrap">
                     <div className="flex items-center gap-1.5 min-w-0">
                       <span className="text-[10px] font-black font-mono bg-emerald-50 text-emerald-800 border border-emerald-200 px-1.5 py-0.5 rounded">
                         #{p.id_prestamo}
                       </span>
                       <span className="text-[9px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
                         {freq}
+                      </span>
+                      <span className="text-[9px] font-black font-mono bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">
+                        +{margenStr}
                       </span>
                       <h3 className="font-black text-slate-900 text-xs truncate" title={p.cliente_nombre}>
                         {p.cliente_nombre}
@@ -1031,36 +1090,213 @@ export default function PwaPrestamosClient({
                     </span>
                   </div>
 
-                  {/* FILA INTERMEDIA: IMPORTES Y CUOTAS COMPACTAS */}
-                  <div className="grid grid-cols-3 gap-1.5 bg-slate-50 p-2 rounded-lg text-xs">
+                  {/* FILA INTERMEDIA: 4 MÉTRICAS COMPACTAS CON MARGEN */}
+                  <div className="grid grid-cols-4 gap-1 bg-slate-50 p-2 rounded-lg text-xs">
                     <div>
                       <span className="text-[8px] uppercase font-bold text-slate-400 block">Capital</span>
-                      <span className="font-mono font-black text-slate-900 text-xs block">
-                        ${Math.round(p.capital_entregado_usd * p.cotizacion_dolar).toLocaleString('es-AR')}
+                      <span className="font-mono font-black text-slate-900 text-[11px] block">
+                        ${Math.round(capArs).toLocaleString('es-AR')}
                       </span>
                       <span className="text-[9px] font-mono text-slate-500 block">
-                        ≈ U$S {p.capital_entregado_usd.toLocaleString('es-AR')}
+                        U$S {capUsd.toFixed(0)}
                       </span>
                     </div>
                     <div>
-                      <span className="text-[8px] uppercase font-bold text-slate-400 block">Total</span>
-                      <span className="font-mono font-black text-emerald-700 text-xs block">
-                        ${Math.round(p.total_devolver_usd * p.cotizacion_dolar).toLocaleString('es-AR')}
+                      <span className="text-[8px] uppercase font-bold text-emerald-600 block">Margen</span>
+                      <span className="font-mono font-black text-emerald-700 text-[11px] block">
+                        +${Math.round(gananciaArs).toLocaleString('es-AR')}
                       </span>
                       <span className="text-[9px] font-mono text-emerald-600 block">
-                        ≈ U$S {p.total_devolver_usd.toLocaleString('es-AR')}
+                        +{margenStr}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[8px] uppercase font-bold text-indigo-500 block">Total</span>
+                      <span className="font-mono font-black text-indigo-950 text-[11px] block">
+                        ${Math.round(totArs).toLocaleString('es-AR')}
+                      </span>
+                      <span className="text-[9px] font-mono text-indigo-700 block">
+                        U$S {totUsd.toFixed(0)}
                       </span>
                     </div>
                     <div className="text-right">
-                      <span className="text-[8px] uppercase font-bold text-slate-400 block">Cuotas</span>
-                      <span className="font-bold text-slate-700 text-xs block">
-                        {p.cuotas_pagadas}/{p.cuotas_totales}
+                      <span className="text-[8px] uppercase font-bold text-slate-400 block">Cuota / Plan</span>
+                      <span className="font-mono font-black text-slate-800 text-[11px] block">
+                        ${Math.round(cuotaArs).toLocaleString('es-AR')}
                       </span>
-                      <span className="text-[9px] font-medium text-slate-400 block">
-                        {Math.round(pctProgreso)}% pagado
+                      <span className="text-[9px] font-medium text-slate-500 block">
+                        {p.cuotas_pagadas}/{cantCuotas}
                       </span>
                     </div>
                   </div>
+
+                  {/* FILA INFERIOR: ACCIONES COMPACTAS */}
+                  <div className="flex items-center justify-between gap-1.5 pt-1 border-t border-slate-100">
+                    <div className="flex items-center gap-1">
+                      {telLimpio && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const hoy = new Date();
+                            hoy.setHours(0, 0, 0, 0);
+                            const cuotasPend = p.cuotas.filter((c) => c.estado !== 'PAGADA');
+                            const cTarget = cuotasPend[0] || p.cuotas[0];
+                            const vtoDate = cTarget ? new Date(cTarget.fecha_vencimiento) : new Date();
+                            vtoDate.setHours(0, 0, 0, 0);
+                            const diffDays = Math.floor((hoy.getTime() - vtoDate.getTime()) / (1000 * 60 * 60 * 24));
+                            setPrestamoAvisar({
+                              cliente_nombre: p.cliente_nombre,
+                              cliente_telefono: p.cliente_telefono,
+                              cliente_dni: p.cliente_dni,
+                              cuota: cTarget
+                                ? {
+                                    numero_cuota: cTarget.numero_cuota,
+                                    total_cuotas: p.cuotas.length,
+                                    monto_usd: cTarget.monto_usd,
+                                    monto_ars:
+                                      cTarget.monto_pagado_ars ||
+                                      Math.round(cTarget.monto_usd * (p.cotizacion_dolar || dolarActual)),
+                                    fecha_vencimiento: cTarget.fecha_vencimiento,
+                                    id_operacion: `PREST-${p.id_prestamo}`,
+                                    dias_mora: Math.max(0, diffDays),
+                                    isVencida: diffDays > 0,
+                                    isHoy: diffDays === 0,
+                                  }
+                                : null,
+                            });
+                          }}
+                          className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 flex items-center justify-center active:scale-95 transition"
+                          title="WhatsApp / Cobranza"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+
+                      <a
+                        href={`/documentos/prestamo/${p.id_prestamo}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="py-1 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-[11px] flex items-center gap-1 transition"
+                        title="Ver Boleto A4"
+                      >
+                        <FileText className="w-3 h-3" /> Boleto
+                      </a>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPrestamoEditando({
+                            id_prestamo: p.id_prestamo,
+                            id_cliente: p.cliente_id,
+                            cliente: {
+                              nombre_completo: p.cliente_nombre,
+                              dni: p.cliente_dni,
+                              telefono: p.cliente_telefono,
+                            },
+                            capital_entregado_usd: p.capital_entregado_usd,
+                            total_devolver_usd: p.total_devolver_usd,
+                            cotizacion_dolar_prestamo: p.cotizacion_dolar,
+                            fecha_prestamo: p.fecha_prestamo,
+                            cuotas: p.cuotas.map((c) => ({
+                              id_cuota: c.id_cuota,
+                              numero_cuota: c.numero_cuota,
+                              monto_usd: c.monto_usd,
+                              monto_pagado_ars: c.monto_pagado_ars,
+                              fecha_vencimiento: c.fecha_vencimiento,
+                              estado: c.estado,
+                              recibo_nro: c.recibo_nro,
+                            })),
+                          });
+                        }}
+                        className="py-1 px-2 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-1 text-[11px] font-bold transition active:scale-95"
+                        title="Editar Plan"
+                      >
+                        <Sliders className="w-3 h-3" /> Editar
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setExpandidoId(expandido ? null : p.id_prestamo)}
+                      className="py-1 px-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[11px] flex items-center gap-1 transition"
+                    >
+                      <span>Cuotas</span>
+                      {expandido ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                    </button>
+                  </div>
+
+                  {/* LISTADO EXPANDIBLE DE CUOTAS */}
+                  {expandido && (
+                    <div className="pt-2 border-t border-slate-100 space-y-1.5 animate-in fade-in">
+                      <p className="text-[10px] uppercase font-black tracking-wider text-slate-400 mb-1">
+                        Cronograma de cuotas ({p.cuotas.length})
+                      </p>
+                      {p.cuotas.map((c) => {
+                        const vto = new Date(c.fecha_vencimiento).toLocaleDateString('es-AR');
+                        return (
+                          <div
+                            key={c.id_cuota}
+                            className="flex items-center justify-between p-2 rounded-lg bg-slate-50 text-xs border border-slate-100"
+                          >
+                            <div>
+                              <span className="font-bold text-slate-800">Cuota {c.numero_cuota}</span>
+                              <span className="text-[10px] text-slate-500 block">Vto: {vto}</span>
+                            </div>
+                            <div className="text-right flex items-center gap-2">
+                              <div className="text-right">
+                                <span className="font-mono font-black text-slate-900 block text-xs">
+                                  $ {Math.round(c.monto_usd * (p.cotizacion_dolar || dolarActual)).toLocaleString('es-AR')}
+                                </span>
+                                <span className="text-[9px] font-mono text-slate-400 block">
+                                  U$S {c.monto_usd.toLocaleString('es-AR')}
+                                </span>
+                              </div>
+                              {c.estado === 'PAGADA' ? (
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
+                                    Pagada
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      window.open(`/documentos/recibo-cuota/${c.id_cuota}?tipo=PRESTAMO`, '_blank')
+                                    }
+                                    className="text-[10px] font-bold text-slate-700 bg-white border border-slate-200 px-2 py-0.5 rounded hover:bg-slate-50 flex items-center gap-1 shadow-2xs"
+                                  >
+                                    <FileText className="w-3 h-3 text-slate-400" />
+                                    Recibo
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setCuotaCobrando({
+                                      id_cuota: c.id_cuota,
+                                      monto_usd: c.monto_usd,
+                                      cliente_nombre: p.cliente_nombre,
+                                      cliente_telefono: p.cliente_telefono,
+                                      numero_cuota: c.numero_cuota,
+                                      total_cuotas: p.cuotas.length,
+                                    });
+                                    setMontoCobroArs(String(Math.round(c.monto_usd * dolarActual)));
+                                  }}
+                                  className="text-[10px] font-black bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1 rounded shadow-xs active:scale-95"
+                                >
+                                  Cobrar
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )
 
                   {/* FILA INFERIOR: ACCIONES COMPACTAS */}
                   <div className="flex items-center justify-between gap-1.5 pt-1 border-t border-slate-100">
