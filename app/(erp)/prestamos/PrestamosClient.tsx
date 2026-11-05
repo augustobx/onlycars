@@ -75,15 +75,6 @@ export default function PrestamosClient({
     } catch {}
   }, []);
 
-  useEffect(() => {
-    if (!modalAprobar) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [modalAprobar]);
-
   const handleToggleVista = (modo: 'CARDS' | 'LISTA') => {
     setModoVista(modo);
     try {
@@ -139,6 +130,15 @@ export default function PrestamosClient({
 
   // Approval modal state
   const [modalAprobar, setModalAprobar] = useState<any | null>(null);
+
+  useEffect(() => {
+    if (!modalAprobar) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [modalAprobar]);
   const [capitalUsd, setCapitalUsd] = useState<number>(0);
   const [totalUsd, setTotalUsd] = useState<number>(0);
   const [cuotasCount, setCuotasCount] = useState<number>(12);
