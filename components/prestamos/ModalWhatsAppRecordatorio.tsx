@@ -14,6 +14,7 @@ import {
   Building,
   CreditCard,
   Edit3,
+  Phone,
 } from 'lucide-react';
 
 export type TemplateTipo =
@@ -23,6 +24,8 @@ export type TemplateTipo =
   | 'MORA_FORMAL'
   | 'DATOS_BANCARIOS'
   | 'LIBRE';
+
+export type ModoEnvioWsp = 'APP' | 'WEB' | 'WAME';
 
 export interface ModalWhatsAppProps {
   isOpen: boolean;
@@ -90,7 +93,25 @@ export default function ModalWhatsAppRecordatorio({
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateTipo>(defaultTemplate);
   const [customText, setCustomText] = useState<string>('');
   const [copied, setCopied] = useState(false);
+  const [copiedTel, setCopiedTel] = useState(false);
+  const [modoEnvio, setModoEnvio] = useState<ModoEnvioWsp>('APP');
   const [abrirEnMismaVentana, setAbrirEnMismaVentana] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('onlycars_wsp_mode') as ModoEnvioWsp;
+      if (saved && ['APP', 'WEB', 'WAME'].includes(saved)) {
+        setModoEnvio(saved);
+      }
+    } catch {}
+  }, []);
+
+  const handleCambiarModo = (m: ModoEnvioWsp) => {
+    setModoEnvio(m);
+    try {
+      localStorage.setItem('onlycars_wsp_mode', m);
+    } catch {}
+  };
 
   // Generador de plantillas prearmadas con datos dinámicos
   const generatedTemplates = useMemo(() => {
@@ -153,20 +174,41 @@ export default function ModalWhatsAppRecordatorio({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const copiarTelefono = () => {
+    if (!telLimpio) return;
+    navigator.clipboard.writeText(telLimpio);
+    setCopiedTel(true);
+    setTimeout(() => setCopiedTel(false), 2000);
+  };
+
   const abrirWhatsApp = () => {
     if (!telLimpio) {
       alert('El cliente no tiene un teléfono válido registrado.');
       return;
     }
     const isMobile = typeof window !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    const url = isMobile
-      ? `https://wa.me/${telLimpio}?text=${encodeURIComponent(mensajeActual)}`
-      : `https://web.whatsapp.com/send?phone=${telLimpio}&text=${encodeURIComponent(mensajeActual)}`;
 
+    if (modoEnvio === 'APP' && !isMobile) {
+      // Dispara el protocolo de aplicación nativo (WhatsApp Desktop, PWA o Linux Mint handler)
+      // Sin abrir pestañas en el navegador ni desconectar la sesión
+      const appUrl = `whatsapp://send?phone=${telLimpio}&text=${encodeURIComponent(mensajeActual)}`;
+      const link = document.createElement('a');
+      link.href = appUrl;
+      link.click();
+      return;
+    }
+
+    if (modoEnvio === 'WAME' || isMobile) {
+      const url = `https://wa.me/${telLimpio}?text=${encodeURIComponent(mensajeActual)}`;
+      window.open(url, '_blank');
+      return;
+    }
+
+    // Modo WEB: web.whatsapp.com
+    const url = `https://web.whatsapp.com/send?phone=${telLimpio}&text=${encodeURIComponent(mensajeActual)}`;
     if (abrirEnMismaVentana) {
       window.location.href = url;
     } else {
-      // Reutiliza siempre la misma pestaña con nombre 'whatsapp_web' para NO abrir pestañas nuevas repetidas ni cerrar la sesión en Linux Mint/PC
       window.open(url, 'whatsapp_web');
     }
   };
@@ -350,42 +392,106 @@ export default function ModalWhatsAppRecordatorio({
       </div>
 
       {/* ACCIONES FINALES (FOOTER FIJO, SIEMPRE VISIBLE EN PANTALLA) */}
-      <div className="shrink-0 p-4 sm:p-5 pt-3 border-t border-slate-100 bg-slate-50/70 space-y-2.5">
-          <div className="flex items-center justify-between text-[11px] text-slate-500 font-semibold px-0.5">
-            <label className="flex items-center gap-1.5 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={abrirEnMismaVentana}
-                onChange={(e) => setAbrirEnMismaVentana(e.target.checked)}
-                className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-              />
-              <span>Abrir en esta misma ventana (sin pestañas nuevas)</span>
-            </label>
-            <span className="text-[10px] text-slate-400">Pestaña única</span>
-          </div>
-
-          <div className="flex items-center gap-2">
+      <div className="shrink-0 p-4 sm:p-5 pt-3 border-t border-slate-100 bg-slate-50/80 space-y-2.5">
+        {/* SELECTOR DE MODO DE DESTINO */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+          <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+            Abrir con:
+          </span>
+          <div className="inline-flex rounded-xl p-0.5 bg-slate-200/80 text-[11px] font-bold">
             <button
               type="button"
-              onClick={copiarAlPortapapeles}
-              className="px-3.5 py-3 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition active:scale-95 cursor-pointer shadow-xs"
-              title="Copiar texto"
+              onClick={() => handleCambiarModo('APP')}
+              className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                modoEnvio === 'APP'
+                  ? 'bg-emerald-600 text-white shadow-xs font-black'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+              title="Abre la app instalada o PWA sin abrir pestañas en Chrome"
             >
-              {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-              <span>{copied ? 'Copiado' : 'Copiar'}</span>
+              💻 App / PWA
             </button>
-
             <button
               type="button"
-              onClick={abrirWhatsApp}
-              disabled={!telLimpio}
-              className="flex-1 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-black text-xs flex items-center justify-center gap-2 shadow-md shadow-emerald-600/30 transition-all disabled:opacity-50 cursor-pointer"
+              onClick={() => handleCambiarModo('WEB')}
+              className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                modoEnvio === 'WEB'
+                  ? 'bg-emerald-600 text-white shadow-xs font-black'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+              title="Abre en web.whatsapp.com en una pestaña"
             >
-              <Send className="w-4 h-4" />
-              <span>{abrirEnMismaVentana ? 'Enviar en esta Pestaña' : 'Abrir WhatsApp (Pestaña Fija)'}</span>
+              🌐 Web
+            </button>
+            <button
+              type="button"
+              onClick={() => handleCambiarModo('WAME')}
+              className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                modoEnvio === 'WAME'
+                  ? 'bg-emerald-600 text-white shadow-xs font-black'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+              title="Enlace universal wa.me"
+            >
+              🔗 wa.me
             </button>
           </div>
         </div>
+
+        {/* HINT EXPLICATIVO */}
+        <p className="text-[10px] text-slate-500 font-medium leading-tight">
+          {modoEnvio === 'APP' && (
+            <span>💡 <strong>Modo App/PWA:</strong> Envía la orden a tu aplicación sin abrir pestañas de Chrome ni cerrar tu sesión previa.</span>
+          )}
+          {modoEnvio === 'WEB' && (
+            <span>⚠️ <strong>Modo Web:</strong> Abre pestaña nueva (WhatsApp Web desconecta la anterior si ya estaba abierta).</span>
+          )}
+          {modoEnvio === 'WAME' && (
+            <span>ℹ️ <strong>Modo wa.me:</strong> Enlace universal directo.</span>
+          )}
+        </p>
+
+        {/* BOTONES DE ACCIÓN: COPIAR MENSAJE, COPIAR TELÉFONO, Y ENVIAR */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={copiarAlPortapapeles}
+            className="px-3 py-2.5 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition active:scale-95 cursor-pointer shadow-xs shrink-0"
+            title="Copiar texto para pegar con Ctrl+V sin esperar cargas"
+          >
+            {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+            <span>{copied ? '¡Copiado!' : 'Copiar Texto'}</span>
+          </button>
+
+          {telLimpio && (
+            <button
+              type="button"
+              onClick={copiarTelefono}
+              className="px-2.5 py-2.5 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1 transition active:scale-95 cursor-pointer shadow-xs shrink-0"
+              title="Copiar número de teléfono"
+            >
+              {copiedTel ? <Check className="w-4 h-4 text-emerald-600" /> : <Phone className="w-3.5 h-3.5" />}
+              <span>{copiedTel ? '¡Copiado!' : 'Tel'}</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={abrirWhatsApp}
+            disabled={!telLimpio}
+            className="flex-1 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/30 transition-all disabled:opacity-50 cursor-pointer min-w-0"
+          >
+            <Send className="w-4 h-4 shrink-0" />
+            <span className="truncate">
+              {modoEnvio === 'APP'
+                ? 'Enviar por App / PWA'
+                : modoEnvio === 'WEB'
+                ? 'Abrir en WhatsApp Web'
+                : 'Abrir con wa.me'}
+            </span>
+          </button>
+        </div>
+      </div>
       </div>
     </div>,
     document.body
