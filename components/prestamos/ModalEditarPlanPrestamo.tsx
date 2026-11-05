@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X,
   Sliders,
@@ -187,7 +188,21 @@ export default function ModalEditarPlanPrestamo({
     }
   }, [isOpen, prestamo, capitalInput, recargoPct, cantidadCuotas, frecuencia, primerVencimiento, moneda, rate, tienePagadas]);
 
-  if (!isOpen || !prestamo) return null;
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [isOpen]);
+
+  if (!isOpen || !prestamo || !mounted || typeof document === 'undefined') return null;
 
   const montoVal = Number(capitalInput) || 0;
   const capUsdCalc = moneda === 'ARS' ? (rate > 0 ? montoVal / rate : 0) : montoVal;
@@ -258,9 +273,19 @@ export default function ModalEditarPlanPrestamo({
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in select-none">
-      <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[92vh] overflow-hidden">
+  return createPortal(
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-[99999] bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 select-none animate-in fade-in duration-150"
+    >
+      {/* Fondo oscuro clickeable para cerrar */}
+      <div className="absolute inset-0" onClick={onClose} />
+
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="relative z-10 w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[88vh] sm:max-h-[90vh] overflow-hidden my-auto"
+      >
         {/* ENCABEZADO */}
         <div className="shrink-0 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 p-4 sm:p-5">
           <div className="flex items-center gap-3">
@@ -564,7 +589,8 @@ export default function ModalEditarPlanPrestamo({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

@@ -75,6 +75,15 @@ export default function PrestamosClient({
     } catch {}
   }, []);
 
+  useEffect(() => {
+    if (!modalAprobar) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [modalAprobar]);
+
   const handleToggleVista = (modo: 'CARDS' | 'LISTA') => {
     setModoVista(modo);
     try {
@@ -1027,8 +1036,16 @@ export default function PrestamosClient({
 
       {/* Modal de Aprobación y Creación Formal de Préstamo */}
       {mounted && modalAprobar && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-[9999] bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in-95 duration-150">
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[99999] bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 select-none animate-in fade-in duration-150"
+        >
+          <div className="absolute inset-0" onClick={() => setModalAprobar(null)} />
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative z-10 bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-slate-200 dark:border-slate-800 my-auto"
+          >
             <div>
               <span className="text-[10px] font-black uppercase text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/40">
                 Aprobación Directa

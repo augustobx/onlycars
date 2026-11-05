@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Users,
   Search,
@@ -92,6 +93,22 @@ export default function PwaClientesClient({
 
   // Modal WhatsApp prearmado
   const [clienteAvisar, setClienteAvisar] = useState<PwaClienteItem | null>(null);
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const anyModalOpen = Boolean(modalNuevo || clienteAvisar);
+
+  useEffect(() => {
+    if (!anyModalOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [anyModalOpen]);
 
   // Totales
   const totalClientes = clientes.length;
@@ -360,11 +377,19 @@ export default function PwaClientesClient({
       </div>
 
       {/* MODAL MÓVIL CENTER: NUEVO CLIENTE RÁPIDO */}
-      {modalNuevo && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in">
+      {mounted && modalNuevo && typeof document !== 'undefined' && createPortal(
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[99999] bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 select-none animate-in fade-in duration-150"
+        >
+          {/* Fondo oscuro clickeable para cerrar */}
+          <div className="absolute inset-0" onClick={() => setModalNuevo(false)} />
+
           <form
             onSubmit={guardarClienteSubmit}
-            className="w-full max-w-md bg-white rounded-2xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[85vh] sm:max-h-[90vh] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+            className="relative z-10 w-full max-w-md bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200 flex flex-col max-h-[88vh] sm:max-h-[90vh] overflow-hidden my-auto"
           >
             <div className="shrink-0 flex items-center justify-between border-b border-slate-100 p-4 sm:p-5">
               <h3 className="font-black text-slate-900 text-sm">Crear Nuevo Cliente</h3>
@@ -468,7 +493,8 @@ export default function PwaClientesClient({
             </button>
           </div>
         </form>
-      </div>
+      </div>,
+      document.body
     )}
 
       {/* MODAL DE WHATSAPP CON PLANTILLAS PREARMADAS */}

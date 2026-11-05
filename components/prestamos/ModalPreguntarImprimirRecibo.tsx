@@ -1,5 +1,7 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Printer, CheckCircle2, MessageCircle, X, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
@@ -32,7 +34,21 @@ export default function ModalPreguntarImprimirRecibo({
   montoUsd,
   onEnviarWhatsApp,
 }: ModalPreguntarImprimirReciboProps) {
-  if (!isOpen) return null;
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [isOpen]);
+
+  if (!isOpen || !mounted || typeof document === 'undefined') return null;
 
   const urlRecibo = `/documentos/recibo-cuota/${idCuota}?tipo=${tipo}`;
 
@@ -40,9 +56,19 @@ export default function ModalPreguntarImprimirRecibo({
     window.open(urlRecibo, '_blank');
   };
 
-  return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in select-none">
-      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-5 text-center">
+  return createPortal(
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-[99999] bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 select-none animate-in fade-in duration-150"
+    >
+      {/* Fondo oscuro clickeable para cerrar */}
+      <div className="absolute inset-0" onClick={onClose} />
+
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="relative z-10 w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-5 text-center my-auto"
+      >
         {/* ICONO Y TÍTULO */}
         <div className="mx-auto w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border-4 border-emerald-50 dark:border-emerald-900/40 shadow-sm">
           <CheckCircle2 className="w-9 h-9" />
@@ -141,6 +167,7 @@ export default function ModalPreguntarImprimirRecibo({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
